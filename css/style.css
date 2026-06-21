@@ -2,7 +2,7 @@
   box-sizing: border-box;
 }
 
-:root {
+/* :root {
   --background: #f4f7fb;
   --surface: #ffffff;
   --surface-alt: #eaf4fb;
@@ -14,6 +14,13 @@
   --danger-dark: #a51111;
   --border: #d9e2ec;
   --shadow: 0 12px 30px rgba(23, 32, 51, 0.08);
+} */
+
+:root {
+  --black: #0b0f12;
+  --dark-ocean: #12262f;
+  --seafoam: #75e6da;
+  --light: #f5f7f8;
 }
 
 html {
