@@ -1,4 +1,8 @@
+
 import {
+  browserLocalPersistence,
+  onAuthStateChanged,
+  setPersistence,
   signInWithEmailAndPassword
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
 
@@ -12,94 +16,269 @@ import {
   db
 } from "./firebase-config.js";
 
-const loginForm = document.querySelector("#login-form");
-const loginButton = document.querySelector("#login-button");
-const message = document.querySelector("#message");
+/* =========================================================
+   DOM 元素
+   ========================================================= */
 
-function showMessage(text, type = "") {
-  message.textContent = text;
-  message.className = `status-message ${type}`.trim();
-}
+const loginForm =
+  document.querySelector("#login-form");
 
-loginForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
+const emailInput =
+  document.querySelector("#email");
 
-  const email = document.querySelector("#email").value.trim();
-  const password = document.querySelector("#password").value;
+const passwordInput =
+  document.querySelector("#password");
 
-  if (!email || !password) {
-    showMessage("請輸入 Email 與密碼。", "error");
+const loginButton =
+  document.querySelector("#login-button");
+
+const loginMessage =
+  document.querySelector("#login-message");
+
+/* =========================================================
+   共用函式
+   ========================================================= */
+
+function showStatus(
+  element,
+  message,
+  type = ""
+) {
+  if (!element) {
     return;
   }
 
-  loginButton.disabled = true;
-  showMessage("登入中……");
+  element.textContent = message;
+  element.className = "status-message";
 
-  try {
-    const credential = await signInWithEmailAndPassword(
-      auth,
-      email,
-      password
-    );
+  if (type) {
+    element.classList.add(type);
+  }
+}
 
-    const uid = credential.user.uid;
-    const userSnapshot = await getDoc(doc(db, "users", uid));
+/* =========================================================
+   已登入使用者自動導向
+   ========================================================= */
 
-    if (!userSnapshot.exists()) {
-      throw new Error("Firestore 中找不到此使用者的角色資料。");
-    }
-
-    const userData = userSnapshot.data();
-
-    if (userData.role === "admin") {
-      window.location.replace("./admin.html");
+onAuthStateChanged(
+  auth,
+  async (user) => {
+    if (!user) {
       return;
     }
 
-    if (userData.role === "member") {
-  if (userData.status === "approved") {
+    try {
+      const userSnapshot =
+        await getDoc(
+          doc(db, "users", user.uid)
+        );
+
+      if (!userSnapshot.exists()) {
+        showStatus(
+          loginMessage,
+          "找不到使用者資料，請聯絡管理員。",
+          "error"
+        );
+
+        return;
+      }
+
+      const userData =
+        userSnapshot.data();
+
+      redirectByRole(userData);
+    } catch (error) {
+      console.error(
+        "讀取登入資料失敗：",
+        error
+      );
+
+      showStatus(
+        loginMessage,
+        `讀取帳號資料失敗：${error.message}`,
+        "error"
+      );
+    }
+  }
+);
+
+/* =========================================================
+   登入
+   ========================================================= */
+
+loginForm?.addEventListener(
+  "submit",
+  async (event) => {
+    event.preventDefault();
+
+    const email =
+      emailInput.value.trim();
+
+    const password =
+      passwordInput.value;
+
+    if (!email || !password) {
+      showStatus(
+        loginMessage,
+        "請輸入 Email 與密碼。",
+        "error"
+      );
+
+      return;
+    }
+
+    loginButton.disabled = true;
+    loginButton.textContent =
+      "登入中……";
+
+    showStatus(
+      loginMessage,
+      "正在登入……"
+    );
+
+    try {
+      /*
+       * 將登入狀態保存在瀏覽器本機。
+       * 換到其他 HTML 頁面時不需要重新登入。
+       * 關閉瀏覽器後再次開啟，也會維持登入。
+       */
+      await setPersistence(
+        auth,
+        browserLocalPersistence
+      );
+
+      const credential =
+        await signInWithEmailAndPassword(
+          auth,
+          email,
+          password
+        );
+
+      const userSnapshot =
+        await getDoc(
+          doc(
+            db,
+            "users",
+            credential.user.uid
+          )
+        );
+
+      if (!userSnapshot.exists()) {
+        throw new Error(
+          "Firestore 中找不到使用者資料。"
+        );
+      }
+
+      const userData =
+        userSnapshot.data();
+
+      showStatus(
+        loginMessage,
+        "登入成功，正在前往頁面……",
+        "success"
+      );
+
+      redirectByRole(userData);
+    } catch (error) {
+      console.error(
+        "登入失敗：",
+        error
+      );
+
+      showStatus(
+        loginMessage,
+        getLoginErrorMessage(error),
+        "error"
+      );
+    } finally {
+      loginButton.disabled = false;
+      loginButton.textContent =
+        "登入";
+    }
+  }
+);
+
+/* =========================================================
+   依照角色導向
+   ========================================================= */
+
+function redirectByRole(userData) {
+  if (
+    userData.role === "admin" &&
+    userData.status !== "rejected"
+  ) {
+    window.location.replace(
+      "./admin.html"
+    );
+
+    return;
+  }
+
+  if (
+    userData.role === "member" &&
+    userData.status === "approved"
+  ) {
     window.location.replace(
       "./member.html"
     );
-  } else {
+
+    return;
+  }
+
+  if (
+    userData.role === "pending" ||
+    userData.status === "pending"
+  ) {
     window.location.replace(
       "./pending.html"
     );
+
+    return;
   }
 
-  return;
+  if (userData.status === "rejected") {
+    showStatus(
+      loginMessage,
+      "社員申請未通過，請聯絡管理員。",
+      "error"
+    );
+
+    return;
+  }
+
+  showStatus(
+    loginMessage,
+    "帳號角色或審核狀態不正確，請聯絡管理員。",
+    "error"
+  );
 }
 
-    throw new Error(`未知的使用者角色：${String(userData.role)}`);
-  } catch (error) {
-    console.error("登入失敗：", error);
+/* =========================================================
+   登入錯誤訊息
+   ========================================================= */
 
-    switch (error.code) {
-      case "auth/invalid-credential":
-        showMessage("Email 或密碼不正確。", "error");
-        break;
+function getLoginErrorMessage(error) {
+  switch (error.code) {
+    case "auth/invalid-email":
+      return "Email 格式不正確。";
 
-      case "auth/invalid-email":
-        showMessage("Email 格式不正確。", "error");
-        break;
+    case "auth/missing-password":
+      return "請輸入密碼。";
 
-      case "auth/too-many-requests":
-        showMessage("登入嘗試次數過多，請稍後再試。", "error");
-        break;
+    case "auth/invalid-credential":
+      return "Email 或密碼不正確。";
 
-      case "auth/operation-not-allowed":
-        showMessage("Firebase 尚未啟用 Email／Password 登入。", "error");
-        break;
+    case "auth/user-disabled":
+      return "這個帳號已被停用。";
 
-      case "permission-denied":
-      case "firestore/permission-denied":
-        showMessage("登入成功，但 Firestore 拒絕讀取角色資料。", "error");
-        break;
+    case "auth/too-many-requests":
+      return "登入嘗試次數過多，請稍後再試。";
 
-      default:
-        showMessage(`登入失敗：${error.message}`, "error");
-    }
-  } finally {
-    loginButton.disabled = false;
+    case "auth/network-request-failed":
+      return "網路連線失敗，請檢查網路後再試。";
+
+    default:
+      return `登入失敗：${error.message}`;
   }
-});
+}
+
