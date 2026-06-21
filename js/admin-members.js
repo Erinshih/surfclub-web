@@ -1163,10 +1163,11 @@ function createMemberEditor(
 
   [
     "",
-    "Lv.1",
-    "Lv.2",
-    "Lv.3",
-    "Lv.4"
+    "Lv.1：漂流木",
+    "Lv.2：水筆仔",
+    "Lv.3：漁光三寶",
+    "Lv.4：奧賽四超人",
+    "Lv.5：漁光電線桿"
   ].forEach(
     (level) => {
       const option =
