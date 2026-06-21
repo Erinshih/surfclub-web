@@ -286,12 +286,53 @@
           </p>
         </div>
       </section>
+
+      <!-- =====================================================
+     社員資料匯出
+     ===================================================== -->
+<section class="card">
+  <div class="section-heading left">
+    <p class="eyebrow">
+      MEMBER EXPORT
+    </p>
+
+    <h2>
+      匯出社員資料
+    </h2>
+
+    <p class="section-description">
+      將 Firestore 中的社員資料匯出成 CSV，
+      可使用 Excel、Numbers 或 Google 試算表開啟。
+    </p>
+  </div>
+
+  <button
+    id="export-members-button"
+    class="button"
+    type="button"
+  >
+    匯出社員 CSV
+  </button>
+
+  <p
+    id="export-members-message"
+    class="status-message"
+    aria-live="polite"
+  ></p>
+</section>
     </div>
   </main>
+
+  
 
   <script
     type="module"
     src="./js/admin.js"
   ></script>
+
+
+
+
+
 </body>
 </html>

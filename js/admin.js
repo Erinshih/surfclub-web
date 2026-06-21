@@ -54,6 +54,12 @@ const announcementFormMessage =
 const announcementList =
   document.querySelector("#announcement-list");
 
+const exportMembersButton =
+  document.querySelector("#export-members-button");
+
+const exportMembersMessage =
+  document.querySelector("#export-members-message");
+
 /* 社課元素 */
 
 const courseForm =
@@ -844,3 +850,205 @@ logoutButton?.addEventListener(
     }
   }
 );
+
+
+/* =========================================================
+   匯出社員 CSV
+   ========================================================= */
+
+exportMembersButton?.addEventListener(
+  "click",
+  async () => {
+    if (!currentAdmin) {
+      showStatus(
+        exportMembersMessage,
+        "尚未完成管理員身分驗證。",
+        "error"
+      );
+
+      return;
+    }
+
+    exportMembersButton.disabled = true;
+
+    showStatus(
+      exportMembersMessage,
+      "正在讀取並整理社員資料……"
+    );
+
+    try {
+      const usersSnapshot =
+        await getDocs(
+          collection(db, "users")
+        );
+
+      const members =
+        usersSnapshot.docs
+          .map((userDocument) => ({
+            uid: userDocument.id,
+            ...userDocument.data()
+          }))
+          .filter((user) => {
+            /*
+             * 只匯出社員與管理員。
+             * 若你的 role 使用其他名稱，
+             * 請修改這裡。
+             */
+            return (
+              user.role === "member" ||
+              user.role === "admin"
+            );
+          })
+          .sort((memberA, memberB) => {
+            const nameA =
+              String(memberA.name ?? "");
+
+            const nameB =
+              String(memberB.name ?? "");
+
+            return nameA.localeCompare(
+              nameB,
+              "zh-Hant"
+            );
+          });
+
+      if (members.length === 0) {
+        showStatus(
+          exportMembersMessage,
+          "目前沒有可以匯出的社員資料。",
+          "error"
+        );
+
+        return;
+      }
+
+      /*
+       * CSV 第一列標題。
+       * 可以依照你的 Firestore 欄位增減。
+       */
+      const csvRows = [
+        [
+          "姓名",
+          "Email",
+          "學號",
+          "角色",
+          "家系",
+          "等級",
+          "積分",
+          "審核狀態",
+          "UID"
+        ]
+      ];
+
+      members.forEach((member) => {
+        csvRows.push([
+          member.name ?? "",
+          member.email ?? "",
+          member.studentId ?? "",
+          member.role ?? "",
+          member.family ?? "",
+          member.level ?? "",
+          member.points ?? 0,
+          member.status ?? "",
+          member.uid
+        ]);
+      });
+
+      /*
+       * 加入 UTF-8 BOM，
+       * 避免 Excel 開啟中文時出現亂碼。
+       */
+      const csvContent =
+        "\uFEFF" +
+        csvRows
+          .map((row) => {
+            return row
+              .map((value) =>
+                escapeCsvValue(value)
+              )
+              .join(",");
+          })
+          .join("\r\n");
+
+      const csvBlob =
+        new Blob(
+          [csvContent],
+          {
+            type:
+              "text/csv;charset=utf-8;"
+          }
+        );
+
+      const downloadUrl =
+        URL.createObjectURL(csvBlob);
+
+      const downloadLink =
+        document.createElement("a");
+
+      const today =
+        new Date()
+          .toISOString()
+          .slice(0, 10);
+
+      downloadLink.href =
+        downloadUrl;
+
+      downloadLink.download =
+        `surf-club-members-${today}.csv`;
+
+      document.body.appendChild(
+        downloadLink
+      );
+
+      downloadLink.click();
+
+      downloadLink.remove();
+
+      URL.revokeObjectURL(
+        downloadUrl
+      );
+
+      showStatus(
+        exportMembersMessage,
+        `成功匯出 ${members.length} 筆社員資料。`,
+        "success"
+      );
+    } catch (error) {
+      console.error(
+        "社員資料匯出失敗：",
+        error
+      );
+
+      showStatus(
+        exportMembersMessage,
+        `匯出失敗：${error.message}`,
+        "error"
+      );
+    } finally {
+      exportMembersButton.disabled = false;
+    }
+  }
+);
+
+
+/**
+ * 將資料轉換為安全的 CSV 欄位。
+ *
+ * 1. 將雙引號轉成兩個雙引號。
+ * 2. 防止 Excel 將社員資料誤判成公式。
+ * 3. 每個欄位都使用雙引號包住。
+ */
+function escapeCsvValue(value) {
+  let text =
+    String(value ?? "");
+
+  if (/^[=+\-@]/.test(text)) {
+    text = `'${text}`;
+  }
+
+  const escapedText =
+    text.replaceAll('"', '""');
+
+  return `"${escapedText}"`;
+}
+
