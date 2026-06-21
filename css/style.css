@@ -1211,3 +1211,116 @@ textarea {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* =========================================================
+   社員 Level 與家系
+   ========================================================= */
+
+.member-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.member-profile-item {
+  min-height: 110px;
+  padding: 20px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+.member-profile-label {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.member-profile-item strong {
+  color: var(--navy);
+  font-size: 1.1rem;
+  overflow-wrap: anywhere;
+}
+
+.member-level-badge,
+.member-family-badge {
+  width: fit-content;
+  padding: 6px 13px;
+
+  color: #356d69;
+  background: var(--primary-light);
+
+  border-radius: 999px;
+}
+
+#member-management-list {
+  display: grid;
+  gap: 16px;
+}
+
+.member-management-card {
+  padding: 20px;
+
+  display: grid;
+  grid-template-columns:
+    minmax(180px, 1fr)
+    minmax(130px, 180px)
+    minmax(180px, 1fr)
+    auto;
+
+  align-items: end;
+  gap: 18px;
+
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+.member-management-information h3 {
+  margin: 0;
+  color: var(--navy);
+}
+
+.member-management-information p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.member-management-field label {
+  margin-top: 0;
+}
+
+.member-management-card .button {
+  margin: 0;
+}
+
+@media screen and (max-width: 900px) {
+  .member-profile-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .member-management-card {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .member-profile-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .member-management-card {
+    grid-template-columns: 1fr;
+  }
+
+  .member-management-card .button {
+    width: 100%;
+  }
+}

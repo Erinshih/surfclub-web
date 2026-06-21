@@ -1,20 +1,8 @@
+
 import {
   onAuthStateChanged,
   signOut
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
-
-// import {
-//   addDoc,
-//   collection,
-//   deleteDoc,
-//   doc,
-//   getDoc,
-//   getDocs,
-//   orderBy,
-//   query,
-//   serverTimestamp,
-//   updateDoc
-// } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
 
 import {
   addDoc,
@@ -29,10 +17,12 @@ import {
   updateDoc,
   writeBatch
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+
 import {
   auth,
   db
 } from "./firebase-config.js";
+
 
 /* =========================================================
    DOM 元素
@@ -125,6 +115,15 @@ const fillCourseExampleButton =
 const courseImportMessage =
   document.querySelector("#course-import-message");
 
+const memberManagementList =
+  document.querySelector(
+    "#member-management-list"
+  );
+
+const memberManagementMessage =
+  document.querySelector(
+    "#member-management-message"
+  );
 /* =========================================================
    共用函式
    ========================================================= */
@@ -199,9 +198,14 @@ onAuthStateChanged(auth, async (user) => {
 
     adminContent.classList.remove("hidden");
 
+    // await Promise.all([
+    //   loadAnnouncements(),
+    //   loadAdminCourses()
+    // ]);
     await Promise.all([
       loadAnnouncements(),
-      loadAdminCourses()
+      loadAdminCourses(),
+      loadMemberManagement()
     ]);
   } catch (error) {
     console.error("管理員驗證失敗：", error);
@@ -1591,3 +1595,256 @@ importCoursesButton?.addEventListener(
   }
 );
 
+/* =========================================================
+   社員 Level 與家系管理
+   ========================================================= */
+
+async function loadMemberManagement() {
+  if (!memberManagementList) {
+    return;
+  }
+
+  memberManagementList.innerHTML = `
+    <p class="empty-state">
+      正在載入社員資料……
+    </p>
+  `;
+
+  try {
+    const usersSnapshot =
+      await getDocs(
+        collection(db, "users")
+      );
+
+    const members =
+      usersSnapshot.docs
+        .map((userDocument) => ({
+          uid: userDocument.id,
+          ...userDocument.data()
+        }))
+        .filter((user) => {
+          return (
+            user.role === "member" ||
+            user.role === "admin"
+          );
+        })
+        .sort((memberA, memberB) => {
+          return String(
+            memberA.name || ""
+          ).localeCompare(
+            String(memberB.name || ""),
+            "zh-Hant"
+          );
+        });
+
+    renderMemberManagement(members);
+  } catch (error) {
+    console.error(
+      "社員資料載入失敗：",
+      error
+    );
+
+    memberManagementList.innerHTML = `
+      <p class="status-message error">
+        社員資料載入失敗：${error.message}
+      </p>
+    `;
+  }
+}
+
+function renderMemberManagement(members) {
+  memberManagementList.innerHTML = "";
+
+  if (members.length === 0) {
+    memberManagementList.innerHTML = `
+      <p class="empty-state">
+        目前沒有社員資料。
+      </p>
+    `;
+
+    return;
+  }
+
+  members.forEach((member) => {
+    memberManagementList.appendChild(
+      createMemberManagementCard(member)
+    );
+  });
+}
+
+function createMemberManagementCard(member) {
+  const article =
+    document.createElement("article");
+
+  article.className =
+    "member-management-card";
+
+  const information =
+    document.createElement("div");
+
+  information.className =
+    "member-management-information";
+
+  const title =
+    document.createElement("h3");
+
+  title.textContent =
+    member.name || "未命名社員";
+
+  const email =
+    document.createElement("p");
+
+  email.textContent =
+    member.email || "";
+
+  information.append(
+    title,
+    email
+  );
+
+  /* Level */
+
+  const levelGroup =
+    document.createElement("div");
+
+  levelGroup.className =
+    "member-management-field";
+
+  const levelLabel =
+    document.createElement("label");
+
+  levelLabel.textContent = "Level";
+
+  const levelSelect =
+    document.createElement("select");
+
+  const levels = [
+    "",
+    "Lv.1",
+    "Lv.2",
+    "Lv.3",
+    "Lv.4",
+    "Lv.5"
+  ];
+
+  levels.forEach((level) => {
+    const option =
+      document.createElement("option");
+
+    option.value = level;
+
+    option.textContent =
+      level || "尚未設定";
+
+    if (member.level === level) {
+      option.selected = true;
+    }
+
+    levelSelect.appendChild(option);
+  });
+
+  levelGroup.append(
+    levelLabel,
+    levelSelect
+  );
+
+  /* 家系 */
+
+  const familyGroup =
+    document.createElement("div");
+
+  familyGroup.className =
+    "member-management-field";
+
+  const familyLabel =
+    document.createElement("label");
+
+  familyLabel.textContent = "家系";
+
+  const familyInput =
+    document.createElement("input");
+
+  familyInput.type = "text";
+
+  familyInput.value =
+    member.family || "";
+
+  familyInput.placeholder =
+    "例如：海浪家";
+
+  familyInput.maxLength = 50;
+
+  familyGroup.append(
+    familyLabel,
+    familyInput
+  );
+
+  /* 儲存按鈕 */
+
+  const saveButton =
+    document.createElement("button");
+
+  saveButton.type = "button";
+
+  saveButton.className =
+    "button button-small";
+
+  saveButton.textContent =
+    "儲存修改";
+
+  saveButton.addEventListener(
+    "click",
+    async () => {
+      saveButton.disabled = true;
+
+      showStatus(
+        memberManagementMessage,
+        `正在更新 ${member.name || "社員"} 的資料……`
+      );
+
+      try {
+        await updateDoc(
+          doc(db, "users", member.uid),
+          {
+            level:
+              levelSelect.value,
+
+            family:
+              familyInput.value.trim(),
+
+            updatedAt:
+              serverTimestamp()
+          }
+        );
+
+        showStatus(
+          memberManagementMessage,
+          `${member.name || "社員"} 的 Level 與家系已更新。`,
+          "success"
+        );
+      } catch (error) {
+        console.error(
+          "更新社員資料失敗：",
+          error
+        );
+
+        showStatus(
+          memberManagementMessage,
+          `更新失敗：${error.message}`,
+          "error"
+        );
+      } finally {
+        saveButton.disabled = false;
+      }
+    }
+  );
+
+  article.append(
+    information,
+    levelGroup,
+    familyGroup,
+    saveButton
+  );
+
+  return article;
+}
