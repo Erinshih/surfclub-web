@@ -22,7 +22,7 @@ import {
 } from "./firebase-config.js";
 
 /* =========================================================
-   DOM 元素
+   DOM
    ========================================================= */
 
 const adminStatus =
@@ -43,138 +43,70 @@ const announcementTitleInput =
 const announcementContentInput =
   document.querySelector("#announcement-content");
 
-const announcementSubmitButton =
-  document.querySelector("#announcement-submit");
+const announcementLinkTextInput =
+  document.querySelector("#announcement-link-text");
 
-const announcementMessage =
-  document.querySelector("#announcement-message");
+const announcementLinkUrlInput =
+  document.querySelector("#announcement-link-url");
+
+const publishButton =
+  document.querySelector("#publish-button");
+
+const announcementFormMessage =
+  document.querySelector("#announcement-form-message");
 
 const announcementList =
   document.querySelector("#announcement-list");
 
-/* =========================================================
-   全域狀態
-   ========================================================= */
-
 let currentAdmin = null;
-let authFinished = false;
 
 /* =========================================================
-   頁面基本檢查
-   ========================================================= */
-
-if (!adminStatus || !adminContent) {
-  console.error(
-    "admin-announcements.html 缺少必要元素：",
-    {
-      adminStatus,
-      adminContent
-    }
-  );
-}
-
-/*
- * 如果 Firebase 驗證長時間完全沒有回應，
- * 顯示提示，避免永遠停在「驗證中」。
- */
-const authTimeout = window.setTimeout(() => {
-  if (authFinished) {
-    return;
-  }
-
-  showStatus(
-    adminStatus,
-    "管理員驗證逾時。請檢查 firebase-config.js、網路連線與瀏覽器 Console。",
-    "error"
-  );
-}, 10000);
-
-/* =========================================================
-   管理員身分驗證
+   管理員驗證
    ========================================================= */
 
 onAuthStateChanged(
   auth,
-
   async (user) => {
-    authFinished = true;
-    window.clearTimeout(authTimeout);
-
-    /*
-     * 沒有 Firebase 登入狀態時，
-     * 導回登入頁面。
-     */
     if (!user) {
-      showStatus(
-        adminStatus,
-        "尚未登入，正在前往登入頁面……",
-        "error"
+      window.location.replace(
+        "./login.html"
       );
-
-      window.setTimeout(() => {
-        window.location.replace(
-          "./login.html"
-        );
-      }, 600);
 
       return;
     }
 
-    showStatus(
-      adminStatus,
-      "登入狀態已確認，正在讀取管理員資料……"
-    );
-
     try {
-      /*
-       * Firestore 文件路徑必須是：
-       * users/{Firebase Authentication UID}
-       */
-      const userReference =
-        doc(
-          db,
-          "users",
-          user.uid
-        );
-
       const userSnapshot =
-        await getDoc(userReference);
+        await getDoc(
+          doc(
+            db,
+            "users",
+            user.uid
+          )
+        );
 
       if (!userSnapshot.exists()) {
         throw new Error(
-          `Firestore 中找不到 users/${user.uid} 文件。`
+          "Firestore 中找不到管理員資料。"
         );
       }
 
       const userData =
         userSnapshot.data();
 
-      /*
-       * 管理員 role 必須精確等於字串 "admin"。
-       */
       if (userData.role !== "admin") {
-        showStatus(
-          adminStatus,
-          `此帳號不是管理員，目前角色為：${
-            userData.role || "未設定"
-          }`,
-          "error"
-        );
-
-        window.setTimeout(() => {
-          if (
-            userData.role === "pending" ||
-            userData.status === "pending"
-          ) {
-            window.location.replace(
-              "./pending.html"
-            );
-          } else {
-            window.location.replace(
-              "./member.html"
-            );
-          }
-        }, 1000);
+        if (
+          userData.status === "pending" ||
+          userData.status === "rejected"
+        ) {
+          window.location.replace(
+            "./pending.html"
+          );
+        } else {
+          window.location.replace(
+            "./member.html"
+          );
+        }
 
         return;
       }
@@ -186,12 +118,12 @@ onAuthStateChanged(
         `管理員：${
           userData.name ||
           user.email ||
-          user.uid
+          "未命名"
         }`,
         "success"
       );
 
-      adminContent.classList.remove(
+      adminContent?.classList.remove(
         "hidden"
       );
 
@@ -204,32 +136,13 @@ onAuthStateChanged(
 
       showStatus(
         adminStatus,
-        getReadableErrorMessage(
-          "管理員驗證失敗",
-          error
-        ),
+        `驗證失敗：${
+          error?.message ||
+          "未知錯誤"
+        }`,
         "error"
       );
     }
-  },
-
-  (error) => {
-    authFinished = true;
-    window.clearTimeout(authTimeout);
-
-    console.error(
-      "Firebase Authentication 監聽失敗：",
-      error
-    );
-
-    showStatus(
-      adminStatus,
-      getReadableErrorMessage(
-        "登入狀態讀取失敗",
-        error
-      ),
-      "error"
-    );
   }
 );
 
@@ -239,13 +152,12 @@ onAuthStateChanged(
 
 announcementForm?.addEventListener(
   "submit",
-
   async (event) => {
     event.preventDefault();
 
     if (!currentAdmin) {
       showStatus(
-        announcementMessage,
+        announcementFormMessage,
         "尚未完成管理員身分驗證。",
         "error"
       );
@@ -263,37 +175,77 @@ announcementForm?.addEventListener(
         .value
         .trim();
 
-    if (!title) {
+    const originalLinkText =
+      announcementLinkTextInput
+        .value
+        .trim();
+
+    const linkUrl =
+      normalizeUrl(
+        announcementLinkUrlInput
+          .value
+      );
+
+    const linkText =
+      linkUrl
+        ? (
+            originalLinkText ||
+            "開啟連結"
+          )
+        : "";
+
+    if (
+      !title ||
+      !content
+    ) {
       showStatus(
-        announcementMessage,
-        "請輸入公告標題。",
+        announcementFormMessage,
+        "公告標題與內容不可空白。",
         "error"
       );
 
-      announcementTitleInput.focus();
       return;
     }
 
-    if (!content) {
+    if (
+      linkUrl &&
+      !isSafeHttpUrl(linkUrl)
+    ) {
       showStatus(
-        announcementMessage,
-        "請輸入公告內容。",
+        announcementFormMessage,
+        "網址格式不正確，只允許 http:// 或 https:// 網址。",
         "error"
       );
 
-      announcementContentInput.focus();
       return;
     }
 
-    announcementSubmitButton.disabled =
+    /*
+     * 有填連結文字但沒有網址時，
+     * 提醒管理員補上網址。
+     */
+    if (
+      originalLinkText &&
+      !linkUrl
+    ) {
+      showStatus(
+        announcementFormMessage,
+        "已填寫連結文字，但尚未輸入網址。",
+        "error"
+      );
+
+      return;
+    }
+
+    publishButton.disabled =
       true;
 
-    announcementSubmitButton.textContent =
+    publishButton.textContent =
       "發布中……";
 
     showStatus(
-      announcementMessage,
-      "正在發布公告……"
+      announcementFormMessage,
+      "公告發布中……"
     );
 
     try {
@@ -305,9 +257,17 @@ announcementForm?.addEventListener(
         {
           title,
           content,
+
+          linkText,
+          linkUrl,
+
           createdBy:
             currentAdmin.uid,
+
           createdAt:
+            serverTimestamp(),
+
+          updatedAt:
             serverTimestamp()
         }
       );
@@ -315,7 +275,7 @@ announcementForm?.addEventListener(
       announcementForm.reset();
 
       showStatus(
-        announcementMessage,
+        announcementFormMessage,
         "公告發布成功。",
         "success"
       );
@@ -328,25 +288,25 @@ announcementForm?.addEventListener(
       );
 
       showStatus(
-        announcementMessage,
-        getReadableErrorMessage(
-          "公告發布失敗",
-          error
-        ),
+        announcementFormMessage,
+        `公告發布失敗：${
+          error?.message ||
+          "未知錯誤"
+        }`,
         "error"
       );
     } finally {
-      announcementSubmitButton.disabled =
+      publishButton.disabled =
         false;
 
-      announcementSubmitButton.textContent =
+      publishButton.textContent =
         "發布公告";
     }
   }
 );
 
 /* =========================================================
-   載入公告
+   讀取公告
    ========================================================= */
 
 async function loadAnnouncements() {
@@ -361,7 +321,7 @@ async function loadAnnouncements() {
   `;
 
   try {
-    const announcementsQuery =
+    const announcementQuery =
       query(
         collection(
           db,
@@ -375,10 +335,11 @@ async function loadAnnouncements() {
 
     const querySnapshot =
       await getDocs(
-        announcementsQuery
+        announcementQuery
       );
 
-    announcementList.innerHTML = "";
+    announcementList.innerHTML =
+      "";
 
     if (querySnapshot.empty) {
       announcementList.innerHTML = `
@@ -391,15 +352,12 @@ async function loadAnnouncements() {
     }
 
     querySnapshot.forEach(
-      (documentSnapshot) => {
-        const announcementCard =
-          createAnnouncementCard(
-            documentSnapshot.id,
-            documentSnapshot.data()
-          );
-
+      (announcementSnapshot) => {
         announcementList.appendChild(
-          announcementCard
+          createAnnouncementCard(
+            announcementSnapshot.id,
+            announcementSnapshot.data()
+          )
         );
       }
     );
@@ -409,23 +367,14 @@ async function loadAnnouncements() {
       error
     );
 
-    announcementList.innerHTML = "";
-
-    const errorMessage =
-      document.createElement("p");
-
-    errorMessage.className =
-      "status-message error";
-
-    errorMessage.textContent =
-      getReadableErrorMessage(
-        "公告讀取失敗",
-        error
-      );
-
-    announcementList.appendChild(
-      errorMessage
-    );
+    announcementList.innerHTML = `
+      <p class="status-message error">
+        公告讀取失敗：${escapeHtml(
+          error?.message ||
+          "未知錯誤"
+        )}
+      </p>
+    `;
   }
 }
 
@@ -438,46 +387,101 @@ function createAnnouncementCard(
   announcement
 ) {
   const article =
-    document.createElement("article");
-
-  article.className =
-    "management-card announcement-card";
-
-  const information =
-    document.createElement("div");
+    document.createElement(
+      "article"
+    );
 
   const title =
-    document.createElement("h3");
+    document.createElement(
+      "h3"
+    );
 
   const content =
-    document.createElement("p");
+    document.createElement(
+      "p"
+    );
 
-  const metadata =
-    document.createElement("small");
+  const time =
+    document.createElement(
+      "small"
+    );
 
   const actions =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
 
   const deleteButton =
-    document.createElement("button");
+    document.createElement(
+      "button"
+    );
+
+  article.className =
+    "card announcement-card";
 
   title.textContent =
     announcement.title ||
     "未命名公告";
 
   content.textContent =
-    announcement.content || "";
+    announcement.content ||
+    "";
 
-  metadata.className =
+  time.className =
     "announcement-meta";
 
-  metadata.textContent =
+  time.textContent =
     formatTimestamp(
       announcement.createdAt
     );
 
   actions.className =
-    "management-actions";
+    "announcement-actions";
+
+  article.append(
+    title,
+    content
+  );
+
+  /*
+   * 公告有安全網址時，
+   * 建立真正可以點擊的連結按鈕。
+   */
+  if (
+    announcement.linkUrl &&
+    isSafeHttpUrl(
+      announcement.linkUrl
+    )
+  ) {
+    const link =
+      document.createElement(
+        "a"
+      );
+
+    link.href =
+      announcement.linkUrl;
+
+    link.textContent =
+      announcement.linkText ||
+      "開啟連結";
+
+    link.className =
+      "button button-small announcement-link";
+
+    link.target =
+      "_blank";
+
+    link.rel =
+      "noopener noreferrer";
+
+    article.appendChild(
+      link
+    );
+  }
+
+  article.appendChild(
+    time
+  );
 
   deleteButton.type =
     "button";
@@ -490,7 +494,6 @@ function createAnnouncementCard(
 
   deleteButton.addEventListener(
     "click",
-
     async () => {
       const confirmed =
         window.confirm(
@@ -520,7 +523,7 @@ function createAnnouncementCard(
         );
 
         showStatus(
-          announcementMessage,
+          announcementFormMessage,
           "公告已刪除。",
           "success"
         );
@@ -532,11 +535,13 @@ function createAnnouncementCard(
           error
         );
 
-        window.alert(
-          getReadableErrorMessage(
-            "公告刪除失敗",
-            error
-          )
+        showStatus(
+          announcementFormMessage,
+          `公告刪除失敗：${
+            error?.message ||
+            "未知錯誤"
+          }`,
+          "error"
         );
 
         deleteButton.disabled =
@@ -548,22 +553,54 @@ function createAnnouncementCard(
     }
   );
 
-  information.append(
-    title,
-    content,
-    metadata
-  );
-
   actions.appendChild(
     deleteButton
   );
 
-  article.append(
-    information,
+  article.appendChild(
     actions
   );
 
   return article;
+}
+
+/* =========================================================
+   網址處理
+   ========================================================= */
+
+function normalizeUrl(value) {
+  const text =
+    String(
+      value || ""
+    ).trim();
+
+  if (!text) {
+    return "";
+  }
+
+  if (
+    /^https?:\/\//i.test(text)
+  ) {
+    return text;
+  }
+
+  return `https://${text}`;
+}
+
+function isSafeHttpUrl(value) {
+  try {
+    const parsedUrl =
+      new URL(value);
+
+    return (
+      parsedUrl.protocol ===
+        "http:" ||
+      parsedUrl.protocol ===
+        "https:"
+    );
+  } catch {
+    return false;
+  }
 }
 
 /* =========================================================
@@ -572,11 +609,9 @@ function createAnnouncementCard(
 
 logoutButton?.addEventListener(
   "click",
-
   async () => {
-    logoutButton.disabled = true;
-    logoutButton.textContent =
-      "登出中……";
+    logoutButton.disabled =
+      true;
 
     try {
       await signOut(auth);
@@ -590,18 +625,17 @@ logoutButton?.addEventListener(
         error
       );
 
+      logoutButton.disabled =
+        false;
+
       showStatus(
         adminStatus,
-        getReadableErrorMessage(
-          "登出失敗",
-          error
-        ),
+        `登出失敗：${
+          error?.message ||
+          "未知錯誤"
+        }`,
         "error"
       );
-
-      logoutButton.disabled = false;
-      logoutButton.textContent =
-        "登出";
     }
   }
 );
@@ -609,26 +643,6 @@ logoutButton?.addEventListener(
 /* =========================================================
    共用函式
    ========================================================= */
-
-function showStatus(
-  element,
-  message,
-  type = ""
-) {
-  if (!element) {
-    return;
-  }
-
-  element.textContent =
-    message;
-
-  element.className =
-    "status-message";
-
-  if (type) {
-    element.classList.add(type);
-  }
-}
 
 function formatTimestamp(
   timestamp
@@ -655,34 +669,51 @@ function formatTimestamp(
     );
 }
 
-function getReadableErrorMessage(
-  prefix,
-  error
+function escapeHtml(value) {
+  return String(
+    value ?? ""
+  )
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
+    .replaceAll(
+      "'",
+      "&#039;"
+    );
+}
+
+function showStatus(
+  element,
+  text,
+  type = ""
 ) {
-  if (
-    error?.code ===
-    "permission-denied"
-  ) {
-    return `${prefix}：Firestore 權限不足，請檢查 Rules 與管理員 role。`;
+  if (!element) {
+    return;
   }
 
-  if (
-    error?.code ===
-    "unavailable"
-  ) {
-    return `${prefix}：目前無法連線到 Firebase，請檢查網路。`;
-  }
+  element.textContent =
+    text;
 
-  if (
-    error?.code ===
-    "failed-precondition"
-  ) {
-    return `${prefix}：Firebase 查詢條件尚未完成設定。`;
-  }
+  element.className =
+    "status-message";
 
-  return `${prefix}：${
-    error?.message ||
-    "未知錯誤"
-  }`;
+  if (type) {
+    element.classList.add(
+      type
+    );
+  }
 }
 
