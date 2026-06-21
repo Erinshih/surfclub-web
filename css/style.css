@@ -1169,3 +1169,45 @@ textarea {
   }
 }
 
+/* =========================================================
+   管理員後台補充樣式
+   ========================================================= */
+
+#admin-content {
+  display: grid;
+  gap: 28px;
+}
+
+#admin-content.hidden {
+  display: none;
+}
+
+#admin-course-list {
+  display: grid;
+  gap: 16px;
+}
+
+#admin-course-list .member-application {
+  margin-bottom: 0;
+}
+
+#admin-course-list .course-tags {
+  margin-top: 12px;
+  margin-bottom: 12px;
+}
+
+#admin-course-list .member-application > div:first-child {
+  min-width: 0;
+  flex: 1;
+}
+
+#admin-course-list .member-application p {
+  overflow-wrap: anywhere;
+}
+
+@media screen and (max-width: 700px) {
+  #admin-course-list .member-application-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}

@@ -2,17 +2,44 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
   <title>Surf Club｜管理員後台</title>
-  <link rel="stylesheet" href="./css/style.css">
+
+  <link
+    rel="stylesheet"
+    href="./css/style.css"
+  >
 </head>
+
 <body>
   <header class="site-header">
     <nav class="navbar">
-      <a class="brand" href="./index.html">Surf Club 管理後台</a>
+      <a
+        class="brand"
+        href="./index.html"
+      >
+        SURF CLUB ADMIN
+      </a>
+
       <div class="nav-links">
-        <a href="./index.html">公開首頁</a>
-        <button id="logout-button" class="button button-small button-secondary" type="button">
+        <a href="./index.html">
+          公開首頁
+        </a>
+
+        <a href="./courses.html">
+          社課頁面
+        </a>
+
+        <button
+          id="logout-button"
+          class="button button-small button-secondary"
+          type="button"
+        >
           登出
         </button>
       </div>
@@ -20,69 +47,251 @@
   </header>
 
   <main class="dashboard">
+    <!-- 管理員資訊 -->
     <section class="dashboard-header card">
       <div>
-        <p class="eyebrow">ADMIN DASHBOARD</p>
-        <h1>管理員後台</h1>
-        <p id="admin-status" class="status-message">正在驗證管理員身分……</p>
-      </div>
-    </section>
+        <p class="eyebrow">
+          ADMIN DASHBOARD
+        </p>
 
-    <section id="announcement-form-section" class="card hidden">
-      <h2>新增公告</h2>
+        <h1>
+          管理員後台
+        </h1>
 
-      <form id="announcement-form">
-        <label for="title">公告標題</label>
-        <input
-          id="title"
-          name="title"
-          type="text"
-          maxlength="100"
-          required
+        <p
+          id="admin-status"
+          class="status-message"
         >
-
-        <label for="content">公告內容</label>
-        <textarea
-          id="content"
-          name="content"
-          maxlength="2000"
-          required
-        ></textarea>
-
-        <button id="publish-button" class="button" type="submit">
-          發布公告
-        </button>
-
-        <p id="form-message" class="status-message" aria-live="polite"></p>
-      </form>
-    </section>
-
-    <section>
-      <div class="section-heading left">
-        <p class="eyebrow">ANNOUNCEMENTS</p>
-        <h2>公告管理</h2>
-      </div>
-
-      <div id="announcement-list">
-        <p>正在讀取公告……</p>
+          正在驗證管理員身分……
+        </p>
       </div>
     </section>
+
+    <!-- 未驗證前隱藏 -->
+    <div
+      id="admin-content"
+      class="hidden"
+    >
+      <!-- ===============================================
+           公告管理
+           =============================================== -->
+      <section class="card">
+        <div class="section-heading left">
+          <p class="eyebrow">
+            ANNOUNCEMENT MANAGEMENT
+          </p>
+
+          <h2>
+            新增公告
+          </h2>
+        </div>
+
+        <form id="announcement-form">
+          <label for="announcement-title">
+            公告標題
+          </label>
+
+          <input
+            id="announcement-title"
+            name="title"
+            type="text"
+            maxlength="100"
+            required
+            placeholder="請輸入公告標題"
+          >
+
+          <label for="announcement-content">
+            公告內容
+          </label>
+
+          <textarea
+            id="announcement-content"
+            name="content"
+            maxlength="2000"
+            required
+            placeholder="請輸入公告內容"
+          ></textarea>
+
+          <button
+            id="publish-button"
+            class="button"
+            type="submit"
+          >
+            發布公告
+          </button>
+
+          <p
+            id="announcement-form-message"
+            class="status-message"
+            aria-live="polite"
+          ></p>
+        </form>
+      </section>
+
+      <section class="card">
+        <div class="section-heading left">
+          <p class="eyebrow">
+            ANNOUNCEMENT LIST
+          </p>
+
+          <h2>
+            公告管理
+          </h2>
+        </div>
+
+        <div id="announcement-list">
+          <p class="empty-state">
+            正在讀取公告……
+          </p>
+        </div>
+      </section>
+
+      <!-- ===============================================
+           社課管理
+           =============================================== -->
+      <section class="card">
+        <div class="section-heading left">
+          <p class="eyebrow">
+            COURSE MANAGEMENT
+          </p>
+
+          <h2>
+            新增或編輯社課
+          </h2>
+
+          <p class="section-description">
+            管理員可以設定日期、名稱、內容、標籤、排序與公開狀態。
+          </p>
+        </div>
+
+        <form id="course-form">
+          <input
+            type="hidden"
+            id="course-id"
+          >
+
+          <label for="course-order">
+            顯示順序
+          </label>
+
+          <input
+            type="number"
+            id="course-order"
+            min="1"
+            step="1"
+            required
+            placeholder="例如：1"
+          >
+
+          <label for="course-date">
+            日期
+          </label>
+
+          <input
+            type="text"
+            id="course-date"
+            maxlength="50"
+            required
+            placeholder="例如：9 月 19 日（六）"
+          >
+
+          <label for="course-title">
+            社課名稱
+          </label>
+
+          <input
+            type="text"
+            id="course-title"
+            maxlength="100"
+            required
+            placeholder="例如：衝浪影片檢討"
+          >
+
+          <label for="course-description">
+            社課說明
+          </label>
+
+          <textarea
+            id="course-description"
+            maxlength="1000"
+            required
+            placeholder="請輸入社課內容"
+          ></textarea>
+
+          <label for="course-tags">
+            標籤
+          </label>
+
+          <input
+            type="text"
+            id="course-tags"
+            maxlength="200"
+            placeholder="請使用逗號分隔，例如：影片分析, 動作檢討, 室內社課"
+          >
+
+          <label for="course-status">
+            顯示狀態
+          </label>
+
+          <select id="course-status">
+            <option value="published">
+              公開
+            </option>
+
+            <option value="draft">
+              草稿
+            </option>
+          </select>
+
+          <div class="announcement-actions">
+            <button
+              id="course-submit-button"
+              class="button"
+              type="submit"
+            >
+              新增社課
+            </button>
+
+            <button
+              id="course-cancel-button"
+              class="button button-secondary hidden"
+              type="button"
+            >
+              取消編輯
+            </button>
+          </div>
+
+          <p
+            id="course-form-message"
+            class="status-message"
+            aria-live="polite"
+          ></p>
+        </form>
+      </section>
+
+      <section class="card">
+        <div class="section-heading left">
+          <p class="eyebrow">
+            COURSE LIST
+          </p>
+
+          <h2>
+            目前社課
+          </h2>
+        </div>
+
+        <div id="admin-course-list">
+          <p class="empty-state">
+            正在載入社課……
+          </p>
+        </div>
+      </section>
+    </div>
   </main>
 
-  <script type="module" src="./js/admin.js"></script>
-
-  <section class="card">
-  <div class="section-heading left">
-    <p class="eyebrow">
-      MEMBER APPLICATIONS
-    </p>
-
-    <h2>社員申請審核</h2>
-  </div>
-
-  <div id="pending-member-list">
-    <p>正在讀取待審核社員……</p>
-  </div>
-</section>
+  <script
+    type="module"
+    src="./js/admin.js"
+  ></script>
 </body>
 </html>
