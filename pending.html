@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Surf Club｜等待審核</title>
+
+  <link
+    rel="stylesheet"
+    href="./css/style.css"
+  >
+</head>
+
+<body>
+  <header class="site-header">
+    <nav class="navbar">
+      <a class="brand" href="./index.html">
+        Surf Club
+      </a>
+
+      <button
+        id="logout-button"
+        class="button button-small button-secondary"
+        type="button"
+      >
+        登出
+      </button>
+    </nav>
+  </header>
+
+  <main class="auth-main">
+    <section class="form-card pending-card">
+      <p class="eyebrow">
+        APPLICATION STATUS
+      </p>
+
+      <h1>社員申請狀態</h1>
+
+      <p id="pending-status">
+        正在讀取申請狀態……
+      </p>
+
+      <a
+        id="member-link"
+        class="button button-block hidden"
+        href="./member.html"
+      >
+        進入社員中心
+      </a>
+    </section>
+  </main>
+
+  <script
+    type="module"
+    src="./js/pending.js"
+  ></script>
+</body>
+</html>
