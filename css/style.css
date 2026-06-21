@@ -1744,5 +1744,493 @@ input[type="file"]::file-selector-button {
     width: 100%;
   }
 }
-```
 
+
+/* =========================================================
+   社員頁公告連結
+   ========================================================= */
+
+.announcement-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.announcement-card > p {
+  width: 100%;
+  margin-bottom: 0;
+
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.announcement-link {
+  width: fit-content;
+  margin-top: 16px;
+}
+
+.announcement-meta {
+  width: 100%;
+  margin-top: 16px;
+
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+
+/* =========================================================
+   社員首頁：個人資料與公告完整樣式
+   建議放在 css/style.css 最底部
+   ========================================================= */
+
+
+/* =========================================================
+   社員資料區塊
+   ========================================================= */
+
+.member-profile-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+
+  gap: 16px;
+  width: 100%;
+  margin-top: 28px;
+}
+
+
+/* =========================================================
+   單一社員資料卡片
+   ========================================================= */
+
+.member-profile-item {
+  min-width: 0;
+  padding: 22px 18px;
+
+  background: #f8fbfb;
+
+  border:
+    1px solid
+    var(--border, #d4e3e5);
+
+  border-radius: 14px;
+
+  box-shadow:
+    0 5px 16px
+    rgba(34, 72, 78, 0.04);
+
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.member-profile-item:hover {
+  transform: translateY(-2px);
+
+  border-color:
+    rgba(71, 164, 159, 0.45);
+
+  box-shadow:
+    0 10px 24px
+    rgba(34, 72, 78, 0.08);
+}
+
+
+/* =========================================================
+   社員資料欄位標題
+   ========================================================= */
+
+.member-profile-item span {
+  display: block;
+
+  margin-bottom: 12px;
+
+  color:
+    var(--muted, #667c82);
+
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+
+/* =========================================================
+   社員資料欄位內容
+   ========================================================= */
+
+.member-profile-item strong {
+  display: block;
+
+  min-width: 0;
+
+  color:
+    var(--navy, #27474f);
+
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1.5;
+
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+
+/* =========================================================
+   Level 與家系膠囊
+   member.html 中若使用 strong，
+   會自動呈現為淺藍綠底
+   ========================================================= */
+
+#member-level,
+#member-family {
+  display: inline-flex;
+  align-items: center;
+
+  width: fit-content;
+  max-width: 100%;
+
+  padding: 6px 12px;
+
+  color: #315f65;
+  background: #ddf4f1;
+
+  border-radius: 999px;
+}
+
+
+/* =========================================================
+   公告列表
+   ========================================================= */
+
+#announcement-list {
+  display: grid;
+  gap: 18px;
+
+  width: 100%;
+  margin-top: 24px;
+}
+
+
+/* =========================================================
+   公告卡片
+   ========================================================= */
+
+.announcement-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+
+  width: 100%;
+  min-width: 0;
+  padding: 24px;
+
+  background: #ffffff;
+
+  border:
+    1px solid
+    var(--border, #d4e3e5);
+
+  border-radius: 16px;
+
+  box-shadow:
+    0 8px 22px
+    rgba(34, 72, 78, 0.06);
+
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.announcement-card:hover {
+  transform: translateY(-2px);
+
+  border-color:
+    rgba(71, 164, 159, 0.45);
+
+  box-shadow:
+    0 14px 32px
+    rgba(34, 72, 78, 0.10);
+}
+
+
+/* =========================================================
+   公告標題
+   ========================================================= */
+
+.announcement-title {
+  width: 100%;
+  margin: 0 0 12px;
+
+  color:
+    var(--navy, #27474f);
+
+  font-size: 1.25rem;
+  font-weight: 900;
+  line-height: 1.45;
+
+  overflow-wrap: anywhere;
+}
+
+
+/* =========================================================
+   公告內容
+   ========================================================= */
+
+.announcement-content {
+  width: 100%;
+  margin: 0;
+
+  color:
+    var(--text, #354b50);
+
+  font-size: 1rem;
+  line-height: 1.8;
+
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+
+/* =========================================================
+   公告網址容器
+   ========================================================= */
+
+.announcement-link-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+
+  gap: 10px;
+
+  width: 100%;
+  margin-top: 18px;
+}
+
+
+/* =========================================================
+   公告網址按鈕
+   ========================================================= */
+
+.announcement-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: fit-content;
+  max-width: 100%;
+  min-height: 40px;
+
+  margin: 0;
+  padding: 9px 16px;
+
+  color: #ffffff;
+  background:
+    var(--primary, #54aaa5);
+
+  border:
+    1px solid
+    var(--primary, #54aaa5);
+
+  border-radius: 999px;
+
+  font-size: 0.92rem;
+  font-weight: 800;
+  line-height: 1.3;
+  text-align: center;
+  text-decoration: none;
+
+  overflow-wrap: anywhere;
+
+  box-shadow:
+    0 7px 16px
+    rgba(63, 151, 146, 0.18);
+
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.announcement-link:hover {
+  transform: translateY(-1px);
+
+  color: #ffffff;
+  background:
+    var(--primary-dark, #367f7b);
+
+  border-color:
+    var(--primary-dark, #367f7b);
+
+  box-shadow:
+    0 10px 22px
+    rgba(63, 151, 146, 0.24);
+}
+
+.announcement-link:focus-visible {
+  outline:
+    3px solid
+    rgba(84, 170, 165, 0.28);
+
+  outline-offset: 3px;
+}
+
+
+/* =========================================================
+   公告發布時間
+   ========================================================= */
+
+.announcement-meta {
+  display: block;
+
+  width: 100%;
+  margin-top: 18px;
+  padding-top: 14px;
+
+  color:
+    var(--muted, #667c82);
+
+  border-top:
+    1px solid
+    var(--border, #d4e3e5);
+
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   歡迎與狀態訊息
+   ========================================================= */
+
+#member-status {
+  margin: 0;
+
+  line-height: 1.6;
+}
+
+#member-status.success {
+  color:
+    var(--success, #33986e);
+}
+
+#member-status.error {
+  color:
+    var(--danger, #d95c5c);
+}
+
+
+/* =========================================================
+   空資料狀態
+   ========================================================= */
+
+#announcement-list .empty-state {
+  margin: 0;
+  padding: 26px 20px;
+
+  color:
+    var(--muted, #667c82);
+
+  background: #f8fbfb;
+
+  border:
+    1px dashed
+    var(--border, #d4e3e5);
+
+  border-radius: 14px;
+
+  text-align: center;
+}
+
+
+/* =========================================================
+   公告錯誤訊息
+   ========================================================= */
+
+#announcement-list .status-message.error {
+  margin: 0;
+  padding: 16px 18px;
+
+  color:
+    var(--danger, #d95c5c);
+
+  background: #fff4f4;
+
+  border:
+    1px solid
+    rgba(217, 92, 92, 0.28);
+
+  border-radius: 12px;
+}
+
+
+/* =========================================================
+   平板版
+   ========================================================= */
+
+@media screen and (max-width: 900px) {
+  .member-profile-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .announcement-card {
+    padding: 22px;
+  }
+}
+
+
+/* =========================================================
+   手機版
+   ========================================================= */
+
+@media screen and (max-width: 560px) {
+  .member-profile-grid {
+    grid-template-columns: 1fr;
+
+    gap: 12px;
+    margin-top: 22px;
+  }
+
+  .member-profile-item {
+    padding: 18px 16px;
+  }
+
+  .announcement-card {
+    padding: 19px 17px;
+  }
+
+  .announcement-title {
+    font-size: 1.12rem;
+  }
+
+  .announcement-content {
+    font-size: 0.96rem;
+  }
+
+  .announcement-link-wrapper {
+    display: block;
+  }
+
+  .announcement-link {
+    width: 100%;
+  }
+}
+
+
+/* =========================================================
+   小型手機
+   ========================================================= */
+
+@media screen and (max-width: 380px) {
+  .member-profile-item {
+    padding: 16px 14px;
+  }
+
+  .announcement-card {
+    padding: 17px 14px;
+  }
+}

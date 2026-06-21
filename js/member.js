@@ -1,4 +1,17 @@
 
+/* =========================================================
+   檔案：js/member.js
+
+   功能：
+   1. 驗證 Firebase Authentication 登入狀態
+   2. 讀取 Firestore users/{uid}
+   3. 驗證正式社員身分
+   4. 顯示社員個人資料
+   5. 讀取公告
+   6. 顯示公告網址按鈕
+   7. 登出
+   ========================================================= */
+
 import {
   onAuthStateChanged,
   signOut
@@ -19,105 +32,70 @@ import {
 } from "./firebase-config.js";
 
 /* =========================================================
-   DOM 元素
+   DOM：頁面狀態
    ========================================================= */
 
 const memberStatus =
-  document.querySelector("#member-status");
-
-const memberName =
-  document.querySelector("#member-name");
-
-const memberEmail =
-  document.querySelector("#member-email");
-
-const memberLevel =
-  document.querySelector("#member-level");
-
-const memberFamily =
-  document.querySelector("#member-family");
-
-const memberProfileMessage =
-  document.querySelector("#member-profile-message");
-
-const announcementList =
-  document.querySelector("#announcement-list");
+  document.querySelector(
+    "#member-status"
+  );
 
 const logoutButton =
-  document.querySelector("#logout-button");
+  document.querySelector(
+    "#logout-button"
+  );
 
 /* =========================================================
-   全域狀態
+   DOM：社員資料
    ========================================================= */
 
-let currentMember = null;
+const memberName =
+  document.querySelector(
+    "#member-name"
+  );
+
+const memberEmail =
+  document.querySelector(
+    "#member-email"
+  );
+
+const memberLevel =
+  document.querySelector(
+    "#member-level"
+  );
+
+const memberFamily =
+  document.querySelector(
+    "#member-family"
+  );
 
 /* =========================================================
-   共用函式
+   DOM：公告
    ========================================================= */
 
-function showStatus(
-  element,
-  message,
-  type = ""
-) {
-  if (!element) {
-    return;
-  }
-
-  element.textContent = message;
-  element.className = "status-message";
-
-  if (type) {
-    element.classList.add(type);
-  }
-}
-
-function setText(
-  element,
-  value,
-  fallback = "尚未設定"
-) {
-  if (!element) {
-    return;
-  }
-
-  const text =
-    String(value ?? "").trim();
-
-  element.textContent =
-    text || fallback;
-}
-
-function formatTimestamp(timestamp) {
-  if (
-    !timestamp ||
-    typeof timestamp.toDate !== "function"
-  ) {
-    return "時間處理中……";
-  }
-
-  return timestamp
-    .toDate()
-    .toLocaleString(
-      "zh-TW",
-      {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit"
-      }
-    );
-}
+const announcementList =
+  document.querySelector(
+    "#announcement-list"
+  );
 
 /* =========================================================
-   Firebase Authentication 驗證
+   狀態
+   ========================================================= */
+
+let currentUser = null;
+let currentUserData = null;
+
+/* =========================================================
+   驗證登入狀態與社員身分
    ========================================================= */
 
 onAuthStateChanged(
   auth,
+
   async (user) => {
+    /*
+     * 沒有登入，導向登入頁。
+     */
     if (!user) {
       window.location.replace(
         "./login.html"
@@ -126,14 +104,17 @@ onAuthStateChanged(
       return;
     }
 
-    currentMember = user;
+    currentUser = user;
 
     showStatus(
       memberStatus,
-      "正在讀取社員資料……"
+      "正在驗證社員資料……"
     );
 
     try {
+      /*
+       * 讀取目前登入者的 Firestore 文件。
+       */
       const userReference =
         doc(
           db,
@@ -146,21 +127,50 @@ onAuthStateChanged(
           userReference
         );
 
+      /*
+       * Authentication 有帳號，
+       * 但 Firestore 找不到 users/{uid}。
+       */
       if (!userSnapshot.exists()) {
-        throw new Error(
-          "Firestore 中找不到這個帳號的社員資料。"
+        clearMemberProfile();
+
+        showStatus(
+          memberStatus,
+          "找不到社員資料，請聯絡社團管理員。",
+          "error"
         );
+
+        return;
       }
 
-      const userData =
+      currentUserData =
         userSnapshot.data();
 
+      const role =
+        currentUserData.role;
+
+      const status =
+        currentUserData.status;
+
       /*
-       * 未審核的使用者轉往等待頁面。
+       * 管理員登入時，導向管理後台。
+       */
+      if (role === "admin") {
+        window.location.replace(
+          "./admin.html"
+        );
+
+        return;
+      }
+
+      /*
+       * 待審核或被拒絕者，
+       * 導向 pending.html。
        */
       if (
-        userData.role === "pending" ||
-        userData.status === "pending"
+        role === "pending" ||
+        status === "pending" ||
+        status === "rejected"
       ) {
         window.location.replace(
           "./pending.html"
@@ -170,20 +180,17 @@ onAuthStateChanged(
       }
 
       /*
-       * 被拒絕的使用者不可進入社員頁。
+       * 只有正式社員可以進入社員首頁。
        */
       if (
-        userData.status === "rejected"
+        role !== "member" ||
+        status !== "approved"
       ) {
-        showStatus(
-          memberStatus,
-          "社員申請未通過，請聯絡管理員。",
-          "error"
-        );
+        clearMemberProfile();
 
         showStatus(
-          memberProfileMessage,
-          "目前無法使用社員功能。",
+          memberStatus,
+          "目前帳號沒有社員首頁的存取權限。",
           "error"
         );
 
@@ -191,60 +198,84 @@ onAuthStateChanged(
       }
 
       /*
-       * 只有 member 或 admin 可以進入社員頁。
+       * 顯示社員個人資料。
        */
-      if (
-        userData.role !== "member" &&
-        userData.role !== "admin"
-      ) {
-        throw new Error(
-          "這個帳號目前沒有社員頁面的使用權限。"
+      renderMemberProfile(
+        user,
+        currentUserData
+      );
+
+      /*
+       * 顯示歡迎訊息。
+       */
+      const displayName =
+        currentUserData.name ||
+        user.displayName ||
+        user.email ||
+        "社員";
+
+      const profileInformation = [];
+
+      if (currentUserData.level) {
+        profileInformation.push(
+          currentUserData.level
         );
       }
 
-      renderMemberProfile(
-        userData,
-        user
-      );
+      if (currentUserData.family) {
+        profileInformation.push(
+          currentUserData.family
+        );
+      }
+
+      const profileText =
+        profileInformation.length > 0
+          ? `｜${profileInformation.join("｜")}`
+          : "";
 
       showStatus(
         memberStatus,
-        `歡迎回來，${
-          userData.name ||
-          user.displayName ||
-          user.email ||
-          "社員"
-        }`,
+        `歡迎回來，${displayName}${profileText}`,
         "success"
       );
 
+      /*
+       * 驗證成功後讀取公告。
+       */
       await loadAnnouncements();
     } catch (error) {
       console.error(
-        "社員驗證或資料載入失敗：",
+        "社員資料讀取失敗：",
         error
       );
 
+      clearMemberProfile();
+
       showStatus(
         memberStatus,
-        `驗證失敗：${error.message}`,
+        `社員資料讀取失敗：${
+          getErrorMessage(error)
+        }`,
         "error"
       );
-
-      showStatus(
-        memberProfileMessage,
-        "社員資料載入失敗，請重新整理頁面或聯絡管理員。",
-        "error"
-      );
-
-      if (announcementList) {
-        announcementList.innerHTML = `
-          <p class="status-message error">
-            因社員身分驗證失敗，無法讀取公告。
-          </p>
-        `;
-      }
     }
+  },
+
+  (error) => {
+    console.error(
+      "登入狀態監聽失敗：",
+      error
+    );
+
+    clearMemberProfile();
+
+    showStatus(
+      memberStatus,
+      `登入狀態讀取失敗：${
+        getErrorMessage(error)
+      }`,
+      "error"
+    );
   }
 );
 
@@ -253,52 +284,60 @@ onAuthStateChanged(
    ========================================================= */
 
 function renderMemberProfile(
-  userData,
-  authUser
+  user,
+  userData
 ) {
-  setText(
-    memberName,
-    userData.name ||
-      authUser.displayName,
-    "尚未填寫姓名"
-  );
-
-  setText(
-    memberEmail,
-    userData.email ||
-      authUser.email,
-    "尚未設定 Email"
-  );
-
-  setText(
-    memberLevel,
-    userData.level,
-    "尚未設定"
-  );
-
-  setText(
-    memberFamily,
-    userData.family,
-    "尚未分配"
-  );
-
-  if (memberLevel) {
-    const level =
-      String(
-        userData.level ?? ""
-      )
-        .trim()
-        .toLowerCase();
-
-    memberLevel.dataset.level =
-      level;
+  if (memberName) {
+    memberName.textContent =
+      userData.name ||
+      user.displayName ||
+      "未提供姓名";
   }
 
-  showStatus(
-    memberProfileMessage,
-    "Level 與家系資料由管理員統一設定。",
-    "success"
-  );
+  if (memberEmail) {
+    memberEmail.textContent =
+      userData.email ||
+      user.email ||
+      "未提供 Email";
+  }
+
+  if (memberLevel) {
+    memberLevel.textContent =
+      userData.level ||
+      "尚未設定";
+  }
+
+  if (memberFamily) {
+    memberFamily.textContent =
+      userData.family ||
+      "尚未分配";
+  }
+}
+
+/* =========================================================
+   清除社員資料顯示
+   ========================================================= */
+
+function clearMemberProfile() {
+  if (memberName) {
+    memberName.textContent =
+      "無法載入";
+  }
+
+  if (memberEmail) {
+    memberEmail.textContent =
+      "無法載入";
+  }
+
+  if (memberLevel) {
+    memberLevel.textContent =
+      "尚未設定";
+  }
+
+  if (memberFamily) {
+    memberFamily.textContent =
+      "尚未分配";
+  }
 }
 
 /* =========================================================
@@ -307,6 +346,10 @@ function renderMemberProfile(
 
 async function loadAnnouncements() {
   if (!announcementList) {
+    console.error(
+      "member.html 找不到 #announcement-list。"
+    );
+
     return;
   }
 
@@ -317,12 +360,13 @@ async function loadAnnouncements() {
   `;
 
   try {
-    const announcementsQuery =
+    const announcementQuery =
       query(
         collection(
           db,
           "announcements"
         ),
+
         orderBy(
           "createdAt",
           "desc"
@@ -331,10 +375,11 @@ async function loadAnnouncements() {
 
     const querySnapshot =
       await getDocs(
-        announcementsQuery
+        announcementQuery
       );
 
-    announcementList.innerHTML = "";
+    announcementList.innerHTML =
+      "";
 
     if (querySnapshot.empty) {
       announcementList.innerHTML = `
@@ -348,8 +393,12 @@ async function loadAnnouncements() {
 
     querySnapshot.forEach(
       (announcementSnapshot) => {
-        const announcement =
-          announcementSnapshot.data();
+        const announcement = {
+          id:
+            announcementSnapshot.id,
+
+          ...announcementSnapshot.data()
+        };
 
         const announcementCard =
           createAnnouncementCard(
@@ -367,13 +416,25 @@ async function loadAnnouncements() {
       error
     );
 
-    announcementList.innerHTML = `
-      <p class="status-message error">
-        公告讀取失敗：${escapeHtml(
-          error.message
-        )}
-      </p>
-    `;
+    announcementList.innerHTML =
+      "";
+
+    const errorMessage =
+      document.createElement(
+        "p"
+      );
+
+    errorMessage.className =
+      "status-message error";
+
+    errorMessage.textContent =
+      `公告讀取失敗：${
+        getErrorMessage(error)
+      }`;
+
+    announcementList.appendChild(
+      errorMessage
+    );
   }
 }
 
@@ -389,30 +450,40 @@ function createAnnouncementCard(
       "article"
     );
 
-  article.className =
-    "announcement-card card";
-
   const title =
-    document.createElement("h3");
+    document.createElement(
+      "h3"
+    );
+
+  const content =
+    document.createElement(
+      "p"
+    );
+
+  const metadata =
+    document.createElement(
+      "small"
+    );
+
+  article.className =
+    "card announcement-card";
+
+  title.className =
+    "announcement-title";
+
+  content.className =
+    "announcement-content";
+
+  metadata.className =
+    "announcement-meta";
 
   title.textContent =
     announcement.title ||
     "未命名公告";
 
-  const content =
-    document.createElement("p");
-
-  content.className =
-    "announcement-content";
-
   content.textContent =
-    announcement.content || "";
-
-  const metadata =
-    document.createElement("small");
-
-  metadata.className =
-    "announcement-meta";
+    announcement.content ||
+    "";
 
   metadata.textContent =
     formatTimestamp(
@@ -421,11 +492,161 @@ function createAnnouncementCard(
 
   article.append(
     title,
-    content,
-    metadata
+    content
   );
 
+  /*
+   * 公告具有安全的 HTTP／HTTPS 網址時，
+   * 顯示可點擊的 URL 按鈕。
+   */
+  if (
+    announcement.linkUrl &&
+    isSafeHttpUrl(
+      announcement.linkUrl
+    )
+  ) {
+    const linkWrapper =
+      document.createElement(
+        "div"
+      );
+
+    const link =
+      document.createElement(
+        "a"
+      );
+
+    linkWrapper.className =
+      "announcement-link-wrapper";
+
+    link.href =
+      announcement.linkUrl;
+
+    link.textContent =
+      announcement.linkText ||
+      "開啟連結";
+
+    link.className =
+      "button button-small announcement-link";
+
+    link.target =
+      "_blank";
+
+    link.rel =
+      "noopener noreferrer";
+
+    linkWrapper.appendChild(
+      link
+    );
+
+    article.appendChild(
+      linkWrapper
+    );
+  }
+
+  /*
+   * Firestore Server Timestamp 剛寫入時，
+   * 可能暫時沒有時間，因此空字串時不顯示。
+   */
+  if (metadata.textContent) {
+    article.appendChild(
+      metadata
+    );
+  }
+
   return article;
+}
+
+/* =========================================================
+   網址安全檢查
+   ========================================================= */
+
+function isSafeHttpUrl(
+  value
+) {
+  try {
+    const parsedUrl =
+      new URL(
+        String(value).trim()
+      );
+
+    return (
+      parsedUrl.protocol === "http:" ||
+      parsedUrl.protocol === "https:"
+    );
+  } catch {
+    return false;
+  }
+}
+
+/* =========================================================
+   公告時間格式
+   ========================================================= */
+
+function formatTimestamp(
+  timestamp
+) {
+  if (!timestamp) {
+    return "";
+  }
+
+  /*
+   * Firestore Timestamp。
+   */
+  if (
+    typeof timestamp.toDate ===
+    "function"
+  ) {
+    try {
+      return timestamp
+        .toDate()
+        .toLocaleString(
+          "zh-TW",
+          {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit"
+          }
+        );
+    } catch (error) {
+      console.warn(
+        "公告時間格式化失敗：",
+        error
+      );
+
+      return "";
+    }
+  }
+
+  /*
+   * 相容一般 Date 字串或毫秒數。
+   */
+  try {
+    const date =
+      new Date(timestamp);
+
+    if (
+      Number.isNaN(
+        date.getTime()
+      )
+    ) {
+      return "";
+    }
+
+    return date.toLocaleString(
+      "zh-TW",
+      {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+      }
+    );
+  } catch {
+    return "";
+  }
 }
 
 /* =========================================================
@@ -434,13 +655,18 @@ function createAnnouncementCard(
 
 logoutButton?.addEventListener(
   "click",
+
   async () => {
-    logoutButton.disabled = true;
+    logoutButton.disabled =
+      true;
+
     logoutButton.textContent =
       "登出中……";
 
     try {
-      await signOut(auth);
+      await signOut(
+        auth
+      );
 
       window.location.replace(
         "./login.html"
@@ -451,28 +677,87 @@ logoutButton?.addEventListener(
         error
       );
 
-      showStatus(
-        memberStatus,
-        `登出失敗：${error.message}`,
-        "error"
-      );
+      logoutButton.disabled =
+        false;
 
-      logoutButton.disabled = false;
       logoutButton.textContent =
         "登出";
+
+      showStatus(
+        memberStatus,
+        `登出失敗：${
+          getErrorMessage(error)
+        }`,
+        "error"
+      );
     }
   }
 );
 
 /* =========================================================
-   避免錯誤訊息直接插入 HTML
+   顯示狀態訊息
    ========================================================= */
 
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+function showStatus(
+  element,
+  message,
+  type = ""
+) {
+  if (!element) {
+    return;
+  }
+
+  element.textContent =
+    message;
+
+  element.className =
+    "status-message";
+
+  if (type) {
+    element.classList.add(
+      type
+    );
+  }
+}
+
+/* =========================================================
+   錯誤訊息轉換
+   ========================================================= */
+
+function getErrorMessage(
+  error
+) {
+  const errorCode =
+    error?.code ||
+    "";
+
+  if (
+    errorCode ===
+      "permission-denied" ||
+    errorCode ===
+      "firestore/permission-denied"
+  ) {
+    return "權限不足，請確認帳號已通過社員審核。";
+  }
+
+  if (
+    errorCode ===
+      "unavailable" ||
+    errorCode ===
+      "firestore/unavailable"
+  ) {
+    return "目前無法連線至資料庫，請稍後再試。";
+  }
+
+  if (
+    errorCode ===
+      "auth/network-request-failed"
+  ) {
+    return "網路連線失敗，請檢查網路狀態。";
+  }
+
+  return (
+    error?.message ||
+    "未知錯誤"
+  );
 }
