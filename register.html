@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -8,7 +9,7 @@
     content="width=device-width, initial-scale=1.0"
   >
 
-  <title>Surf Club｜社員註冊</title>
+  <title>Surf Club｜社員申請</title>
 
   <link
     rel="stylesheet"
@@ -19,108 +20,173 @@
 <body class="auth-page">
   <header class="site-header">
     <nav class="navbar">
-      <a class="brand" href="./index.html">
-        Surf Club
+      <a
+        class="brand"
+        href="./index.html"
+      >
+        SURF CLUB
       </a>
 
       <div class="nav-links">
-        <a href="./login.html">
-          已有帳號
-        </a>
-
         <a href="./index.html">
           返回首頁
+        </a>
+
+        <a href="./login.html">
+          社員登入
         </a>
       </div>
     </nav>
   </header>
 
-  <main class="auth-main">
+  <main class="auth-main auth-main-wide">
     <form
       id="register-form"
       class="form-card"
-      novalidate
+      enctype="multipart/form-data"
     >
       <p class="eyebrow">
-        MEMBER REGISTRATION
+        MEMBER APPLICATION
       </p>
 
-      <h1>社員註冊</h1>
+      <h1>
+        申請成為社員
+      </h1>
 
       <p class="form-description">
-        註冊完成後，需要等待管理員審核，
-        通過後才能查看社員公告。
+        請填寫社員資料並上傳匯款截圖。
+        管理員確認資料與社費後，才會通過社員認證。
       </p>
 
-      <label for="name">
-        姓名
-      </label>
+      <div class="form-grid">
+        <label class="field-stack">
+          <span>
+            姓名 *
+          </span>
 
-      <input
-        id="name"
-        name="name"
-        type="text"
-        maxlength="50"
-        autocomplete="name"
-        required
-      >
+          <input
+            id="name"
+            name="name"
+            type="text"
+            maxlength="50"
+            autocomplete="name"
+            required
+          >
+        </label>
 
-      <label for="student-id">
-        學號
-      </label>
+        <label class="field-stack">
+          <span>
+            學號 *
+          </span>
 
-      <input
-        id="student-id"
-        name="studentId"
-        type="text"
-        maxlength="20"
-        required
-      >
+          <input
+            id="student-id"
+            name="studentId"
+            type="text"
+            maxlength="30"
+            required
+          >
+        </label>
 
-      <label for="email">
-        Email
-      </label>
+        <label class="field-stack">
+          <span>
+            系級 *
+          </span>
 
-      <input
-        id="email"
-        name="email"
-        type="email"
-        autocomplete="username"
-        required
-      >
+          <input
+            id="department"
+            name="department"
+            type="text"
+            maxlength="80"
+            placeholder="例如：電機四甲"
+            required
+          >
+        </label>
 
-      <label for="password">
-        密碼
-      </label>
+        <label class="field-stack">
+          <span>
+            電話 *
+          </span>
 
-      <input
-        id="password"
-        name="password"
-        type="password"
-        minlength="6"
-        autocomplete="new-password"
-        required
-      >
+          <input
+            id="phone"
+            name="phone"
+            type="tel"
+            maxlength="30"
+            autocomplete="tel"
+            required
+          >
+        </label>
 
-      <label for="confirm-password">
-        確認密碼
-      </label>
+        <label class="field-stack">
+          <span>
+            Email *
+          </span>
 
-      <input
-        id="confirm-password"
-        name="confirmPassword"
-        type="password"
-        minlength="6"
-        autocomplete="new-password"
-        required
-      >
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autocomplete="email"
+            required
+          >
+        </label>
+
+        <!-- <label class="field-stack">
+          <span>
+            匯款截圖 *
+          </span>
+
+          <input
+            id="payment-proof"
+            name="paymentProof"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            required
+          >
+        </label> -->
+
+        <label class="field-stack">
+          <span>
+            密碼 *
+          </span>
+
+          <input
+            id="password"
+            name="password"
+            type="password"
+            minlength="6"
+            autocomplete="new-password"
+            required
+          >
+        </label>
+
+        <label class="field-stack">
+          <span>
+            再次輸入密碼 *
+          </span>
+
+          <input
+            id="confirm-password"
+            name="confirmPassword"
+            type="password"
+            minlength="6"
+            autocomplete="new-password"
+            required
+          >
+        </label>
+      </div>
+
+      <p class="privacy-note">
+  送出申請後，請等待管理員確認社員資料與社費狀態。
+</p>
 
       <button
         id="register-button"
         class="button button-block"
         type="submit"
       >
-        送出註冊申請
+        送出社員申請
       </button>
 
       <p
@@ -128,11 +194,6 @@
         class="status-message"
         aria-live="polite"
       ></p>
-
-      <p class="form-footer">
-        已經有帳號？
-        <a href="./login.html">前往登入</a>
-      </p>
     </form>
   </main>
 
@@ -142,3 +203,4 @@
   ></script>
 </body>
 </html>
+

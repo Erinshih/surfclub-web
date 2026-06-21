@@ -1,0 +1,278 @@
+
+<!-- =====================================================
+     檔案：admin-courses.html
+     ===================================================== -->
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Surf Club｜社課管理</title>
+
+  <link
+    rel="stylesheet"
+    href="./css/style.css"
+  >
+</head>
+
+<body>
+  <header class="site-header">
+    <nav class="navbar">
+      <a
+        class="brand"
+        href="./admin.html"
+      >
+        SURF CLUB ADMIN
+      </a>
+
+      <div class="nav-links">
+        <a href="./admin.html">
+          管理首頁
+        </a>
+
+        <a href="./admin-announcements.html">
+          公告管理
+        </a>
+
+        <a href="./admin-courses.html">
+          社課管理
+        </a>
+
+        <a href="./admin-members.html">
+          社員管理
+        </a>
+
+        <a href="./courses.html">
+          公開社課
+        </a>
+
+        <button
+          id="logout-button"
+          class="button button-small button-secondary"
+          type="button"
+        >
+          登出
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="dashboard">
+    <section class="dashboard-header card">
+      <div>
+        <p class="eyebrow">
+          COURSE MANAGEMENT
+        </p>
+
+        <h1>
+          社課管理
+        </h1>
+
+        <p
+          id="admin-status"
+          class="status-message"
+        >
+          正在驗證管理員身分……
+        </p>
+      </div>
+    </section>
+
+    <div
+      id="admin-content"
+      class="hidden"
+    >
+      <section class="card">
+        <div class="section-heading left">
+          <p class="eyebrow">
+            COURSE EDITOR
+          </p>
+
+          <h2>
+            新增或編輯社課
+          </h2>
+        </div>
+
+        <form id="course-form">
+          <input
+            id="course-id"
+            type="hidden"
+          >
+
+          <label for="course-order">
+            顯示順序
+          </label>
+
+          <input
+            id="course-order"
+            type="number"
+            min="1"
+            step="1"
+            required
+          >
+
+          <label for="course-date">
+            日期
+          </label>
+
+          <input
+            id="course-date"
+            type="text"
+            maxlength="50"
+            required
+            placeholder="例如：9 月 19 日（六）"
+          >
+
+          <label for="course-title">
+            社課名稱
+          </label>
+
+          <input
+            id="course-title"
+            type="text"
+            maxlength="100"
+            required
+          >
+
+          <label for="course-description">
+            社課說明
+          </label>
+
+          <textarea
+            id="course-description"
+            maxlength="1000"
+            rows="6"
+            required
+          ></textarea>
+
+          <label for="course-tags">
+            標籤
+          </label>
+
+          <input
+            id="course-tags"
+            type="text"
+            maxlength="200"
+            placeholder="例如：影片分析, 動作檢討"
+          >
+
+          <label for="course-status">
+            顯示狀態
+          </label>
+
+          <select id="course-status">
+            <option value="published">
+              公開
+            </option>
+
+            <option value="draft">
+              草稿
+            </option>
+          </select>
+
+          <div class="management-actions">
+            <button
+              id="course-submit"
+              class="button"
+              type="submit"
+            >
+              新增社課
+            </button>
+
+            <button
+              id="course-cancel"
+              class="button button-secondary hidden"
+              type="button"
+            >
+              取消編輯
+            </button>
+          </div>
+
+          <p
+            id="course-message"
+            class="status-message"
+          ></p>
+        </form>
+      </section>
+
+      <section class="card">
+        <div class="section-heading left">
+          <p class="eyebrow">
+            COURSE IMPORT
+          </p>
+
+          <h2>
+            批次匯入社課
+          </h2>
+        </div>
+
+        <textarea
+          id="course-import-data"
+          rows="14"
+          placeholder='[
+  {
+    "order": 1,
+    "date": "9 月 19 日（六）",
+    "title": "衝浪影片檢討",
+    "description": "社課內容",
+    "tags": ["影片分析"],
+    "status": "published"
+  }
+]'
+        ></textarea>
+
+        <div class="management-actions">
+          <button
+            id="fill-course-example"
+            class="button button-secondary"
+            type="button"
+          >
+            載入範例
+          </button>
+
+          <button
+            id="import-courses"
+            class="button"
+            type="button"
+          >
+            批次匯入
+          </button>
+        </div>
+
+        <p
+          id="course-import-message"
+          class="status-message"
+        ></p>
+      </section>
+
+      <section class="card">
+        <div class="section-heading left">
+          <p class="eyebrow">
+            COURSE LIST
+          </p>
+
+          <h2>
+            目前社課
+          </h2>
+        </div>
+
+        <div id="course-list">
+          <p class="empty-state">
+            正在載入社課……
+          </p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script
+    type="module"
+    src="./js/admin-courses.js"
+  ></script>
+</body>
+</html>

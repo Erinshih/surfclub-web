@@ -1,0 +1,195 @@
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Surf Club｜公告管理</title>
+
+  <link
+    rel="stylesheet"
+    href="./css/style.css"
+  >
+</head>
+
+<body>
+  <!-- =====================================================
+       頁首與管理員導覽列
+       ===================================================== -->
+  <header class="site-header">
+    <nav class="navbar">
+      <a
+        class="brand"
+        href="./admin.html"
+      >
+        SURF CLUB ADMIN
+      </a>
+
+      <div class="nav-links">
+        <a href="./admin.html">
+          管理首頁
+        </a>
+
+        <a href="./admin-announcements.html">
+          公告管理
+        </a>
+
+        <a href="./admin-courses.html">
+          社課管理
+        </a>
+
+        <a href="./admin-members.html">
+          社員管理
+        </a>
+
+        <a href="./index.html">
+          公開網站
+        </a>
+
+        <button
+          id="logout-button"
+          class="button button-small button-secondary"
+          type="button"
+        >
+          登出
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <!-- =====================================================
+       管理員主內容
+       ===================================================== -->
+  <main class="dashboard">
+
+    <!-- 管理員身分驗證狀態 -->
+    <section class="dashboard-header card">
+      <div>
+        <p class="eyebrow">
+          ANNOUNCEMENT MANAGEMENT
+        </p>
+
+        <h1>
+          公告管理
+        </h1>
+
+        <p
+          id="admin-status"
+          class="status-message"
+          aria-live="polite"
+        >
+          正在驗證管理員身分……
+        </p>
+      </div>
+    </section>
+
+    <!--
+      驗證成功前維持隱藏。
+      admin-announcements.js 驗證成功後，
+      會移除 hidden class。
+    -->
+    <div
+      id="admin-content"
+      class="hidden"
+    >
+
+      <!-- =================================================
+           新增公告
+           ================================================= -->
+      <section class="card">
+        <div class="section-heading left">
+          <p class="eyebrow">
+            NEW ANNOUNCEMENT
+          </p>
+
+          <h2>
+            新增公告
+          </h2>
+
+          <p class="section-description">
+            公告發布後，正式社員與管理員可以在社員頁查看。
+          </p>
+        </div>
+
+        <form id="announcement-form">
+          <label for="announcement-title">
+            公告標題
+          </label>
+
+          <input
+            id="announcement-title"
+            name="title"
+            type="text"
+            maxlength="100"
+            required
+            placeholder="請輸入公告標題"
+          >
+
+          <label for="announcement-content">
+            公告內容
+          </label>
+
+          <textarea
+            id="announcement-content"
+            name="content"
+            rows="8"
+            maxlength="2000"
+            required
+            placeholder="請輸入公告內容"
+          ></textarea>
+
+          <button
+            id="announcement-submit"
+            class="button"
+            type="submit"
+          >
+            發布公告
+          </button>
+
+          <p
+            id="announcement-message"
+            class="status-message"
+            aria-live="polite"
+          ></p>
+        </form>
+      </section>
+
+      <!-- =================================================
+           公告列表
+           ================================================= -->
+      <section class="card">
+        <div class="section-heading left">
+          <p class="eyebrow">
+            ANNOUNCEMENT LIST
+          </p>
+
+          <h2>
+            目前公告
+          </h2>
+        </div>
+
+        <div id="announcement-list">
+          <p class="empty-state">
+            正在讀取公告……
+          </p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!--
+    請確認實際檔案名稱也是：
+    js/admin-announcements.js
+  -->
+  <script
+    type="module"
+    src="./js/admin-announcements.js"
+  ></script>
+</body>
+</html>
+

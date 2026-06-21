@@ -1,0 +1,166 @@
+<!-- =====================================================
+     檔案：admin-members.html
+     ===================================================== -->
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Surf Club｜社員管理</title>
+
+  <link
+    rel="stylesheet"
+    href="./css/style.css"
+  >
+</head>
+
+<body>
+  <header class="site-header">
+    <nav class="navbar">
+      <a
+        class="brand"
+        href="./admin.html"
+      >
+        SURF CLUB ADMIN
+      </a>
+
+      <div class="nav-links">
+        <a href="./admin.html">
+          管理首頁
+        </a>
+
+        <a href="./admin-announcements.html">
+          公告管理
+        </a>
+
+        <a href="./admin-courses.html">
+          社課管理
+        </a>
+
+        <a href="./admin-members.html">
+          社員管理
+        </a>
+
+        <a href="./index.html">
+          公開網站
+        </a>
+
+        <button
+          id="logout-button"
+          class="button button-small button-secondary"
+          type="button"
+        >
+          登出
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="dashboard">
+    <section class="dashboard-header card">
+      <div>
+        <p class="eyebrow">
+          MEMBER MANAGEMENT
+        </p>
+
+        <h1>
+          社員管理
+        </h1>
+
+        <p
+          id="admin-status"
+          class="status-message"
+        >
+          正在驗證管理員身分……
+        </p>
+      </div>
+    </section>
+
+    <div
+      id="admin-content"
+      class="hidden"
+    >
+      <section class="card">
+        <div class="section-heading left">
+          <p class="eyebrow">
+            PENDING APPLICATIONS
+          </p>
+
+          <h2>
+            待審核社員
+          </h2>
+        </div>
+
+        <div id="pending-member-list">
+          <p class="empty-state">
+            正在載入社員申請……
+          </p>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-heading left">
+          <p class="eyebrow">
+            APPROVED MEMBERS
+          </p>
+
+          <h2>
+            正式社員管理
+          </h2>
+
+          <p class="section-description">
+            可修改社員 Level、家系與社費狀態。
+          </p>
+        </div>
+
+        <div id="member-list">
+          <p class="empty-state">
+            正在載入正式社員……
+          </p>
+        </div>
+
+        <p
+          id="member-message"
+          class="status-message"
+        ></p>
+      </section>
+
+      <section class="card">
+        <div class="section-heading left">
+          <p class="eyebrow">
+            MEMBER EXPORT
+          </p>
+
+          <h2>
+            匯出社員資料
+          </h2>
+        </div>
+
+        <button
+          id="export-members"
+          class="button"
+          type="button"
+        >
+          匯出社員 CSV
+        </button>
+
+        <p
+          id="export-message"
+          class="status-message"
+        ></p>
+      </section>
+    </div>
+  </main>
+
+  <script
+    type="module"
+    src="./js/admin-members.js"
+  ></script>
+</body>
+</html>

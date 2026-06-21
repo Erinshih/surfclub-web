@@ -1,0 +1,166 @@
+<!-- =====================================================
+     檔案：admin-announcements.html
+     ===================================================== -->
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Surf Club｜公告管理</title>
+
+  <link
+    rel="stylesheet"
+    href="./css/style.css"
+  >
+</head>
+
+<body>
+  <header class="site-header">
+    <nav class="navbar">
+      <a
+        class="brand"
+        href="./admin.html"
+      >
+        SURF CLUB ADMIN
+      </a>
+
+      <div class="nav-links">
+        <a href="./admin.html">
+          管理首頁
+        </a>
+
+        <a href="./admin-announcements.html">
+          公告管理
+        </a>
+
+        <a href="./admin-courses.html">
+          社課管理
+        </a>
+
+        <a href="./admin-members.html">
+          社員管理
+        </a>
+
+        <a href="./index.html">
+          公開網站
+        </a>
+
+        <button
+          id="logout-button"
+          class="button button-small button-secondary"
+          type="button"
+        >
+          登出
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="dashboard">
+    <section class="dashboard-header card">
+      <div>
+        <p class="eyebrow">
+          ANNOUNCEMENT MANAGEMENT
+        </p>
+
+        <h1>
+          公告管理
+        </h1>
+
+        <p
+          id="admin-status"
+          class="status-message"
+        >
+          正在驗證管理員身分……
+        </p>
+      </div>
+    </section>
+
+    <div
+      id="admin-content"
+      class="hidden"
+    >
+      <section class="card">
+        <div class="section-heading left">
+          <p class="eyebrow">
+            NEW ANNOUNCEMENT
+          </p>
+
+          <h2>
+            新增公告
+          </h2>
+        </div>
+
+        <form id="announcement-form">
+          <label for="announcement-title">
+            公告標題
+          </label>
+
+          <input
+            id="announcement-title"
+            type="text"
+            maxlength="100"
+            required
+            placeholder="請輸入公告標題"
+          >
+
+          <label for="announcement-content">
+            公告內容
+          </label>
+
+          <textarea
+            id="announcement-content"
+            maxlength="2000"
+            rows="8"
+            required
+            placeholder="請輸入公告內容"
+          ></textarea>
+
+          <button
+            id="announcement-submit"
+            class="button"
+            type="submit"
+          >
+            發布公告
+          </button>
+
+          <p
+            id="announcement-message"
+            class="status-message"
+            aria-live="polite"
+          ></p>
+        </form>
+      </section>
+
+      <section class="card">
+        <div class="section-heading left">
+          <p class="eyebrow">
+            ANNOUNCEMENT LIST
+          </p>
+
+          <h2>
+            目前公告
+          </h2>
+        </div>
+
+        <div id="announcement-list">
+          <p class="empty-state">
+            正在讀取公告……
+          </p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script
+    type="module"
+    src="./js/admin-announcements.js"
+  ></script>
+</body>
+</html>

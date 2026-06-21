@@ -1,5 +1,9 @@
+
 import {
-  createUserWithEmailAndPassword
+  browserLocalPersistence,
+  createUserWithEmailAndPassword,
+  deleteUser,
+  setPersistence
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
 
 import {
@@ -13,6 +17,10 @@ import {
   db
 } from "./firebase-config.js";
 
+/* =========================================================
+   DOM
+   ========================================================= */
+
 const registerForm =
   document.querySelector("#register-form");
 
@@ -22,35 +30,106 @@ const registerButton =
 const message =
   document.querySelector("#message");
 
+/* =========================================================
+   顯示訊息
+   ========================================================= */
+
 function showMessage(text, type = "") {
+  if (!message) {
+    console.error(
+      'register.html 中找不到 id="message"。'
+    );
+
+    return;
+  }
+
   message.textContent = text;
-  message.className =
-    `status-message ${type}`.trim();
+  message.className = "status-message";
+
+  if (type) {
+    message.classList.add(type);
+  }
 }
 
-registerForm.addEventListener(
+/* =========================================================
+   社員註冊
+   ========================================================= */
+
+registerForm?.addEventListener(
   "submit",
   async (event) => {
     event.preventDefault();
 
+    const nameInput =
+      document.querySelector("#name");
+
+    const studentIdInput =
+      document.querySelector("#student-id");
+
+    const departmentInput =
+      document.querySelector("#department");
+
+    const phoneInput =
+      document.querySelector("#phone");
+
+    const emailInput =
+      document.querySelector("#email");
+
+    const passwordInput =
+      document.querySelector("#password");
+
+    const confirmPasswordInput =
+      document.querySelector(
+        "#confirm-password"
+      );
+
+    if (
+      !nameInput ||
+      !studentIdInput ||
+      !departmentInput ||
+      !phoneInput ||
+      !emailInput ||
+      !passwordInput ||
+      !confirmPasswordInput
+    ) {
+      showMessage(
+        "註冊頁面缺少必要欄位，請檢查 HTML 元素 ID。",
+        "error"
+      );
+
+      return;
+    }
+
     const name =
-      document.querySelector("#name").value.trim();
+      nameInput.value.trim();
 
     const studentId =
-      document.querySelector("#student-id").value.trim();
+      studentIdInput.value.trim();
+
+    const department =
+      departmentInput.value.trim();
+
+    const phone =
+      phoneInput.value.trim();
 
     const email =
-      document.querySelector("#email").value.trim();
+      emailInput.value.trim();
 
     const password =
-      document.querySelector("#password").value;
+      passwordInput.value;
 
     const confirmPassword =
-      document.querySelector("#confirm-password").value;
+      confirmPasswordInput.value;
+
+    /* =====================================================
+       表單驗證
+       ===================================================== */
 
     if (
       !name ||
       !studentId ||
+      !department ||
+      !phone ||
       !email ||
       !password ||
       !confirmPassword
@@ -72,7 +151,9 @@ registerForm.addEventListener(
       return;
     }
 
-    if (password !== confirmPassword) {
+    if (
+      password !== confirmPassword
+    ) {
       showMessage(
         "兩次輸入的密碼不一致。",
         "error"
@@ -82,13 +163,28 @@ registerForm.addEventListener(
     }
 
     registerButton.disabled = true;
+    registerButton.textContent =
+      "送出申請中……";
 
-    showMessage("正在建立帳號……");
+    let createdUser = null;
+    let firestoreDocumentCreated = false;
 
     try {
       /*
-       * 1. 建立 Firebase Authentication 帳號
+       * 1. 設定登入狀態保存方式
        */
+      await setPersistence(
+        auth,
+        browserLocalPersistence
+      );
+
+      /*
+       * 2. 建立 Firebase Authentication 帳號
+       */
+      showMessage(
+        "正在建立登入帳號……"
+      );
+
       const credential =
         await createUserWithEmailAndPassword(
           auth,
@@ -96,42 +192,92 @@ registerForm.addEventListener(
           password
         );
 
-      const user = credential.user;
+      createdUser =
+        credential.user;
 
       /*
-       * 2. 建立 Firestore 使用者資料
-       *
-       * role 與 status 固定由程式指定，
-       * 不接受使用者自行輸入。
+       * 3. 建立 Firestore 社員申請資料
        */
+      showMessage(
+        "正在建立社員申請資料……"
+      );
+
       await setDoc(
-        doc(db, "users", user.uid),
+        doc(
+          db,
+          "users",
+          createdUser.uid
+        ),
         {
-          name: name,
-          studentId: studentId,
-          email: email,
-          role: "member",
+          name,
+          studentId,
+          department,
+          phone,
+          email,
+
+          role: "pending",
           status: "pending",
-          createdAt: serverTimestamp()
+
+          level: "",
+          family: "",
+
+          /*
+           * 社費狀態仍保留，
+           * 由管理員在後台人工確認。
+           */
+          paymentStatus: "pending",
+
+          createdAt:
+            serverTimestamp(),
+
+          updatedAt:
+            serverTimestamp()
         }
       );
 
+      firestoreDocumentCreated =
+        true;
+
       showMessage(
-        "註冊成功，正在前往審核等待頁面。",
+        "社員申請已送出，正在前往審核等待頁面……",
         "success"
       );
 
-      window.location.replace(
-        "./pending.html"
+      window.setTimeout(
+        () => {
+          window.location.replace(
+            "./pending.html"
+          );
+        },
+        600
       );
-
     } catch (error) {
       console.error(
-        "註冊失敗：",
+        "社員申請失敗：",
         error
       );
 
-      switch (error.code) {
+      /*
+       * Firestore 文件建立失敗時，
+       * 清除剛建立的 Authentication 帳號。
+       */
+      if (
+        createdUser &&
+        !firestoreDocumentCreated
+      ) {
+        try {
+          await deleteUser(
+            createdUser
+          );
+        } catch (cleanupError) {
+          console.warn(
+            "無法清除未完成的登入帳號：",
+            cleanupError
+          );
+        }
+      }
+
+      switch (error?.code) {
         case "auth/email-already-in-use":
           showMessage(
             "這個 Email 已經註冊。",
@@ -148,7 +294,14 @@ registerForm.addEventListener(
 
         case "auth/weak-password":
           showMessage(
-            "密碼強度不足。",
+            "密碼強度不足，至少需要 6 個字元。",
+            "error"
+          );
+          break;
+
+        case "auth/network-request-failed":
+          showMessage(
+            "網路連線失敗，請稍後重新嘗試。",
             "error"
           );
           break;
@@ -156,20 +309,28 @@ registerForm.addEventListener(
         case "permission-denied":
         case "firestore/permission-denied":
           showMessage(
-            "帳號已建立，但無法建立社員申請資料，請聯絡管理員。",
+            "社員申請資料被 Firestore Rules 拒絕。",
             "error"
           );
           break;
 
         default:
           showMessage(
-            `註冊失敗：${error.message}`,
+            `申請失敗：${
+              error?.code ||
+              "unknown"
+            }｜${
+              error?.message ||
+              "未知錯誤"
+            }`,
             "error"
           );
       }
-
     } finally {
       registerButton.disabled = false;
+      registerButton.textContent =
+        "送出社員申請";
     }
   }
 );
+

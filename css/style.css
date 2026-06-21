@@ -1324,3 +1324,426 @@ textarea {
     width: 100%;
   }
 }
+
+
+/* =========================================================
+   管理員社課列表
+   ========================================================= */
+
+/* #course-list {
+  display: grid;
+  gap: 20px;
+}
+
+.management-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 24px;
+  align-items: start;
+
+  padding: 22px;
+  margin: 0;
+
+  background: #ffffff;
+  border: 1px solid #d5e5e5;
+  border-radius: 16px;
+
+  box-shadow: 0 8px 24px rgba(30, 70, 75, 0.06);
+}
+
+.management-card h3 {
+  margin: 4px 0 12px;
+}
+
+.management-card p {
+  margin: 8px 0;
+  line-height: 1.7;
+}
+
+.management-card small {
+  display: block;
+  margin-top: 12px;
+  color: #64787b;
+}
+
+.management-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.management-card > .management-actions {
+  justify-content: flex-end;
+}
+
+.course-date {
+  margin: 0 0 4px;
+  color: #279b98;
+  font-weight: 800;
+}
+
+.course-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0 8px;
+}
+
+.course-tags span {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 6px 12px;
+
+  color: #286d6c;
+  background: #e7f7f5;
+  border: 1px solid #bee1df;
+  border-radius: 999px;
+
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.delete-button,
+.button-danger {
+  color: #ffffff;
+  background: #e85d62;
+  border-color: #e85d62;
+}
+
+@media (max-width: 760px) {
+  .management-card {
+    grid-template-columns: 1fr;
+  }
+
+  .management-card > .management-actions {
+    justify-content: flex-start;
+  }
+}
+ */
+
+/* =========================================================
+   正式社員條狀管理
+   ========================================================= */
+
+#member-list {
+  display: grid;
+  gap: 10px;
+}
+
+.member-row {
+  display: grid;
+
+  grid-template-columns:
+    minmax(210px, 1.6fr)
+    minmax(110px, 0.65fr)
+    minmax(150px, 1fr)
+    minmax(130px, 0.8fr)
+    auto;
+
+  gap: 14px;
+  align-items: end;
+
+  padding: 14px 16px;
+
+  background: #ffffff;
+
+  border: 1px solid #d7e5e6;
+  border-radius: 12px;
+
+  box-shadow:
+    0 4px 14px
+    rgba(29, 72, 77, 0.04);
+}
+
+.member-row:hover {
+  border-color: #9fd2d0;
+
+  box-shadow:
+    0 6px 18px
+    rgba(29, 72, 77, 0.08);
+}
+
+/* =========================================================
+   社員姓名與基本資料
+   ========================================================= */
+
+.member-row-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  min-width: 0;
+}
+
+.member-row-name {
+  color: #24494f;
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.member-row-detail {
+  overflow: hidden;
+
+  color: #708286;
+  font-size: 0.82rem;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* =========================================================
+   條狀欄位
+   ========================================================= */
+
+.member-row-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+
+  min-width: 0;
+}
+
+.member-row-field > span {
+  color: #668084;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.member-row-field select,
+.member-row-field input {
+  width: 100%;
+  height: 38px;
+
+  box-sizing: border-box;
+
+  padding: 7px 10px;
+
+  border: 1px solid #c8d9da;
+  border-radius: 8px;
+
+  background: #ffffff;
+  color: #294b50;
+
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.member-row-field select:focus,
+.member-row-field input:focus {
+  outline:
+    2px solid
+    rgba(67, 173, 168, 0.18);
+
+  border-color: #49aaa6;
+}
+
+.member-row-save {
+  min-width: 72px;
+  height: 38px;
+
+  align-self: end;
+}
+
+/* =========================================================
+   平板
+   ========================================================= */
+
+@media (max-width: 980px) {
+  .member-row {
+    grid-template-columns:
+      minmax(200px, 1.4fr)
+      minmax(100px, 0.7fr)
+      minmax(140px, 1fr)
+      minmax(120px, 0.8fr);
+
+    align-items: end;
+  }
+
+  .member-row-save {
+    grid-column: 4;
+  }
+}
+
+/* =========================================================
+   手機
+   ========================================================= */
+
+@media (max-width: 700px) {
+  .member-row {
+    grid-template-columns:
+      1fr
+      1fr;
+
+    gap: 12px;
+  }
+
+  .member-row-identity {
+    grid-column:
+      1 / -1;
+  }
+
+  .member-row-family {
+    grid-column:
+      1 / -1;
+  }
+
+  .member-row-save {
+    grid-column:
+      1 / -1;
+
+    width: 100%;
+  }
+}
+
+/* =========================================================
+   小型手機
+   ========================================================= */
+
+@media (max-width: 460px) {
+  .member-row {
+    grid-template-columns:
+      1fr;
+  }
+
+  .member-row-identity,
+  .member-row-family,
+  .member-row-save {
+    grid-column:
+      auto;
+  }
+}
+
+
+/* =========================================================
+   寬版社員註冊表單
+   ========================================================= */
+
+.auth-main-wide {
+  padding-top: 48px;
+  padding-bottom: 72px;
+}
+
+.auth-main-wide .form-card {
+  width: min(820px, 100%);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 22px;
+}
+
+.form-grid .field-stack {
+  min-width: 0;
+}
+
+.privacy-note {
+  margin: 18px 0;
+
+  color: var(--muted);
+
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+
+input[type="file"] {
+  padding: 9px 10px;
+}
+
+input[type="file"]::file-selector-button {
+  margin-right: 12px;
+  padding: 8px 14px;
+
+  color: #ffffff;
+  background: var(--primary-dark);
+
+  border: 0;
+  border-radius: 8px;
+
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media screen and (max-width: 700px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .auth-main-wide .form-card {
+    width: 100%;
+  }
+}
+
+
+```css
+/* =========================================================
+   正式社員操作按鈕
+   ========================================================= */
+
+.member-row-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+
+  align-self: end;
+}
+
+.member-row-actions .button {
+  min-width: 68px;
+  height: 38px;
+  margin: 0;
+  padding: 7px 13px;
+}
+
+.member-row-delete {
+  background: var(--danger);
+  box-shadow:
+    0 6px 16px
+    rgba(217, 92, 92, 0.18);
+}
+
+.member-row-delete:hover {
+  background: var(--danger-dark);
+}
+
+.member-row-delete:disabled {
+  background: #9aa9ad;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* 平板 */
+@media screen and (max-width: 980px) {
+  .member-row-actions {
+    grid-column: 4;
+  }
+}
+
+/* 手機 */
+@media screen and (max-width: 700px) {
+  .member-row-actions {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .member-row-actions .button {
+    flex: 1;
+  }
+}
+
+/* 小型手機 */
+@media screen and (max-width: 460px) {
+  .member-row-actions {
+    grid-column: auto;
+    flex-direction: column;
+  }
+
+  .member-row-actions .button {
+    width: 100%;
+  }
+}
+```
+
