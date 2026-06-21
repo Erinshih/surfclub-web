@@ -146,6 +146,72 @@
         </div>
       </section>
 
+  
+<!-- =====================================================
+     批次匯入社課
+     ===================================================== -->
+<section class="card">
+  <div class="section-heading left">
+    <p class="eyebrow">
+      COURSE IMPORT
+    </p>
+
+    <h2>
+      批次匯入社課
+    </h2>
+
+    <p class="section-description">
+      將多筆社課 JSON 貼到下方，
+      即可一次建立多筆社課資料。
+    </p>
+  </div>
+
+  <label for="course-import-data">
+    社課 JSON 資料
+  </label>
+
+  <textarea
+    id="course-import-data"
+    rows="16"
+    placeholder='[
+  {
+    "order": 1,
+    "date": "9 月 19 日（六）",
+    "title": "衝浪影片檢討",
+    "description": "透過影片分析社員動作。",
+    "tags": ["影片分析", "動作檢討"],
+    "status": "published"
+  }
+]'
+  ></textarea>
+
+  <div class="announcement-actions">
+    <button
+      id="import-courses-button"
+      class="button"
+      type="button"
+    >
+      批次匯入社課
+    </button>
+
+    <button
+      id="fill-course-example-button"
+      class="button button-secondary"
+      type="button"
+    >
+      載入範例資料
+    </button>
+  </div>
+
+  <p
+    id="course-import-message"
+    class="status-message"
+    aria-live="polite"
+  ></p>
+</section>
+
+
+      
       <!-- ===============================================
            社課管理
            =============================================== -->

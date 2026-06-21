@@ -3,6 +3,19 @@ import {
   signOut
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
 
+// import {
+//   addDoc,
+//   collection,
+//   deleteDoc,
+//   doc,
+//   getDoc,
+//   getDocs,
+//   orderBy,
+//   query,
+//   serverTimestamp,
+//   updateDoc
+// } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+
 import {
   addDoc,
   collection,
@@ -13,9 +26,9 @@ import {
   orderBy,
   query,
   serverTimestamp,
-  updateDoc
+  updateDoc,
+  writeBatch
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
-
 import {
   auth,
   db
@@ -99,6 +112,18 @@ const adminCourseList =
   document.querySelector("#admin-course-list");
 
 let currentAdmin = null;
+
+const courseImportData =
+  document.querySelector("#course-import-data");
+
+const importCoursesButton =
+  document.querySelector("#import-courses-button");
+
+const fillCourseExampleButton =
+  document.querySelector("#fill-course-example-button");
+
+const courseImportMessage =
+  document.querySelector("#course-import-message");
 
 /* =========================================================
    共用函式
@@ -1051,4 +1076,518 @@ function escapeCsvValue(value) {
 
   return `"${escapedText}"`;
 }
+
+
+/* =========================================================
+   批次匯入社課
+   ========================================================= */
+
+const courseImportExample = [
+  {
+    order: 1,
+    date: "9 月 19 日（六）",
+    title: "衝浪影片檢討",
+    description:
+      "透過衝浪影片回顧社員的動作表現，討論划水、起乘、站姿與浪況判斷等問題。",
+    tags: [
+      "影片分析",
+      "動作檢討",
+      "室內社課"
+    ],
+    status: "published"
+  },
+  {
+    order: 2,
+    date: "9 月 29 日（二）",
+    title: "期初社大",
+    description:
+      "說明本學期的社團規劃、活動安排、社員制度與重要注意事項。",
+    tags: [
+      "社員大會",
+      "學期規劃",
+      "重要活動"
+    ],
+    status: "published"
+  },
+  {
+    order: 3,
+    date: "10 月 7 日（三）",
+    title: "秋波知識社課 🍕",
+    description:
+      "認識秋季浪況、潮汐、風向與海洋安全，建立下水前需要具備的基礎判斷能力。",
+    tags: [
+      "海洋知識",
+      "浪況判讀",
+      "安全觀念"
+    ],
+    status: "published"
+  },
+  {
+    order: 4,
+    date: "10 月 17 日（六）",
+    title: "Lv.2 大團練",
+    description:
+      "針對 Lv.2 社員進行團體練習，加強划水、起乘、站姿與基礎控板能力。",
+    tags: [
+      "Lv.2",
+      "團體練習",
+      "實作課程"
+    ],
+    status: "published"
+  },
+  {
+    order: 5,
+    date: "10 月 20 日（二）",
+    title: "衝浪滑板",
+    description:
+      "利用衝浪滑板練習轉向、重心移動與身體協調，建立接近實際衝浪的動作感受。",
+    tags: [
+      "衝浪滑板",
+      "平衡訓練",
+      "重心控制"
+    ],
+    status: "published"
+  },
+  {
+    order: 6,
+    date: "10 月 24 日（六）",
+    title: "衝浪影片檢討",
+    description:
+      "分析近期衝浪練習影片，找出動作問題並討論後續改善方向。",
+    tags: [
+      "影片分析",
+      "動作修正",
+      "經驗交流"
+    ],
+    status: "published"
+  },
+  {
+    order: 7,
+    date: "10 月 25 日（日）",
+    title: "Lv.3 學理課（可旁聽）",
+    description:
+      "介紹進階浪況判讀、選浪方式、衝浪規則與安全觀念，並開放社員旁聽。",
+    tags: [
+      "Lv.3",
+      "學理課",
+      "開放旁聽"
+    ],
+    status: "published"
+  },
+  {
+    order: 8,
+    date: "10 月 27 日（二）",
+    title: "合作社課（待定）",
+    description:
+      "預計與其他社團或合作單位共同舉辦社課，實際內容、時間與地點將另行公告。",
+    tags: [
+      "合作社課",
+      "內容待定",
+      "另行公告"
+    ],
+    status: "published"
+  },
+  {
+    order: 9,
+    date: "10 月底",
+    title: "第一次等級結算",
+    description:
+      "統整社員於 10 月底前的課程參與、練習紀錄與等級進度。",
+    tags: [
+      "等級制度",
+      "進度結算",
+      "社員紀錄"
+    ],
+    status: "published"
+  },
+  {
+    order: 10,
+    date: "11 月 10 日（二）",
+    title: "衝浪滑板",
+    description:
+      "持續練習轉向、壓板、重心移動與身體協調，加強動作的連續性。",
+    tags: [
+      "衝浪滑板",
+      "轉向練習",
+      "動作銜接"
+    ],
+    status: "published"
+  },
+  {
+    order: 11,
+    date: "11 月 17 日（二）",
+    title: "秋波知識社課 🍕",
+    description:
+      "延伸秋季浪況與海洋環境知識，加強社員對下水條件與安全風險的判斷。",
+    tags: [
+      "海洋知識",
+      "浪況判讀",
+      "安全觀念"
+    ],
+    status: "published"
+  },
+  {
+    order: 12,
+    date: "11 月 21 日（六）",
+    title: "衝浪影片檢討",
+    description:
+      "檢視社員近期的衝浪影片，從動作、選浪與路線等面向進行討論。",
+    tags: [
+      "影片分析",
+      "選浪討論",
+      "動作改善"
+    ],
+    status: "published"
+  },
+  {
+    order: 13,
+    date: "11 月 28 日（六）",
+    title: "Lv.4 學理課（可旁聽）",
+    description:
+      "介紹進階浪況分析、路線選擇、衝浪禮儀與實作策略，並開放社員旁聽。",
+    tags: [
+      "Lv.4",
+      "進階學理",
+      "開放旁聽"
+    ],
+    status: "published"
+  },
+  {
+    order: 14,
+    date: "11 月底",
+    title: "第二次等級結算",
+    description:
+      "統整 11 月底前的社員參與紀錄、練習成果與等級升級進度。",
+    tags: [
+      "等級制度",
+      "進度結算",
+      "升級紀錄"
+    ],
+    status: "published"
+  },
+  {
+    order: 15,
+    date: "12 月 1 日（二）",
+    title: "衝浪滑板",
+    description:
+      "持續練習重心控制、動作連接與模擬轉向技巧。",
+    tags: [
+      "衝浪滑板",
+      "重心控制",
+      "轉向技巧"
+    ],
+    status: "published"
+  },
+  {
+    order: 16,
+    date: "12 月 8 日（二）",
+    title: "合作社課",
+    description:
+      "與合作單位共同進行社課交流，實際主題、時間與地點以後續公告為準。",
+    tags: [
+      "合作社課",
+      "交流活動",
+      "另行公告"
+    ],
+    status: "published"
+  },
+  {
+    order: 17,
+    date: "12 月 12 日（六）",
+    title: "衝浪影片檢討",
+    description:
+      "回顧學期後段的衝浪練習影片，檢討社員進步情況並提出後續建議。",
+    tags: [
+      "影片分析",
+      "成果檢討",
+      "練習建議"
+    ],
+    status: "published"
+  },
+  {
+    order: 18,
+    date: "12 月 15 日（二）",
+    title: "衝浪滑板",
+    description:
+      "本學期最後一次衝浪滑板練習，統整平衡、轉向與連續動作技巧。",
+    tags: [
+      "衝浪滑板",
+      "綜合練習",
+      "學期成果"
+    ],
+    status: "published"
+  },
+  {
+    order: 19,
+    date: "1 月 9 日",
+    title: "期末社大",
+    description:
+      "回顧本學期社課與活動成果，公布重要事項並進行社員交流與學期總結。",
+    tags: [
+      "社員大會",
+      "學期總結",
+      "成果回顧"
+    ],
+    status: "published"
+  }
+];
+
+
+fillCourseExampleButton?.addEventListener(
+  "click",
+  () => {
+    courseImportData.value =
+      JSON.stringify(
+        courseImportExample,
+        null,
+        2
+      );
+
+    showStatus(
+      courseImportMessage,
+      `已載入 ${courseImportExample.length} 筆範例社課資料。`,
+      "success"
+    );
+  }
+);
+
+
+importCoursesButton?.addEventListener(
+  "click",
+  async () => {
+    if (!currentAdmin) {
+      showStatus(
+        courseImportMessage,
+        "尚未完成管理員身分驗證。",
+        "error"
+      );
+
+      return;
+    }
+
+    const rawData =
+      courseImportData.value.trim();
+
+    if (!rawData) {
+      showStatus(
+        courseImportMessage,
+        "請先貼上社課 JSON 資料。",
+        "error"
+      );
+
+      return;
+    }
+
+    let courses;
+
+    try {
+      courses = JSON.parse(rawData);
+    } catch (error) {
+      showStatus(
+        courseImportMessage,
+        `JSON 格式錯誤：${error.message}`,
+        "error"
+      );
+
+      return;
+    }
+
+    if (!Array.isArray(courses)) {
+      showStatus(
+        courseImportMessage,
+        "最外層資料必須是 JSON 陣列。",
+        "error"
+      );
+
+      return;
+    }
+
+    if (courses.length === 0) {
+      showStatus(
+        courseImportMessage,
+        "沒有可以匯入的社課資料。",
+        "error"
+      );
+
+      return;
+    }
+
+    /*
+     * 這裡先限制單次最多 400 筆，
+     * 避免批次太大造成失敗。
+     */
+    if (courses.length > 400) {
+      showStatus(
+        courseImportMessage,
+        "單次最多匯入 400 筆社課。",
+        "error"
+      );
+
+      return;
+    }
+
+    const validatedCourses = [];
+
+    for (
+      let index = 0;
+      index < courses.length;
+      index += 1
+    ) {
+      const course = courses[index];
+
+      const order =
+        Number(course.order);
+
+      const date =
+        String(course.date ?? "").trim();
+
+      const title =
+        String(course.title ?? "").trim();
+
+      const description =
+        String(course.description ?? "").trim();
+
+      const tags =
+        Array.isArray(course.tags)
+          ? course.tags
+              .map((tag) =>
+                String(tag).trim()
+              )
+              .filter(Boolean)
+              .slice(0, 10)
+          : [];
+
+      const status =
+        course.status === "draft"
+          ? "draft"
+          : "published";
+
+      if (
+        !Number.isInteger(order) ||
+        order < 1
+      ) {
+        showStatus(
+          courseImportMessage,
+          `第 ${index + 1} 筆資料的 order 必須是大於 0 的整數。`,
+          "error"
+        );
+
+        return;
+      }
+
+      if (!date) {
+        showStatus(
+          courseImportMessage,
+          `第 ${index + 1} 筆資料缺少日期。`,
+          "error"
+        );
+
+        return;
+      }
+
+      if (!title) {
+        showStatus(
+          courseImportMessage,
+          `第 ${index + 1} 筆資料缺少社課名稱。`,
+          "error"
+        );
+
+        return;
+      }
+
+      if (!description) {
+        showStatus(
+          courseImportMessage,
+          `第 ${index + 1} 筆資料缺少社課說明。`,
+          "error"
+        );
+
+        return;
+      }
+
+      validatedCourses.push({
+        order,
+        date,
+        title,
+        description,
+        tags,
+        status
+      });
+    }
+
+    const confirmed =
+      window.confirm(
+        `確定要一次新增 ${validatedCourses.length} 筆社課嗎？`
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    importCoursesButton.disabled = true;
+    fillCourseExampleButton.disabled = true;
+
+    showStatus(
+      courseImportMessage,
+      `正在匯入 ${validatedCourses.length} 筆社課……`
+    );
+
+    try {
+      const batch =
+        writeBatch(db);
+
+      validatedCourses.forEach(
+        (course) => {
+          /*
+           * 使用 doc(collection(...))
+           * 自動產生新的 document ID。
+           */
+          const courseReference =
+            doc(collection(db, "courses"));
+
+          batch.set(
+            courseReference,
+            {
+              ...course,
+              createdBy:
+                currentAdmin.uid,
+              createdAt:
+                serverTimestamp(),
+              updatedBy:
+                currentAdmin.uid,
+              updatedAt:
+                serverTimestamp()
+            }
+          );
+        }
+      );
+
+      await batch.commit();
+
+      showStatus(
+        courseImportMessage,
+        `成功匯入 ${validatedCourses.length} 筆社課。`,
+        "success"
+      );
+
+      courseImportData.value = "";
+
+      await loadAdminCourses();
+    } catch (error) {
+      console.error(
+        "批次匯入社課失敗：",
+        error
+      );
+
+      showStatus(
+        courseImportMessage,
+        `匯入失敗：${error.message}`,
+        "error"
+      );
+    } finally {
+      importCoursesButton.disabled = false;
+      fillCourseExampleButton.disabled = false;
+    }
+  }
+);
 
