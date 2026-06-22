@@ -1,20 +1,26 @@
-const CACHE_NAME = "surfclub-cache-v4";
+// const CACHE_NAME = "surfclub-cache-v4";
 
 // const APP_FILES = [
 //   "./",
 //   "./index.html",
-//   ".css/style.css",
-// //   "./script.js",
 //   "./manifest.webmanifest",
-//   "./icons/icon-192.png",
-//   "./icons/icon-512.png",
-//   "./icons/icon-512-maskable.png"
+//   "./css/style.css"
 // ];
+
+const CACHE_NAME = "surfclub-cache-v8";
+
 const APP_FILES = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
-  "./css/style.css"
+  "./css/style.css",
+
+  "./js/firebase-config.js",
+  "./js/auth-nav.js",
+  "./js/courses.js",
+
+  "./icons/icon-192.png",
+  "./icons/icon-512.png"
 ];
 
 self.addEventListener("install", (event) => {
