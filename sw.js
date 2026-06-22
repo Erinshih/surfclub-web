@@ -14,25 +14,7 @@ const APP_FILES = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
-
-  "./css/style.css",
-//   "./js/main.js",
-"./js/auth-nav.js",
-".js/admin-courses.js",
-".js/pending.js",
-".js/admin-common.js",
-".js/member.js",
-".js/register.js",
-".js/admin-dashboard.js",
-".js/login.js",
-".js/courses.js",
-".js/admin.js",
-".js/firebase-config.js",
-".js/admin-members.js",
-".js/admin-announcements.js",
-
-  "./icons/icon-192.png",
-  "./icons/icon-512.png"
+  "./css/style.css"
 ];
 
 self.addEventListener("install", (event) => {
