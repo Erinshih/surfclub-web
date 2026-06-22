@@ -3,7 +3,7 @@ const CACHE_NAME = "member-system-v1";
 const APP_FILES = [
   "./",
   "./index.html",
-  "./style.css",
+  ".css/style.css",
   "./script.js",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
