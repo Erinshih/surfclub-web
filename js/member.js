@@ -6,10 +6,15 @@
    1. 驗證 Firebase Authentication 登入狀態
    2. 讀取 Firestore users/{uid}
    3. 驗證正式社員身分
-   4. 顯示社員個人資料
-   5. 讀取公告
+   4. 顯示姓名、Email、Level、家系
+   5. 讀取最新公告
    6. 顯示公告網址按鈕
    7. 登出
+
+   已移除：
+   - 近期社課載入
+   - member-course-list
+   - 快速入口相關邏輯
    ========================================================= */
 
 import {
@@ -32,7 +37,7 @@ import {
 } from "./firebase-config.js";
 
 /* =========================================================
-   DOM：頁面狀態
+   DOM：狀態與登出
    ========================================================= */
 
 const memberStatus =
@@ -94,7 +99,7 @@ onAuthStateChanged(
 
   async (user) => {
     /*
-     * 沒有登入，導向登入頁。
+     * 沒有登入時，導向登入頁面。
      */
     if (!user) {
       window.location.replace(
@@ -128,7 +133,7 @@ onAuthStateChanged(
         );
 
       /*
-       * Authentication 有帳號，
+       * Firebase Authentication 有帳號，
        * 但 Firestore 找不到 users/{uid}。
        */
       if (!userSnapshot.exists()) {
@@ -180,7 +185,7 @@ onAuthStateChanged(
       }
 
       /*
-       * 只有正式社員可以進入社員首頁。
+       * 只有正式社員可以留在社員首頁。
        */
       if (
         role !== "member" ||
@@ -190,7 +195,7 @@ onAuthStateChanged(
 
         showStatus(
           memberStatus,
-          "目前帳號沒有社員首頁的存取權限。",
+          "目前帳號沒有社員資訊系統的存取權限。",
           "error"
         );
 
@@ -214,33 +219,33 @@ onAuthStateChanged(
         user.email ||
         "社員";
 
-      const profileInformation = [];
+      const summaryParts = [];
 
       if (currentUserData.level) {
-        profileInformation.push(
+        summaryParts.push(
           currentUserData.level
         );
       }
 
       if (currentUserData.family) {
-        profileInformation.push(
+        summaryParts.push(
           currentUserData.family
         );
       }
 
-      const profileText =
-        profileInformation.length > 0
-          ? `｜${profileInformation.join("｜")}`
+      const summaryText =
+        summaryParts.length > 0
+          ? `｜${summaryParts.join("｜")}`
           : "";
 
       showStatus(
         memberStatus,
-        `歡迎回來，${displayName}${profileText}`,
+        `歡迎回來，${displayName}${summaryText}`,
         "success"
       );
 
       /*
-       * 驗證成功後讀取公告。
+       * 身分驗證完成後讀取公告。
        */
       await loadAnnouncements();
     } catch (error) {
@@ -400,13 +405,10 @@ async function loadAnnouncements() {
           ...announcementSnapshot.data()
         };
 
-        const announcementCard =
+        announcementList.appendChild(
           createAnnouncementCard(
             announcement
-          );
-
-        announcementList.appendChild(
-          announcementCard
+          )
         );
       }
     );
@@ -496,8 +498,8 @@ function createAnnouncementCard(
   );
 
   /*
-   * 公告具有安全的 HTTP／HTTPS 網址時，
-   * 顯示可點擊的 URL 按鈕。
+   * 公告有合法的 HTTP／HTTPS 網址時，
+   * 顯示可點擊的連結按鈕。
    */
   if (
     announcement.linkUrl &&
@@ -519,7 +521,9 @@ function createAnnouncementCard(
       "announcement-link-wrapper";
 
     link.href =
-      announcement.linkUrl;
+      String(
+        announcement.linkUrl
+      ).trim();
 
     link.textContent =
       announcement.linkText ||
@@ -544,8 +548,7 @@ function createAnnouncementCard(
   }
 
   /*
-   * Firestore Server Timestamp 剛寫入時，
-   * 可能暫時沒有時間，因此空字串時不顯示。
+   * 有時間資料才顯示時間。
    */
   if (metadata.textContent) {
     article.appendChild(
@@ -620,7 +623,7 @@ function formatTimestamp(
   }
 
   /*
-   * 相容一般 Date 字串或毫秒數。
+   * 相容一般日期字串或毫秒數。
    */
   try {
     const date =
@@ -721,7 +724,7 @@ function showStatus(
 }
 
 /* =========================================================
-   錯誤訊息轉換
+   錯誤訊息處理
    ========================================================= */
 
 function getErrorMessage(
@@ -732,19 +735,15 @@ function getErrorMessage(
     "";
 
   if (
-    errorCode ===
-      "permission-denied" ||
-    errorCode ===
-      "firestore/permission-denied"
+    errorCode === "permission-denied" ||
+    errorCode === "firestore/permission-denied"
   ) {
     return "權限不足，請確認帳號已通過社員審核。";
   }
 
   if (
-    errorCode ===
-      "unavailable" ||
-    errorCode ===
-      "firestore/unavailable"
+    errorCode === "unavailable" ||
+    errorCode === "firestore/unavailable"
   ) {
     return "目前無法連線至資料庫，請稍後再試。";
   }
@@ -761,3 +760,4 @@ function getErrorMessage(
     "未知錯誤"
   );
 }
+

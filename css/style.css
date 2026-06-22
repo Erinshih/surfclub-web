@@ -2234,3 +2234,551 @@ input[type="file"]::file-selector-button {
     padding: 17px 14px;
   }
 }
+
+/* =========================================================
+   系統入口頁
+   ========================================================= */
+
+.system-entry-page {
+  min-height: 100vh;
+
+  display: grid;
+  place-items: center;
+
+  padding: 24px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #edf6f6,
+      #dceceb
+    );
+}
+
+.system-entry-card {
+  width: min(520px, 100%);
+
+  padding: 48px 36px;
+
+  text-align: center;
+
+  background: #ffffff;
+
+  border: 1px solid var(--border);
+  border-radius: 24px;
+
+  box-shadow:
+    0 24px 60px
+    rgba(37, 72, 78, 0.12);
+}
+
+.system-entry-card h1 {
+  margin: 10px 0 16px;
+
+  color: var(--navy);
+
+  font-size:
+    clamp(2rem, 7vw, 3.2rem);
+}
+
+.brand-mark {
+  color: var(--primary);
+
+  font-size: 2rem;
+}
+
+.system-entry-actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+
+  gap: 12px;
+  margin-top: 28px;
+}
+
+
+/* =========================================================
+   社員資訊系統
+   ========================================================= */
+
+.member-dashboard {
+  width: min(1080px, calc(100% - 32px));
+
+  margin: 0 auto;
+  padding: 36px 0 72px;
+}
+
+.member-dashboard > section {
+  margin-bottom: 24px;
+}
+
+.member-welcome-card {
+  padding: 36px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #ffffff,
+      #eef8f7
+    );
+
+  border: 1px solid var(--border);
+  border-radius: 20px;
+
+  box-shadow: var(--shadow-small);
+}
+
+.member-welcome-card h1 {
+  margin: 8px 0 16px;
+
+  color: var(--navy);
+
+  font-size:
+    clamp(2rem, 5vw, 3.2rem);
+}
+
+.member-summary-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 18px;
+}
+
+.member-summary-card {
+  padding: 28px;
+
+  background: #ffffff;
+
+  border: 1px solid var(--border);
+  border-radius: 18px;
+
+  box-shadow: var(--shadow-small);
+}
+
+.member-summary-card span {
+  display: block;
+
+  margin-bottom: 12px;
+
+  color: var(--muted);
+
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.member-summary-card strong {
+  display: block;
+
+  color: var(--primary-dark);
+
+  font-size:
+    clamp(1.8rem, 5vw, 2.8rem);
+
+  font-weight: 900;
+}
+
+.member-profile-grid-compact {
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+}
+
+.member-quick-links {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 18px;
+}
+
+.member-quick-link-card {
+  display: block;
+
+  padding: 28px;
+
+  color: var(--navy);
+  text-decoration: none;
+
+  background: #ffffff;
+
+  border: 1px solid var(--border);
+  border-radius: 18px;
+
+  box-shadow: var(--shadow-small);
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.member-quick-link-card:hover {
+  transform: translateY(-3px);
+
+  box-shadow:
+    0 16px 34px
+    rgba(34, 72, 78, 0.1);
+}
+
+.member-quick-link-card span {
+  display: block;
+
+  margin-bottom: 8px;
+
+  color: var(--primary-dark);
+
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.member-quick-link-card strong {
+  font-size: 1.25rem;
+}
+
+@media screen and (max-width: 650px) {
+  .member-summary-grid,
+  .member-profile-grid-compact,
+  .member-quick-links {
+    grid-template-columns: 1fr;
+  }
+
+  .member-welcome-card {
+    padding: 28px 22px;
+  }
+
+  .system-entry-actions {
+    flex-direction: column;
+  }
+
+  .system-entry-actions .button {
+    width: 100%;
+  }
+}
+
+/* =========================================================
+   Surf Club 社員資訊系統
+   ========================================================= */
+
+.member-dashboard {
+  width: min(1080px, calc(100% - 32px));
+
+  margin: 0 auto;
+  padding: 36px 0 72px;
+}
+
+.member-dashboard > section {
+  margin-bottom: 24px;
+}
+
+
+/* =========================================================
+   歡迎區塊
+   ========================================================= */
+
+.member-welcome-card {
+  padding: 36px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #ffffff,
+      #eef8f7
+    );
+
+  border:
+    1px solid
+    var(--border, #d5e2e4);
+
+  border-radius: 20px;
+
+  box-shadow:
+    0 12px 32px
+    rgba(38, 74, 80, 0.08);
+}
+
+.member-welcome-card h1 {
+  margin: 8px 0 16px;
+
+  color:
+    var(--navy, #27474f);
+
+  font-size:
+    clamp(2rem, 5vw, 3.2rem);
+
+  line-height: 1.15;
+}
+
+
+/* =========================================================
+   Level 與家系摘要
+   ========================================================= */
+
+.member-summary-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 18px;
+}
+
+.member-summary-card {
+  min-width: 0;
+  padding: 28px;
+
+  background: #ffffff;
+
+  border:
+    1px solid
+    var(--border, #d5e2e4);
+
+  border-radius: 18px;
+
+  box-shadow:
+    0 8px 24px
+    rgba(38, 74, 80, 0.06);
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.member-summary-card:hover {
+  transform: translateY(-3px);
+
+  box-shadow:
+    0 14px 32px
+    rgba(38, 74, 80, 0.1);
+}
+
+.member-summary-label {
+  display: block;
+
+  margin-bottom: 12px;
+
+  color:
+    var(--muted, #657a80);
+
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.member-summary-card strong {
+  display: block;
+
+  color:
+    var(--primary-dark, #367f7b);
+
+  font-size:
+    clamp(1.8rem, 5vw, 2.8rem);
+
+  font-weight: 900;
+  line-height: 1.2;
+
+  overflow-wrap: anywhere;
+}
+
+
+/* =========================================================
+   社員基本資料
+   ========================================================= */
+
+.member-profile-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+
+  gap: 16px;
+  width: 100%;
+  margin-top: 28px;
+}
+
+.member-profile-grid-compact {
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+}
+
+.member-profile-item {
+  min-width: 0;
+  padding: 22px 18px;
+
+  background: #f8fbfb;
+
+  border:
+    1px solid
+    var(--border, #d5e2e4);
+
+  border-radius: 14px;
+}
+
+.member-profile-item span {
+  display: block;
+
+  margin-bottom: 12px;
+
+  color:
+    var(--muted, #657a80);
+
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.member-profile-item strong {
+  display: block;
+
+  color:
+    var(--navy, #27474f);
+
+  font-size: 1.05rem;
+  font-weight: 800;
+
+  overflow-wrap: anywhere;
+}
+
+
+/* =========================================================
+   公告列表
+   ========================================================= */
+
+#announcement-list {
+  display: grid;
+  gap: 18px;
+
+  width: 100%;
+  margin-top: 24px;
+}
+
+.announcement-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+
+  width: 100%;
+  min-width: 0;
+  padding: 24px;
+
+  background: #ffffff;
+
+  border:
+    1px solid
+    var(--border, #d5e2e4);
+
+  border-radius: 16px;
+
+  box-shadow:
+    0 8px 22px
+    rgba(34, 72, 78, 0.06);
+}
+
+.announcement-title {
+  width: 100%;
+  margin: 0 0 12px;
+
+  color:
+    var(--navy, #27474f);
+
+  font-size: 1.25rem;
+  font-weight: 900;
+}
+
+.announcement-content {
+  width: 100%;
+  margin: 0;
+
+  color:
+    var(--text, #354b50);
+
+  line-height: 1.8;
+
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.announcement-link-wrapper {
+  margin-top: 18px;
+}
+
+.announcement-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: fit-content;
+  min-height: 40px;
+
+  margin: 0;
+  padding: 9px 16px;
+
+  color: #ffffff;
+  background:
+    var(--primary, #54aaa5);
+
+  border-radius: 999px;
+
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.announcement-meta {
+  display: block;
+
+  width: 100%;
+  margin-top: 18px;
+  padding-top: 14px;
+
+  color:
+    var(--muted, #657a80);
+
+  border-top:
+    1px solid
+    var(--border, #d5e2e4);
+
+  font-size: 0.86rem;
+}
+
+
+
+/* =========================================================
+   空資料狀態
+   ========================================================= */
+
+.empty-state {
+  margin: 0;
+  padding: 24px 20px;
+
+  color:
+    var(--muted, #657a80);
+
+  background: #f8fbfb;
+
+  border:
+    1px dashed
+    var(--border, #d5e2e4);
+
+  border-radius: 14px;
+
+  text-align: center;
+}
+
+
+/* =========================================================
+   響應式
+   ========================================================= */
+
+@media screen and (max-width: 760px) {
+  .member-summary-grid,
+  .member-profile-grid,
+  .member-profile-grid-compact,
+  .member-quick-links {
+    grid-template-columns: 1fr;
+  }
+
+  .member-welcome-card {
+    padding: 28px 22px;
+  }
+
+  .member-dashboard {
+    width:
+      min(100% - 24px, 1080px);
+
+    padding-top: 24px;
+  }
+}

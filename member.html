@@ -9,8 +9,19 @@
     content="width=device-width, initial-scale=1.0"
   >
 
-  <title>Surf Club｜社員首頁</title>
+  <meta
+    name="theme-color"
+    content="#315f65"
+  >
 
+  <meta
+    name="description"
+    content="Surf Club 社員資訊系統"
+  >
+
+  <title>Surf Club｜社員資訊系統</title>
+
+  <!-- 這行不能刪除 -->
   <link
     rel="stylesheet"
     href="./css/style.css"
@@ -18,23 +29,38 @@
 </head>
 
 <body>
+  <!-- =====================================================
+       社員頁導覽列
+       ===================================================== -->
+
   <header class="site-header">
     <nav class="navbar">
       <a
         class="brand"
-        href="./index.html"
+        href="./member.html"
       >
-        Surf Club 社員首頁
+        <span class="brand-mark-small">
+          ◉
+        </span>
+
+        Surf Club 社員系統
       </a>
 
       <div class="nav-links">
-        <a href="./index.html">
-          公開首頁
+        <a
+          class="active"
+          href="./member.html"
+        >
+          社員首頁
         </a>
 
         <a href="./courses.html">
           社課資訊
         </a>
+
+        <!-- <a href="./outing.html">
+          外衝資訊
+        </a> -->
 
         <button
           id="logout-button"
@@ -47,34 +73,62 @@
     </nav>
   </header>
 
-  <main class="dashboard">
-    <!-- =================================================
-         社員登入狀態
-         ================================================= -->
-    <section class="dashboard-header card">
+  <!-- =====================================================
+       社員資訊系統
+       ===================================================== -->
+
+  <main class="member-dashboard">
+    <!-- 歡迎區 -->
+    <section class="member-welcome-card">
       <div>
         <p class="eyebrow">
           MEMBER DASHBOARD
         </p>
 
         <h1>
-          社員首頁
+          Surf Club 社員資訊系統
         </h1>
 
         <p
           id="member-status"
           class="status-message"
-          aria-live="polite"
         >
-          正在驗證社員身分……
+          正在驗證社員資料……
         </p>
       </div>
     </section>
 
-    <!-- =================================================
+    <!-- ===================================================
+         Level 與家系
+         =================================================== -->
+
+    <section class="member-summary-grid">
+      <article class="member-summary-card">
+        <span class="member-summary-label">
+          我的 Level
+        </span>
+
+        <strong id="member-level">
+          載入中……
+        </strong>
+      </article>
+
+      <article class="member-summary-card">
+        <span class="member-summary-label">
+          我的家系
+        </span>
+
+        <strong id="member-family">
+          載入中……
+        </strong>
+      </article>
+    </section>
+
+    <!-- ===================================================
          社員個人資料
-         ================================================= -->
-    <section class="card member-profile-card">
+         =================================================== -->
+
+    <section class="content-card">
       <div class="section-heading left">
         <p class="eyebrow">
           MEMBER PROFILE
@@ -86,69 +140,38 @@
 
         <p class="section-description">
           Level 與家系由管理員設定。
-          若資料有誤，請聯絡社團管理員。
+          若社員資料有誤，請聯絡社團管理員。
         </p>
       </div>
 
-      <div class="member-profile-grid">
-        <div class="member-profile-item">
-          <span class="member-profile-label">
+      <div class="member-profile-grid member-profile-grid-compact">
+        <article class="member-profile-item">
+          <span>
             姓名
           </span>
 
           <strong id="member-name">
             載入中……
           </strong>
-        </div>
+        </article>
 
-        <div class="member-profile-item">
-          <span class="member-profile-label">
+        <article class="member-profile-item">
+          <span>
             Email
           </span>
 
           <strong id="member-email">
             載入中……
           </strong>
-        </div>
-
-        <div class="member-profile-item">
-          <span class="member-profile-label">
-            Level
-          </span>
-
-          <strong
-            id="member-level"
-            class="member-level-badge"
-          >
-            尚未設定
-          </strong>
-        </div>
-
-        <div class="member-profile-item">
-          <span class="member-profile-label">
-            家系
-          </span>
-
-          <strong
-            id="member-family"
-            class="member-family-badge"
-          >
-            尚未分配
-          </strong>
-        </div>
+        </article>
       </div>
-
-      <p
-        id="member-profile-message"
-        class="status-message"
-        aria-live="polite"
-      ></p>
     </section>
 
-    <!-- =================================================
+    <!-- ===================================================
          最新公告
-         ================================================= -->
-    <section class="card">
+         =================================================== -->
+
+    <section class="content-card">
       <div class="section-heading left">
         <p class="eyebrow">
           ANNOUNCEMENTS
@@ -161,16 +184,25 @@
 
       <div id="announcement-list">
         <p class="empty-state">
-          正在讀取公告……
+          正在載入公告……
         </p>
       </div>
     </section>
-  </main>
+
+
+  <!-- =====================================================
+       JavaScript
+       ===================================================== -->
 
   <script
     type="module"
     src="./js/member.js"
   ></script>
+
+  <!-- 有做 PWA 時才保留 -->
+  <script
+    type="module"
+    src="./js/register-sw.js"
+  ></script>
 </body>
 </html>
-

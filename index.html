@@ -4,30 +4,17 @@
 <head>
   <meta charset="UTF-8">
 
-  <!-- pwa -->
-  <link rel="manifest" href="./manifest.webmanifest">
-
-  <meta name="theme-color" content="#123456">
-
-  <meta name="mobile-web-app-capable" content="yes">
-
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="社員系統">
-
-  <link rel="apple-touch-icon" href="./icons/icon-192.png">
-
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1.0"
   >
 
   <meta
-    name="description"
-    content="Surf Club 衝浪社團官方網站，提供社團介紹、社課資訊、社員登入與活動公告。"
+    name="theme-color"
+    content="#315f65"
   >
 
-  <title>Surf Club｜一起找到屬於你的浪</title>
+  <title>Surf Club｜社員資訊系統</title>
 
   <link
     rel="stylesheet"
@@ -36,361 +23,44 @@
 </head>
 
 <body>
-  <!-- =====================================================
-       導覽列
-       ===================================================== -->
-  <header class="site-header">
-    <nav class="navbar">
-      <a
-        class="brand"
-        href="./index.html"
-      >
+  <main class="system-entry-page">
+    <section class="system-entry-card">
+      <p class="eyebrow">
         SURF CLUB
-      </a>
+      </p>
 
-      <div class="nav-links">
-        <a href="./index.html">首頁</a>
-        <a href="./about.html">社團介紹</a>
-        <a href="./courses.html">社課介紹</a>
-        <a href="#club-features">社團特色</a>
-        <!-- <a href="./login.html">社員登入</a> -->
-         <a
-  id="auth-navigation"
-  href="./login.html"
->
-  社員登入
-</a>
-      </div>
-    </nav>
-  </header>
+      <h1>
+        社員資訊系統
+      </h1>
 
-  <main>
-    <!-- ===================================================
-         首頁主視覺
-         =================================================== -->
-    <section class="hero">
-      <div class="hero-overlay">
-        <div class="hero-content">
-          <p class="eyebrow">
-            WELCOME TO SURF CLUB
-          </p>
+      <p
+        id="entry-status"
+        class="status-message"
+      >
+        正在確認登入狀態……
+      </p>
 
-          <h1>
-            Find Your Wave
-          </h1>
-
-          <p>
-            一起踏上浪板、認識海洋、累積回憶。
-            在 Surf Club，你可以學習衝浪技巧，
-            也能認識一群熱愛戶外活動與海洋的夥伴。
-          </p>
-
-          <div class="hero-actions">
-            <a
-              class="button"
-              href="./about.html"
-            >
-              認識我們
-            </a>
-
-            <a
-              class="button button-outline"
-              href="./courses.html"
-            >
-              查看社課
-            </a>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ===================================================
-         統計資訊
-         =================================================== -->
-    <section class="stats-strip">
-      <div class="stats-grid">
-        <div class="stat-item">
-          <strong>50+</strong>
-          <span>社員夥伴</span>
-        </div>
-
-        <div class="stat-item">
-          <strong>12</strong>
-          <span>學期社課</span>
-        </div>
-
-        <div class="stat-item">
-          <strong>8</strong>
-          <span>年度活動</span>
-        </div>
-
-        <div class="stat-item">
-          <strong>100%</strong>
-          <span>海洋熱情</span>
-        </div>
-      </div>
-    </section>
-
-    <!-- ===================================================
-         社團介紹預覽
-         =================================================== -->
-    <section class="section">
-      <div class="section-heading">
-        <p class="eyebrow">
-          MEET THE CLUB
-        </p>
-
-        <h2>
-          不只是學習衝浪，
-          更是一群人的海洋旅程
-        </h2>
-
-        <p class="section-description">
-          我們希望讓沒有衝浪經驗的人，
-          也能在安全、有系統的社課與活動中認識海洋，
-          從第一次站上浪板開始，找到屬於自己的節奏。
-        </p>
-      </div>
-
-      <div class="card-grid">
-        <article class="card">
-          <p class="eyebrow">
-            01
-          </p>
-
-          <h3>
-            初學者友善
-          </h3>
-
-          <p>
-            從裝備介紹、海洋安全、陸上起乘，
-            到實際下水練習，循序漸進建立基礎。
-          </p>
-        </article>
-
-        <article class="card">
-          <p class="eyebrow">
-            02
-          </p>
-
-          <h3>
-            安全與專業
-          </h3>
-
-          <p>
-            社課重視浪況判讀、基本救生知識與活動安全，
-            讓社員在享受海洋時也懂得保護自己。
-          </p>
-        </article>
-
-        <article class="card">
-          <p class="eyebrow">
-            03
-          </p>
-
-          <h3>
-            夥伴與交流
-          </h3>
-
-          <p>
-            透過社課、出遊與交流活動，
-            建立跨年級的社團連結與共同回憶。
-          </p>
-        </article>
-      </div>
-
-      <div class="section-action">
-        <a
-          class="button"
-          href="./about.html"
-        >
-          查看完整社團介紹
-        </a>
-      </div>
-    </section>
-
-    <!-- ===================================================
-         社課預覽
-         =================================================== -->
-    <section class="section section-alt">
-      <div class="section-heading">
-        <p class="eyebrow">
-          OUR COURSES
-        </p>
-
-        <h2>
-          從岸上知識到海上實作
-        </h2>
-
-        <p class="section-description">
-          社課包含理論、安全、體能與實際操作，
-          協助社員逐步建立完整的衝浪基礎。
-        </p>
-      </div>
-
-      <div class="card-grid">
-        <article class="card">
-          <h3>
-            裝備與海洋認識
-          </h3>
-
-          <p>
-            認識浪板、腳繩、防寒衣，
-            並了解潮汐、風向與常見浪況。
-          </p>
-        </article>
-
-        <article class="card">
-          <h3>
-            陸上起乘訓練
-          </h3>
-
-          <p>
-            練習划水姿勢、起乘動作與重心控制，
-            建立下水前的基本動作能力。
-          </p>
-        </article>
-
-        <article class="card">
-          <h3>
-            海上實作活動
-          </h3>
-
-          <p>
-            在適合的浪況下進行實際教學，
-            由有經驗的幹部協助練習。
-          </p>
-        </article>
-      </div>
-
-      <div class="section-action">
-        <a
-          class="button"
-          href="./courses.html"
-        >
-          查看完整社課內容
-        </a>
-      </div>
-    </section>
-
-    <!-- ===================================================
-         社團特色
-         =================================================== -->
-    <section
-      id="club-features"
-      class="section"
-    >
-      <div class="section-heading">
-        <p class="eyebrow">
-          WHY JOIN US
-        </p>
-
-        <h2>
-          在 Surf Club 你會獲得什麼？
-        </h2>
-      </div>
-
-      <div class="card-grid">
-        <article class="card">
-          <h3>
-            海洋知識
-          </h3>
-
-          <p>
-            不只學習怎麼站上浪板，
-            也學會看懂浪況、潮汐、風向與海灘環境。
-          </p>
-        </article>
-
-        <article class="card">
-          <h3>
-            運動挑戰
-          </h3>
-
-          <p>
-            透過划水、平衡與核心訓練，
-            提升體能並享受突破自己的成就感。
-          </p>
-        </article>
-
-        <article class="card">
-          <h3>
-            社團歸屬
-          </h3>
-
-          <p>
-            與社員一起參與社課、活動與旅行，
-            建立屬於大學生活的重要回憶。
-          </p>
-        </article>
-      </div>
-    </section>
-
-    <!-- ===================================================
-         社員登入區
-         =================================================== -->
-    <section class="section section-alt">
-      <div class="member-area">
-        <div>
-          <p class="eyebrow">
-            MEMBER AREA
-          </p>
-
-          <h2>
-            已經是 Surf Club 的社員嗎？
-          </h2>
-
-          <p>
-            登入社員專區，可以查看最新公告、
-            社員資訊與社團內部內容。
-          </p>
-        </div>
-
+      <div class="system-entry-actions">
         <a
           class="button"
           href="./login.html"
         >
-          前往社員登入
+          社員登入
+        </a>
+
+        <a
+          class="button button-secondary"
+          href="./register.html"
+        >
+          申請加入
         </a>
       </div>
     </section>
   </main>
 
-  <!-- =====================================================
-       Footer
-       ===================================================== -->
-  <footer class="site-footer">
-    <p>
-      © 2026 Surf Club. All rights reserved.
-    </p>
-  </footer>
-
   <script
-  type="module"
-  src="./js/auth-nav.js"
-></script>
-
-
-<script>
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", async () => {
-      try {
-        const registration =
-          await navigator.serviceWorker.register("./sw.js");
-
-        console.log(
-          "Service Worker 註冊成功",
-          registration.scope
-        );
-      } catch (error) {
-        console.error(
-          "Service Worker 註冊失敗",
-          error
-        );
-      }
-    });
-  }
-</script>
-
+    type="module"
+    src="./js/index.js"
+  ></script>
 </body>
 </html>
