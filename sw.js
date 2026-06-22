@@ -1,69 +1,65 @@
-const CACHE_NAME = "member-system-v1";
+const CACHE_NAME = "surfclub-cache-v4";
 
+// const APP_FILES = [
+//   "./",
+//   "./index.html",
+//   ".css/style.css",
+// //   "./script.js",
+//   "./manifest.webmanifest",
+//   "./icons/icon-192.png",
+//   "./icons/icon-512.png",
+//   "./icons/icon-512-maskable.png"
+// ];
 const APP_FILES = [
   "./",
   "./index.html",
-  ".css/style.css",
-  "./script.js",
   "./manifest.webmanifest",
+
+  "./css/style.css",
+  "./js/main.js",
+
   "./icons/icon-192.png",
-  "./icons/icon-512.png",
-  "./icons/icon-512-maskable.png"
+  "./icons/icon-512.png"
 ];
 
-/*
- * 安裝 Service Worker
- * 將網站的核心檔案加入快取
- */
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(APP_FILES))
-      .then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then(async (cache) => {
+      for (const file of APP_FILES) {
+        try {
+          await cache.add(file);
+          console.log("快取成功：", file);
+        } catch (error) {
+          console.error("快取失敗：", file, error);
+          throw error;
+        }
+      }
+
+      await self.skipWaiting();
+    })
   );
 });
 
-/*
- * 啟用新版 Service Worker
- * 刪除舊版本快取
- */
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys()
-      .then((cacheNames) => {
-        return Promise.all(
-          cacheNames
-            .filter((name) => name !== CACHE_NAME)
-            .map((name) => caches.delete(name))
-        );
-      })
-      .then(() => self.clients.claim())
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames
+          .filter((name) => name !== CACHE_NAME)
+          .map((name) => caches.delete(name))
+      );
+    }).then(() => self.clients.claim())
   );
 });
 
-/*
- * 優先從網路取得最新版；
- * 網路失敗時使用快取
- */
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") {
     return;
   }
 
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        const responseCopy = response.clone();
-
-        caches.open(CACHE_NAME)
-          .then((cache) => {
-            cache.put(event.request, responseCopy);
-          });
-
-        return response;
-      })
-      .catch(() => {
-        return caches.match(event.request);
-      })
+    fetch(event.request).catch(() => {
+      return caches.match(event.request);
+    })
   );
 });
