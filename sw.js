@@ -19,6 +19,9 @@ const APP_FILES = [
   "./js/auth-nav.js",
   "./js/courses.js",
   "./leaderboard.html",
+  "./member.html",
+  "./courses.html",
+  "./js/index.js",
 
   "./icons/icon-192-v2.png",
   "./icons/icon-512-v2.png"

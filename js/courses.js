@@ -1,4 +1,3 @@
-
 import {
   collection,
   getDocs,
@@ -29,10 +28,6 @@ async function loadPublicCourses() {
   `;
 
   try {
-    /*
-     * 查詢中直接限定 published，
-     * 才能符合 Firestore Security Rules。
-     */
     const coursesQuery = query(
       collection(db, "courses"),
       where("status", "==", "published")
@@ -161,6 +156,21 @@ function createPublicCourseCard(
     tagsContainer
   );
 
+  if (course.photoUrl) {
+    const photoLink =
+      document.createElement("a");
+
+    photoLink.className =
+      "button button-secondary course-photo-link";
+
+    photoLink.href = course.photoUrl;
+    photoLink.target = "_blank";
+    photoLink.rel = "noopener noreferrer";
+    photoLink.textContent = "查看活動照片";
+
+    content.appendChild(photoLink);
+  }
+
   article.append(
     number,
     content
@@ -170,4 +180,3 @@ function createPublicCourseCard(
 }
 
 loadPublicCourses();
-

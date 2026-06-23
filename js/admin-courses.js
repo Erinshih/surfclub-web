@@ -1,4 +1,3 @@
-
 /* =========================================================
    檔案：js/admin-courses.js
    ========================================================= */
@@ -57,6 +56,9 @@ const courseTitle =
 
 const courseDescription =
   document.querySelector("#course-description");
+
+const coursePhotoUrl =
+  document.querySelector("#course-photo-url");
 
 const courseTags =
   document.querySelector("#course-tags");
@@ -184,6 +186,11 @@ courseForm?.addEventListener(
     const description =
       courseDescription.value.trim();
 
+    const photoUrl =
+      coursePhotoUrl
+        ? coursePhotoUrl.value.trim()
+        : "";
+
     const tags =
       parseTags(courseTags.value);
 
@@ -213,6 +220,19 @@ courseForm?.addEventListener(
       return;
     }
 
+    if (
+      photoUrl &&
+      !isValidUrl(photoUrl)
+    ) {
+      showStatus(
+        courseMessage,
+        "活動照片連結格式不正確，請輸入完整網址。",
+        "error"
+      );
+
+      return;
+    }
+
     courseSubmit.disabled = true;
 
     const courseData = {
@@ -220,6 +240,7 @@ courseForm?.addEventListener(
       date,
       title,
       description,
+      photoUrl,
       tags,
       status,
       updatedBy: currentAdmin.uid,
@@ -576,6 +597,30 @@ function createCourseCard(
     }
   );
 
+  if (course.photoUrl) {
+    const photoLink =
+      document.createElement("a");
+
+    photoLink.href =
+      course.photoUrl;
+
+    photoLink.target =
+      "_blank";
+
+    photoLink.rel =
+      "noopener noreferrer";
+
+    photoLink.className =
+      "button button-small";
+
+    photoLink.textContent =
+      "查看活動照片";
+
+    information.appendChild(
+      photoLink
+    );
+  }
+
   editButton.type =
     "button";
 
@@ -589,18 +634,29 @@ function createCourseCard(
     "click",
     () => {
       courseId.value = id;
+
       courseOrder.value =
         course.order ?? "";
+
       courseDate.value =
         course.date ?? "";
+
       courseTitle.value =
         course.title ?? "";
+
       courseDescription.value =
         course.description ?? "";
+
+      if (coursePhotoUrl) {
+        coursePhotoUrl.value =
+          course.photoUrl ?? "";
+      }
+
       courseTags.value =
         Array.isArray(course.tags)
           ? course.tags.join(", ")
           : "";
+
       courseStatus.value =
         course.status || "published";
 
@@ -655,7 +711,7 @@ function createCourseCard(
     }
   );
 
-  information.append(
+  information.prepend(
     date,
     title,
     description,
@@ -695,11 +751,19 @@ logoutButton?.addEventListener(
 
 function resetForm() {
   courseForm.reset();
+
   courseId.value = "";
+
+  if (coursePhotoUrl) {
+    coursePhotoUrl.value = "";
+  }
+
   courseStatus.value =
     "published";
+
   courseSubmit.textContent =
     "新增社課";
+
   courseCancel.classList.add(
     "hidden"
   );
@@ -733,6 +797,11 @@ function validateImportedCourse(
   const description =
     String(
       course.description ?? ""
+    ).trim();
+
+  const photoUrl =
+    String(
+      course.photoUrl ?? ""
     ).trim();
 
   const tags =
@@ -777,14 +846,42 @@ function validateImportedCourse(
     return null;
   }
 
+  if (
+    photoUrl &&
+    !isValidUrl(photoUrl)
+  ) {
+    showStatus(
+      importMessage,
+      `第 ${index + 1} 筆 photoUrl 不是有效網址。`,
+      "error"
+    );
+
+    return null;
+  }
+
   return {
     order,
     date,
     title,
     description,
+    photoUrl,
     tags,
     status
   };
+}
+
+function isValidUrl(value) {
+  try {
+    const url =
+      new URL(value);
+
+    return (
+      url.protocol === "http:" ||
+      url.protocol === "https:"
+    );
+  } catch {
+    return false;
+  }
 }
 
 function showStatus(
@@ -812,6 +909,8 @@ const COURSE_EXAMPLE = [
     title: "衝浪影片檢討",
     description:
       "透過衝浪影片回顧社員的動作表現。",
+    photoUrl:
+      "https://drive.google.com/",
     tags: [
       "影片分析",
       "動作檢討"
@@ -819,4 +918,3 @@ const COURSE_EXAMPLE = [
     status: "published"
   }
 ];
-
