@@ -1,24 +1,19 @@
 
 /* =========================================================
    檔案：js/admin-members.js
-   功能：社員審核、正式社員管理、CSV 匯出
-   已完全移除匯款截圖與 Firebase Storage
+   功能：
+   1. 管理員權限驗證
+   2. 待審核社員管理
+   3. 正式社員資料管理
+   4. 家系與個人積分管理
+   5. 社員刪除
+   6. CSV 匯出
    ========================================================= */
 
 import {
   onAuthStateChanged,
   signOut
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
-
-// import {
-//   collection,
-//   doc,
-//   getDoc,
-//   getDocs,
-//   serverTimestamp,
-//   updateDoc
-// } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
-
 
 import {
   collection,
@@ -29,8 +24,6 @@ import {
   serverTimestamp,
   updateDoc
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
-
-
 
 import {
   auth,
@@ -78,6 +71,7 @@ let allUsers = [];
 
 onAuthStateChanged(
   auth,
+
   async (user) => {
     if (!user) {
       window.location.replace(
@@ -156,6 +150,7 @@ onAuthStateChanged(
       );
     }
   },
+
   (error) => {
     console.error(
       "登入狀態監聽失敗：",
@@ -174,7 +169,7 @@ onAuthStateChanged(
 );
 
 /* =========================================================
-   讀取全部使用者
+   讀取所有使用者
    ========================================================= */
 
 async function loadUsers() {
@@ -212,12 +207,26 @@ async function loadUsers() {
 
     allUsers =
       snapshot.docs.map(
-        (documentSnapshot) => ({
-          uid:
-            documentSnapshot.id,
+        (documentSnapshot) => {
+          const data =
+            documentSnapshot.data();
 
-          ...documentSnapshot.data()
-        })
+          return {
+            uid:
+              documentSnapshot.id,
+
+            ...data,
+
+            /*
+             * 舊社員文件可能沒有 points。
+             * 沒有積分時預設為 0。
+             */
+            points:
+              normalizePoints(
+                data.points
+              )
+          };
+        }
       );
 
     renderPendingMembers();
@@ -247,17 +256,16 @@ async function loadUsers() {
 }
 
 /* =========================================================
-   待審核社員
+   待審核社員列表
    ========================================================= */
 
 function renderPendingMembers() {
+  if (!pendingMemberList) {
+    return;
+  }
+
   pendingMemberList.innerHTML = "";
 
-  /*
-   * 僅顯示 status === pending。
-   * 被拒絕後 status 會變成 rejected，
-   * 因此會從待審核清單消失。
-   */
   const pendingMembers =
     allUsers
       .filter(
@@ -407,6 +415,7 @@ function createPendingMemberCard(
 
   approveButton.addEventListener(
     "click",
+
     async () => {
       if (
         paymentSelect.value !==
@@ -453,9 +462,31 @@ function createPendingMemberCard(
             member.uid
           ),
           {
-            role: "member",
-            status: "approved",
-            paymentStatus: "paid",
+            role:
+              "member",
+
+            status:
+              "approved",
+
+            paymentStatus:
+              "paid",
+
+            /*
+             * 新社員通過審核時，
+             * 預設個人積分為 0。
+             */
+            points:
+              normalizePoints(
+                member.points
+              ),
+
+            /*
+             * 沒有家系時預設空字串。
+             */
+            family:
+              String(
+                member.family || ""
+              ).trim(),
 
             approvedBy:
               currentAdmin.uid,
@@ -520,6 +551,7 @@ function createPendingMemberCard(
 
   rejectButton.addEventListener(
     "click",
+
     async () => {
       const confirmed =
         window.confirm(
@@ -550,9 +582,14 @@ function createPendingMemberCard(
             member.uid
           ),
           {
-            role: "pending",
-            status: "rejected",
-            paymentStatus: "rejected",
+            role:
+              "pending",
+
+            status:
+              "rejected",
+
+            paymentStatus:
+              "rejected",
 
             reviewedBy:
               currentAdmin.uid,
@@ -617,9 +654,6 @@ function createPendingMemberCard(
     rejectButton
   );
 
-  /*
-   * 已移除匯款截圖區塊。
-   */
   article.append(
     information,
     controls
@@ -633,6 +667,10 @@ function createPendingMemberCard(
    ========================================================= */
 
 function renderApprovedMembers() {
+  if (!memberList) {
+    return;
+  }
+
   memberList.innerHTML = "";
 
   const approvedMembers =
@@ -682,328 +720,8 @@ function renderApprovedMembers() {
 }
 
 /* =========================================================
-   建立條狀社員列
+   建立正式社員編輯列
    ========================================================= */
-
-// function createMemberEditor(
-//   member
-// ) {
-//   const row =
-//     document.createElement(
-//       "article"
-//     );
-
-//   const identity =
-//     document.createElement(
-//       "div"
-//     );
-
-//   const name =
-//     document.createElement(
-//       "strong"
-//     );
-
-//   const detail =
-//     document.createElement(
-//       "span"
-//     );
-
-//   const levelWrapper =
-//     document.createElement(
-//       "label"
-//     );
-
-//   const levelLabel =
-//     document.createElement(
-//       "span"
-//     );
-
-//   const levelSelect =
-//     document.createElement(
-//       "select"
-//     );
-
-//   const familyWrapper =
-//     document.createElement(
-//       "label"
-//     );
-
-//   const familyLabel =
-//     document.createElement(
-//       "span"
-//     );
-
-//   const familyInput =
-//     document.createElement(
-//       "input"
-//     );
-
-//   const paymentWrapper =
-//     document.createElement(
-//       "label"
-//     );
-
-//   const paymentLabel =
-//     document.createElement(
-//       "span"
-//     );
-
-//   const paymentSelect =
-//     createPaymentSelect(
-//       member.paymentStatus ||
-//       "unpaid"
-//     );
-
-//   const saveButton =
-//     document.createElement(
-//       "button"
-//     );
-
-//   row.className =
-//     "member-row";
-
-//   identity.className =
-//     "member-row-identity";
-
-//   name.className =
-//     "member-row-name";
-
-//   detail.className =
-//     "member-row-detail";
-
-//   levelWrapper.className =
-//     "member-row-field";
-
-//   familyWrapper.className =
-//     "member-row-field member-row-family";
-
-//   paymentWrapper.className =
-//     "member-row-field";
-
-//   name.textContent =
-//     `${
-//       member.name ||
-//       "未命名社員"
-//     }${
-//       member.role === "admin"
-//         ? "（管理員）"
-//         : ""
-//     }`;
-
-//   const detailParts = [];
-
-//   if (member.email) {
-//     detailParts.push(
-//       member.email
-//     );
-//   }
-
-//   if (member.studentId) {
-//     detailParts.push(
-//       member.studentId
-//     );
-//   }
-
-//   detail.textContent =
-//     detailParts.join("｜") ||
-//     "無其他資料";
-
-//   identity.append(
-//     name,
-//     detail
-//   );
-
-//   /* =====================================================
-//      Level
-//      ===================================================== */
-
-//   levelLabel.textContent =
-//     "Level";
-
-//   [
-//     "",
-//     "Lv.1",
-//     "Lv.2",
-//     "Lv.3",
-//     "Lv.4"
-//   ].forEach(
-//     (level) => {
-//       const option =
-//         document.createElement(
-//           "option"
-//         );
-
-//       option.value =
-//         level;
-
-//       option.textContent =
-//         level ||
-//         "尚未設定";
-
-//       option.selected =
-//         member.level === level;
-
-//       levelSelect.appendChild(
-//         option
-//       );
-//     }
-//   );
-
-//   levelWrapper.append(
-//     levelLabel,
-//     levelSelect
-//   );
-
-//   /* =====================================================
-//      家系
-//      ===================================================== */
-
-//   familyLabel.textContent =
-//     "家系";
-
-//   familyInput.type =
-//     "text";
-
-//   familyInput.maxLength =
-//     50;
-
-//   familyInput.placeholder =
-//     "尚未分配";
-
-//   familyInput.value =
-//     member.family || "";
-
-//   familyWrapper.append(
-//     familyLabel,
-//     familyInput
-//   );
-
-//   /* =====================================================
-//      社費
-//      ===================================================== */
-
-//   paymentLabel.textContent =
-//     "社費";
-
-//   paymentWrapper.append(
-//     paymentLabel,
-//     paymentSelect
-//   );
-
-//   /* =====================================================
-//      儲存修改
-//      ===================================================== */
-
-//   saveButton.type =
-//     "button";
-
-//   saveButton.className =
-//     "button button-small member-row-save";
-
-//   saveButton.textContent =
-//     "儲存";
-
-//   saveButton.addEventListener(
-//     "click",
-//     async () => {
-//       saveButton.disabled =
-//         true;
-
-//       saveButton.textContent =
-//         "儲存中……";
-
-//       try {
-//         await updateDoc(
-//           doc(
-//             db,
-//             "users",
-//             member.uid
-//           ),
-//           {
-//             level:
-//               levelSelect.value,
-
-//             family:
-//               familyInput
-//                 .value
-//                 .trim(),
-
-//             paymentStatus:
-//               paymentSelect.value,
-
-//             updatedAt:
-//               serverTimestamp()
-//           }
-//         );
-
-//         /*
-//          * 同步更新目前記憶體資料。
-//          */
-//         member.level =
-//           levelSelect.value;
-
-//         member.family =
-//           familyInput
-//             .value
-//             .trim();
-
-//         member.paymentStatus =
-//           paymentSelect.value;
-
-//         showStatus(
-//           memberMessage,
-//           `${
-//             member.name ||
-//             "社員"
-//           } 的資料已更新。`,
-//           "success"
-//         );
-
-//         saveButton.textContent =
-//           "已儲存";
-
-//         window.setTimeout(
-//           () => {
-//             saveButton.textContent =
-//               "儲存";
-//           },
-//           1200
-//         );
-//       } catch (error) {
-//         console.error(
-//           "社員資料更新失敗：",
-//           error
-//         );
-
-//         showStatus(
-//           memberMessage,
-//           `更新失敗：${
-//             error?.message ||
-//             "未知錯誤"
-//           }`,
-//           "error"
-//         );
-
-//         saveButton.textContent =
-//           "儲存";
-//       } finally {
-//         saveButton.disabled =
-//           false;
-//       }
-//     }
-//   );
-
-//   row.append(
-//     identity,
-//     levelWrapper,
-//     familyWrapper,
-//     paymentWrapper,
-//     saveButton
-//   );
-
-//   return row;
-// }
-
 
 function createMemberEditor(
   member
@@ -1058,6 +776,21 @@ function createMemberEditor(
       "input"
     );
 
+  const pointsWrapper =
+    document.createElement(
+      "label"
+    );
+
+  const pointsLabel =
+    document.createElement(
+      "span"
+    );
+
+  const pointsInput =
+    document.createElement(
+      "input"
+    );
+
   const paymentWrapper =
     document.createElement(
       "label"
@@ -1090,11 +823,17 @@ function createMemberEditor(
     );
 
   /* =====================================================
-     樣式
+     樣式 class
      ===================================================== */
 
   row.className =
     "member-row";
+
+  /*
+   * 方便 CSS 或其他程式取得社員 UID。
+   */
+  row.dataset.userId =
+    member.uid;
 
   identity.className =
     "member-row-identity";
@@ -1110,6 +849,9 @@ function createMemberEditor(
 
   familyWrapper.className =
     "member-row-field member-row-family";
+
+  pointsWrapper.className =
+    "member-row-field member-row-points";
 
   paymentWrapper.className =
     "member-row-field";
@@ -1221,6 +963,64 @@ function createMemberEditor(
   );
 
   /* =====================================================
+     個人積分
+     ===================================================== */
+
+  pointsLabel.textContent =
+    "個人積分";
+
+  pointsInput.type =
+    "number";
+
+  pointsInput.min =
+    "0";
+
+  pointsInput.step =
+    "1";
+
+  pointsInput.inputMode =
+    "numeric";
+
+  pointsInput.placeholder =
+    "0";
+
+  pointsInput.value =
+    String(
+      normalizePoints(
+        member.points
+      )
+    );
+
+  pointsInput.className =
+    "member-points-input";
+
+  /*
+   * 避免輸入負數。
+   */
+  pointsInput.addEventListener(
+    "input",
+    () => {
+      const value =
+        Number(
+          pointsInput.value
+        );
+
+      if (
+        Number.isFinite(value) &&
+        value < 0
+      ) {
+        pointsInput.value =
+          "0";
+      }
+    }
+  );
+
+  pointsWrapper.append(
+    pointsLabel,
+    pointsInput
+  );
+
+  /* =====================================================
      社費
      ===================================================== */
 
@@ -1247,7 +1047,28 @@ function createMemberEditor(
 
   saveButton.addEventListener(
     "click",
+
     async () => {
+      const points =
+        validatePointsInput(
+          pointsInput.value
+        );
+
+      if (points === null) {
+        showStatus(
+          memberMessage,
+          `${
+            member.name ||
+            "社員"
+          } 的個人積分必須是大於或等於 0 的整數。`,
+          "error"
+        );
+
+        pointsInput.focus();
+
+        return;
+      }
+
       saveButton.disabled =
         true;
 
@@ -1258,6 +1079,11 @@ function createMemberEditor(
         "儲存中……";
 
       try {
+        const family =
+          familyInput
+            .value
+            .trim();
+
         await updateDoc(
           doc(
             db,
@@ -1268,10 +1094,9 @@ function createMemberEditor(
             level:
               levelSelect.value,
 
-            family:
-              familyInput
-                .value
-                .trim(),
+            family,
+
+            points,
 
             paymentStatus:
               paymentSelect.value,
@@ -1281,13 +1106,18 @@ function createMemberEditor(
           }
         );
 
+        /*
+         * 同步更新瀏覽器記憶體中的資料，
+         * 不必重新讀取 Firestore。
+         */
         member.level =
           levelSelect.value;
 
         member.family =
-          familyInput
-            .value
-            .trim();
+          family;
+
+        member.points =
+          points;
 
         member.paymentStatus =
           paymentSelect.value;
@@ -1297,7 +1127,7 @@ function createMemberEditor(
           `${
             member.name ||
             "社員"
-          } 的資料已更新。`,
+          } 的資料與積分已更新。`,
           "success"
         );
 
@@ -1332,8 +1162,21 @@ function createMemberEditor(
         saveButton.disabled =
           false;
 
-        deleteButton.disabled =
-          false;
+        /*
+         * 目前登入的管理員不能刪除自己，
+         * 因此不能在這裡直接一律解除 disabled。
+         */
+        if (
+          currentAdmin &&
+          member.uid ===
+            currentAdmin.uid
+        ) {
+          deleteButton.disabled =
+            true;
+        } else {
+          deleteButton.disabled =
+            false;
+        }
       }
     }
   );
@@ -1352,8 +1195,7 @@ function createMemberEditor(
     "刪除";
 
   /*
-   * 避免管理員刪除自己的 Firestore 文件，
-   * 否則刪除後可能立即失去後台權限。
+   * 避免管理員刪除自己的 Firestore 文件。
    */
   if (
     currentAdmin &&
@@ -1371,6 +1213,7 @@ function createMemberEditor(
 
   deleteButton.addEventListener(
     "click",
+
     async () => {
       if (
         currentAdmin &&
@@ -1461,7 +1304,7 @@ function createMemberEditor(
   );
 
   /* =====================================================
-     組合按鈕
+     組合社員列
      ===================================================== */
 
   actions.append(
@@ -1473,6 +1316,7 @@ function createMemberEditor(
     identity,
     levelWrapper,
     familyWrapper,
+    pointsWrapper,
     paymentWrapper,
     actions
   );
@@ -1480,13 +1324,13 @@ function createMemberEditor(
   return row;
 }
 
-
 /* =========================================================
    CSV 匯出
    ========================================================= */
 
 exportMembersButton?.addEventListener(
   "click",
+
   () => {
     const members =
       allUsers.filter(
@@ -1521,6 +1365,7 @@ exportMembersButton?.addEventListener(
         "角色",
         "Level",
         "家系",
+        "個人積分",
         "社費狀態",
         "審核狀態",
         "UID"
@@ -1538,6 +1383,9 @@ exportMembersButton?.addEventListener(
           member.role ?? "",
           member.level ?? "",
           member.family ?? "",
+          normalizePoints(
+            member.points
+          ),
           member.paymentStatus ?? "",
           member.status ?? "",
           member.uid
@@ -1614,6 +1462,7 @@ exportMembersButton?.addEventListener(
 
 logoutButton?.addEventListener(
   "click",
+
   async () => {
     logoutButton.disabled =
       true;
@@ -1652,7 +1501,7 @@ logoutButton?.addEventListener(
 );
 
 /* =========================================================
-   共用函式
+   建立社費選單
    ========================================================= */
 
 function createPaymentSelect(
@@ -1708,6 +1557,10 @@ function createPaymentSelect(
   return select;
 }
 
+/* =========================================================
+   建立有標題的控制元件
+   ========================================================= */
+
 function createLabeledControl(
   labelText,
   control
@@ -1735,6 +1588,10 @@ function createLabeledControl(
 
   return wrapper;
 }
+
+/* =========================================================
+   建立資料顯示欄位
+   ========================================================= */
 
 function createDetail(
   labelText,
@@ -1775,13 +1632,22 @@ function createDetail(
   return wrapper;
 }
 
+/* =========================================================
+   審核狀態文字
+   ========================================================= */
+
 function getApplicationStatusText(
   status
 ) {
   const statusMap = {
-    pending: "待審核",
-    approved: "已通過",
-    rejected: "已拒絕"
+    pending:
+      "待審核",
+
+    approved:
+      "已通過",
+
+    rejected:
+      "已拒絕"
   };
 
   return (
@@ -1789,6 +1655,62 @@ function getApplicationStatusText(
     "未知狀態"
   );
 }
+
+/* =========================================================
+   積分轉換
+   ========================================================= */
+
+function normalizePoints(
+  value
+) {
+  const points =
+    Number(value);
+
+  if (
+    !Number.isFinite(points) ||
+    points < 0
+  ) {
+    return 0;
+  }
+
+  return Math.floor(points);
+}
+
+/* =========================================================
+   驗證積分輸入
+
+   成功：回傳整數
+   失敗：回傳 null
+   ========================================================= */
+
+function validatePointsInput(
+  value
+) {
+  if (
+    value === null ||
+    value === undefined ||
+    String(value).trim() === ""
+  ) {
+    return 0;
+  }
+
+  const points =
+    Number(value);
+
+  if (
+    !Number.isFinite(points) ||
+    !Number.isInteger(points) ||
+    points < 0
+  ) {
+    return null;
+  }
+
+  return points;
+}
+
+/* =========================================================
+   CSV 欄位跳脫
+   ========================================================= */
 
 function escapeCsvValue(
   value
@@ -1798,6 +1720,9 @@ function escapeCsvValue(
       value ?? ""
     );
 
+  /*
+   * 避免 Excel 將內容視為公式。
+   */
   if (
     /^[=+\-@]/.test(text)
   ) {
@@ -1810,6 +1735,10 @@ function escapeCsvValue(
     '""'
   )}"`;
 }
+
+/* =========================================================
+   HTML 跳脫
+   ========================================================= */
 
 function escapeHtml(
   value
@@ -1839,6 +1768,10 @@ function escapeHtml(
     );
 }
 
+/* =========================================================
+   顯示狀態訊息
+   ========================================================= */
+
 function showStatus(
   element,
   text,
@@ -1860,4 +1793,3 @@ function showStatus(
     );
   }
 }
-

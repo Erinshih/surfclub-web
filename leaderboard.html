@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta
+    name="theme-color"
+    content="#315f65"
+  >
+
+  <title>積分榜｜Surf Club</title>
+
+  <link
+    rel="stylesheet"
+    href="./css/style.css"
+  >
+</head>
+
+<body class="leaderboard-body">
+
+  <!-- =====================================================
+       Header
+       ===================================================== -->
+
+  <header class="site-header">
+    <div class="site-header-inner">
+
+      <a
+        class="site-brand"
+        href="./member.html"
+      >
+        <span class="site-brand-mark">
+          SC
+        </span>
+
+        <span class="site-brand-text">
+          <strong>Surf Club</strong>
+          <small>社員資訊系統</small>
+        </span>
+      </a>
+
+      <nav class="site-nav">
+        <a href="./member.html">
+          社員首頁
+        </a>
+
+        <a href="./courses.html" >
+          社課資訊
+        </a>
+
+        <a
+          class="active"
+          href="./leaderboard.html"
+        >
+          積分榜
+        </a>
+
+        <button
+          id="logoutButton"
+          class="site-nav-logout"
+          type="button"
+        >
+          登出
+        </button>
+      </nav>
+
+    </div>
+  </header>
+
+  <!-- =====================================================
+       Main
+       ===================================================== -->
+
+  <main class="leaderboard-page">
+
+    <!-- Hero -->
+
+    <section class="leaderboard-hero">
+
+      <div class="leaderboard-hero-copy">
+        <p class="leaderboard-eyebrow">
+          SURF CLUB POINTS
+        </p>
+
+        <h1>
+          社員積分榜
+        </h1>
+
+        <p class="leaderboard-description">
+          查看社員個人積分排名，以及各家系累積積分排名。
+          所有積分皆由管理員統一設定與更新。
+        </p>
+      </div>
+
+      <div class="leaderboard-hero-decoration">
+        <span class="wave-circle wave-circle-one"></span>
+        <span class="wave-circle wave-circle-two"></span>
+
+        <div class="leaderboard-hero-icon">
+          🏄
+        </div>
+      </div>
+
+    </section>
+
+    <!-- 排名主卡片 -->
+
+    <section class="leaderboard-panel">
+
+      <!-- Tabs -->
+
+      <div
+        class="leaderboard-tabs"
+        role="tablist"
+        aria-label="積分榜分類"
+      >
+
+        <button
+          id="personalTabButton"
+          class="leaderboard-tab active"
+          type="button"
+          role="tab"
+          aria-selected="true"
+          aria-controls="personalLeaderboard"
+        >
+          <span class="leaderboard-tab-icon">
+            👤
+          </span>
+
+          <span>
+            個人積分
+          </span>
+        </button>
+
+        <button
+          id="familyTabButton"
+          class="leaderboard-tab"
+          type="button"
+          role="tab"
+          aria-selected="false"
+          aria-controls="familyLeaderboard"
+        >
+          <span class="leaderboard-tab-icon">
+            🌊
+          </span>
+
+          <span>
+            家系積分
+          </span>
+        </button>
+
+      </div>
+
+      <!-- Loading -->
+
+      <div
+        id="leaderboardLoading"
+        class="leaderboard-loading"
+      >
+        <div class="leaderboard-spinner"></div>
+
+        <span>
+          正在載入積分資料……
+        </span>
+      </div>
+
+      <!-- Error -->
+
+      <div
+        id="leaderboardError"
+        class="leaderboard-error"
+        hidden
+      ></div>
+
+      <!-- 個人積分 -->
+
+      <section
+        id="personalLeaderboard"
+        class="leaderboard-content"
+        role="tabpanel"
+      >
+
+        <div class="leaderboard-section-header">
+
+          <div>
+            <p class="leaderboard-section-eyebrow">
+              PERSONAL RANKING
+            </p>
+
+            <h2>
+              個人積分排名
+            </h2>
+          </div>
+
+          <span class="leaderboard-section-note">
+            依積分高低排序
+          </span>
+
+        </div>
+
+        <div
+          id="personalRankingList"
+          class="ranking-list"
+        ></div>
+
+      </section>
+
+      <!-- 家系積分 -->
+
+      <section
+        id="familyLeaderboard"
+        class="leaderboard-content"
+        role="tabpanel"
+        hidden
+      >
+
+        <div class="leaderboard-section-header">
+
+          <div>
+            <p class="leaderboard-section-eyebrow">
+              FAMILY RANKING
+            </p>
+
+            <h2>
+              家系積分排名
+            </h2>
+          </div>
+
+          <span class="leaderboard-section-note">
+            自動加總家系成員積分
+          </span>
+
+        </div>
+
+        <div
+          id="familyRankingList"
+          class="ranking-list"
+        ></div>
+
+      </section>
+
+    </section>
+
+  </main>
+
+  <script
+    type="module"
+    src="./js/leaderboard.js"
+  ></script>
+
+</body>
+</html>
