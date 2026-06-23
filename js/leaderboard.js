@@ -1,15 +1,11 @@
-
 /* =========================================================
    檔案：js/leaderboard.js
    功能：
-   1. 驗證登入狀態
-   2. 驗證社員或管理員權限
-   3. 載入正式社員積分
-   4. 顯示個人積分榜
-   5. 計算並顯示家系積分榜
-   6. 處理積分榜切換與登出
-
-   Firebase 版本：12.7.0
+   1. 驗證登入狀態與權限
+   2. 顯示個人積分榜
+   3. 顯示家系積分榜與家系成員
+   4. 點選個人姓名後顯示 Level 曲線圖與成就紀錄
+   5. 登出
    ========================================================= */
 
 import {
@@ -22,6 +18,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  orderBy,
   query,
   where
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
@@ -31,64 +28,96 @@ import {
   db
 } from "./firebase-config.js";
 
-console.log(
-  "leaderboard.js 已成功載入"
-);
-
 /* =========================================================
    DOM
    ========================================================= */
 
 const personalTabButton =
-  document.querySelector(
-    "#personalTabButton"
-  );
+  document.querySelector("#personalTabButton");
 
 const familyTabButton =
-  document.querySelector(
-    "#familyTabButton"
-  );
+  document.querySelector("#familyTabButton");
 
 const personalLeaderboard =
-  document.querySelector(
-    "#personalLeaderboard"
-  );
+  document.querySelector("#personalLeaderboard");
 
 const familyLeaderboard =
-  document.querySelector(
-    "#familyLeaderboard"
-  );
+  document.querySelector("#familyLeaderboard");
 
 const personalRankingList =
-  document.querySelector(
-    "#personalRankingList"
-  );
+  document.querySelector("#personalRankingList");
 
 const familyRankingList =
-  document.querySelector(
-    "#familyRankingList"
-  );
+  document.querySelector("#familyRankingList");
 
 const leaderboardLoading =
-  document.querySelector(
-    "#leaderboardLoading"
-  );
+  document.querySelector("#leaderboardLoading");
 
 const leaderboardError =
-  document.querySelector(
-    "#leaderboardError"
-  );
+  document.querySelector("#leaderboardError");
 
 const logoutButton =
-  document.querySelector(
-    "#logoutButton"
-  );
+  document.querySelector("#logoutButton");
+
+const memberDetailPanel =
+  document.querySelector("#memberDetailPanel");
+
+const selectedMemberName =
+  document.querySelector("#selectedMemberName");
+
+const selectedMemberMeta =
+  document.querySelector("#selectedMemberMeta");
+
+const selectedMemberAchievementList =
+  document.querySelector("#selectedMemberAchievementList");
+
+const selectedMemberLevelChart =
+  document.querySelector("#selectedMemberLevelChart");
+
+const closeMemberDetail =
+  document.querySelector("#closeMemberDetail");
 
 /* =========================================================
-   載入逾時計時器
+   狀態
    ========================================================= */
 
+let allMembers = [];
+let levelChartInstance = null;
 let loadingTimeoutId = null;
+
+/* =========================================================
+   Loading / Error
+   ========================================================= */
+
+function showLoading() {
+  if (leaderboardLoading) {
+    leaderboardLoading.hidden = false;
+  }
+}
+
+function hideLoading() {
+  if (leaderboardLoading) {
+    leaderboardLoading.hidden = true;
+  }
+}
+
+function clearError() {
+  if (!leaderboardError) {
+    return;
+  }
+
+  leaderboardError.textContent = "";
+  leaderboardError.hidden = true;
+}
+
+function showError(message) {
+  if (!leaderboardError) {
+    return;
+  }
+
+  leaderboardError.textContent = message;
+  leaderboardError.hidden = false;
+}
 
 function startLoadingTimeout() {
   stopLoadingTimeout();
@@ -111,61 +140,12 @@ function stopLoadingTimeout() {
     return;
   }
 
-  window.clearTimeout(
-    loadingTimeoutId
-  );
-
+  window.clearTimeout(loadingTimeoutId);
   loadingTimeoutId = null;
 }
 
 /* =========================================================
-   畫面狀態
-   ========================================================= */
-
-function showLoading() {
-  if (!leaderboardLoading) {
-    return;
-  }
-
-  leaderboardLoading.hidden =
-    false;
-}
-
-function hideLoading() {
-  if (!leaderboardLoading) {
-    return;
-  }
-
-  leaderboardLoading.hidden =
-    true;
-}
-
-function clearError() {
-  if (!leaderboardError) {
-    return;
-  }
-
-  leaderboardError.textContent =
-    "";
-
-  leaderboardError.hidden =
-    true;
-}
-
-function showError(message) {
-  if (!leaderboardError) {
-    return;
-  }
-
-  leaderboardError.textContent =
-    message;
-
-  leaderboardError.hidden =
-    false;
-}
-
-/* =========================================================
-   個人榜／家系榜切換
+   Tabs
    ========================================================= */
 
 function showTab(tabName) {
@@ -205,25 +185,29 @@ function showTab(tabName) {
 
 personalTabButton?.addEventListener(
   "click",
-  () => {
-    showTab("personal");
-  }
+  () => showTab("personal")
 );
 
 familyTabButton?.addEventListener(
   "click",
+  () => showTab("family")
+);
+
+closeMemberDetail?.addEventListener(
+  "click",
   () => {
-    showTab("family");
+    if (memberDetailPanel) {
+      memberDetailPanel.hidden = true;
+    }
   }
 );
 
 /* =========================================================
-   資料處理
+   Utils
    ========================================================= */
 
 function normalizePoints(value) {
-  const points =
-    Number(value);
+  const points = Number(value);
 
   if (
     !Number.isFinite(points) ||
@@ -236,34 +220,16 @@ function normalizePoints(value) {
 }
 
 function escapeHtml(value) {
-  return String(
-    value ?? ""
-  )
-    .replaceAll(
-      "&",
-      "&amp;"
-    )
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
-    .replaceAll(
-      ">",
-      "&gt;"
-    )
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
-    .replaceAll(
-      "'",
-      "&#039;"
-    );
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 function getRankLabel(index) {
-  const rank =
-    index + 1;
+  const rank = index + 1;
 
   if (rank === 1) {
     return "🥇";
@@ -280,16 +246,25 @@ function getRankLabel(index) {
   return String(rank);
 }
 
+function formatDate(timestamp) {
+  return (
+    timestamp
+      ?.toDate?.()
+      ?.toLocaleDateString("zh-TW") ||
+    "未知日期"
+  );
+}
+
 /* =========================================================
-   顯示個人積分榜
+   個人積分榜
    ========================================================= */
 
-function renderPersonalRanking(
-  members
-) {
+function renderPersonalRanking(members) {
   if (!personalRankingList) {
     return;
   }
+
+  personalRankingList.innerHTML = "";
 
   if (members.length === 0) {
     personalRankingList.innerHTML = `
@@ -301,149 +276,140 @@ function renderPersonalRanking(
     return;
   }
 
-  personalRankingList.innerHTML =
-    members
-      .map(
-        (member, index) => {
-          const rank =
-            index + 1;
+  members.forEach((member, index) => {
+    const rank = index + 1;
 
-          return `
-            <article
-              class="ranking-item ${
-                rank <= 3
-                  ? "ranking-item-top"
-                  : ""
-              }"
-            >
-              <div class="ranking-position">
-                ${getRankLabel(index)}
-              </div>
+    const article =
+      document.createElement("article");
 
-              <div class="ranking-member-info">
-                <strong>
-                  ${escapeHtml(member.name)}
-                </strong>
+    article.className =
+      `ranking-item ${
+        rank <= 3
+          ? "ranking-item-top"
+          : ""
+      }`;
 
-                <span>
-                  ${
-                    member.family
-                      ? escapeHtml(member.family)
-                      : "尚未設定家系"
-                  }
-                </span>
-              </div>
+    article.dataset.uid = member.uid;
 
-              <div class="ranking-points">
-                <strong>
-                  ${member.points.toLocaleString("zh-TW")}
-                </strong>
+    article.innerHTML = `
+      <div class="ranking-position">
+        ${getRankLabel(index)}
+      </div>
 
-                <span>
-                  分
-                </span>
-              </div>
-            </article>
-          `;
-        }
-      )
-      .join("");
+      <div class="ranking-member-info">
+        <button
+          class="ranking-member-button"
+          type="button"
+        >
+          ${escapeHtml(member.name)}
+        </button>
+
+        <span>
+          ${
+            member.family
+              ? escapeHtml(member.family)
+              : "尚未設定家系"
+          }
+          ${
+            member.level
+              ? `｜${escapeHtml(member.level)}`
+              : ""
+          }
+        </span>
+      </div>
+
+      <div class="ranking-points">
+        <strong>
+          ${member.points.toLocaleString("zh-TW")}
+        </strong>
+
+        <span>
+          分
+        </span>
+      </div>
+    `;
+
+    const nameButton =
+      article.querySelector(".ranking-member-button");
+
+    nameButton?.addEventListener(
+      "click",
+      async () => {
+        await showMemberDetail(member);
+      }
+    );
+
+    // personalRankingList.appendChild(article);
+    personalRankingList.appendChild(article);
+
+if (
+  memberDetailPanel &&
+  memberDetailPanel.parentElement !== personalRankingList
+) {
+  personalRankingList.appendChild(memberDetailPanel);
+}
+  });
 }
 
 /* =========================================================
-   計算家系積分
+   家系積分榜
    ========================================================= */
 
-function buildFamilyRanking(
-  members
-) {
+function buildFamilyRanking(members) {
   const familyMap =
     new Map();
 
-  members.forEach(
-    (member) => {
-      const familyName =
-        String(
-          member.family || ""
-        ).trim();
+  members.forEach((member) => {
+    const familyName =
+      String(member.family || "").trim();
 
-      /*
-       * 沒有設定家系的社員，
-       * 不列入家系排行榜。
-       */
-      if (!familyName) {
-        return;
-      }
-
-      if (
-        !familyMap.has(
-          familyName
-        )
-      ) {
-        familyMap.set(
-          familyName,
-          {
-            family:
-              familyName,
-
-            points:
-              0,
-
-            memberCount:
-              0
-          }
-        );
-      }
-
-      const familyData =
-        familyMap.get(
-          familyName
-        );
-
-      familyData.points +=
-        normalizePoints(
-          member.points
-        );
-
-      familyData.memberCount +=
-        1;
+    if (!familyName) {
+      return;
     }
-  );
+
+    if (!familyMap.has(familyName)) {
+      familyMap.set(
+        familyName,
+        {
+          family: familyName,
+          points: 0,
+          memberCount: 0,
+          members: []
+        }
+      );
+    }
+
+    const familyData =
+      familyMap.get(familyName);
+
+    familyData.points +=
+      normalizePoints(member.points);
+
+    familyData.memberCount += 1;
+
+    familyData.members.push(member);
+  });
 
   return Array
-    .from(
-      familyMap.values()
-    )
-    .sort(
-      (first, second) => {
-        if (
-          second.points !==
-          first.points
-        ) {
-          return (
-            second.points -
-            first.points
-          );
-        }
-
-        return first.family.localeCompare(
-          second.family,
-          "zh-Hant"
-        );
+    .from(familyMap.values())
+    .sort((first, second) => {
+      if (second.points !== first.points) {
+        return second.points - first.points;
       }
-    );
+
+      return first.family.localeCompare(
+        second.family,
+        "zh-Hant"
+      );
+    });
 }
 
-/* =========================================================
-   顯示家系積分榜
-   ========================================================= */
-
-function renderFamilyRanking(
-  families
-) {
+function renderFamilyRanking(families) {
   if (!familyRankingList) {
     return;
   }
+
+  familyRankingList.innerHTML = "";
 
   if (families.length === 0) {
     familyRankingList.innerHTML = `
@@ -455,49 +421,332 @@ function renderFamilyRanking(
     return;
   }
 
-  familyRankingList.innerHTML =
-    families
-      .map(
-        (family, index) => {
-          const rank =
-            index + 1;
+  families.forEach((family, index) => {
+    const rank = index + 1;
 
-          return `
-            <article
-              class="ranking-item ${
-                rank <= 3
-                  ? "ranking-item-top"
-                  : ""
-              }"
-            >
-              <div class="ranking-position">
-                ${getRankLabel(index)}
-              </div>
+    const article =
+      document.createElement("article");
 
-              <div class="ranking-member-info">
-                <strong>
-                  ${escapeHtml(family.family)}
-                </strong>
+    article.className =
+      `ranking-item family-ranking-item ${
+        rank <= 3
+          ? "ranking-item-top"
+          : ""
+      }`;
 
-                <span>
-                  ${family.memberCount} 位社員
-                </span>
-              </div>
+    const sortedMembers =
+      [...family.members].sort(
+        (first, second) => {
+          if (second.points !== first.points) {
+            return second.points - first.points;
+          }
 
-              <div class="ranking-points">
-                <strong>
-                  ${family.points.toLocaleString("zh-TW")}
-                </strong>
-
-                <span>
-                  分
-                </span>
-              </div>
-            </article>
-          `;
+          return first.name.localeCompare(
+            second.name,
+            "zh-Hant"
+          );
         }
+      );
+
+    const memberListHtml =
+      sortedMembers
+        .map(
+          (member) => `
+            <li>
+              <button
+                class="family-member-button"
+                type="button"
+                data-uid="${escapeHtml(member.uid)}"
+              >
+                ${escapeHtml(member.name)}
+              </button>
+
+              <span>
+                ${member.points.toLocaleString("zh-TW")} 分
+              </span>
+            </li>
+          `
+        )
+        .join("");
+
+    article.innerHTML = `
+      <div class="ranking-position">
+        ${getRankLabel(index)}
+      </div>
+
+      <div class="ranking-member-info family-ranking-info">
+        <strong>
+          ${escapeHtml(family.family)}
+        </strong>
+
+        <span>
+          ${family.memberCount} 位社員
+        </span>
+
+        <ul class="family-member-list">
+          ${memberListHtml}
+        </ul>
+      </div>
+
+      <div class="ranking-points">
+        <strong>
+          ${family.points.toLocaleString("zh-TW")}
+        </strong>
+
+        <span>
+          分
+        </span>
+      </div>
+    `;
+
+    article
+      .querySelectorAll(".family-member-button")
+      .forEach((button) => {
+        button.addEventListener(
+          "click",
+          async () => {
+            const uid =
+              button.getAttribute("data-uid");
+
+            const member =
+              allMembers.find(
+                (item) => item.uid === uid
+              );
+
+            if (member) {
+              showTab("personal");
+              await showMemberDetail(member);
+            }
+          }
+        );
+      });
+
+    familyRankingList.appendChild(article);
+  });
+}
+
+/* =========================================================
+   社員 Level / 成就詳情
+   ========================================================= */
+
+async function loadMemberLevelHistory(uid) {
+  const snapshot =
+    await getDocs(
+      query(
+        collection(
+          db,
+          "users",
+          uid,
+          "levelHistory"
+        ),
+        orderBy(
+          "unlockedAt",
+          "asc"
+        )
       )
-      .join("");
+    );
+
+  return snapshot.docs.map(
+    (documentSnapshot) => ({
+      id: documentSnapshot.id,
+      ...documentSnapshot.data()
+    })
+  );
+}
+
+async function showMemberDetail(member) {
+  const selectedRow =
+  document.querySelector(
+    `.ranking-item[data-uid="${member.uid}"]`
+  );
+
+if (selectedRow && memberDetailPanel) {
+  selectedRow.insertAdjacentElement(
+    "afterend",
+    memberDetailPanel
+  );
+}
+
+  if (!memberDetailPanel) {
+    return;
+  }
+
+  memberDetailPanel.hidden = false;
+
+  if (selectedMemberName) {
+    selectedMemberName.textContent =
+      member.name;
+  }
+
+  if (selectedMemberMeta) {
+    selectedMemberMeta.textContent =
+      [
+        member.family || "尚未設定家系",
+        member.level || "尚未設定 Level",
+        `${member.points.toLocaleString("zh-TW")} 分`
+      ].join("｜");
+  }
+
+  if (selectedMemberAchievementList) {
+    selectedMemberAchievementList.innerHTML = `
+      <p class="empty-state">
+        正在載入成就紀錄……
+      </p>
+    `;
+  }
+
+  try {
+    const history =
+      await loadMemberLevelHistory(
+        member.uid
+      );
+
+    renderSelectedMemberAchievements(
+      history
+    );
+
+    renderSelectedMemberChart(
+      history
+    );
+
+    memberDetailPanel.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  } catch (error) {
+    console.error(
+      "讀取社員成就紀錄失敗：",
+      error
+    );
+
+    if (selectedMemberAchievementList) {
+      selectedMemberAchievementList.innerHTML = `
+        <p class="status-message error">
+          成就紀錄載入失敗：${escapeHtml(error?.message || "未知錯誤")}
+        </p>
+      `;
+    }
+  }
+}
+
+function renderSelectedMemberAchievements(history) {
+  if (!selectedMemberAchievementList) {
+    return;
+  }
+
+  selectedMemberAchievementList.innerHTML = "";
+
+  if (history.length === 0) {
+    selectedMemberAchievementList.innerHTML = `
+      <p class="empty-state">
+        尚無成就紀錄
+      </p>
+    `;
+
+    return;
+  }
+
+  history.forEach((item) => {
+    const card =
+      document.createElement("div");
+
+    card.className =
+      "achievement-item";
+
+    card.innerHTML = `
+      <div class="achievement-date">
+        ${escapeHtml(formatDate(item.unlockedAt))}
+      </div>
+
+      <div class="achievement-level">
+        ${escapeHtml(item.levelText || "未設定 Level")}
+      </div>
+
+      <div class="achievement-title">
+        ${escapeHtml(item.achievement || "")}
+      </div>
+    `;
+
+    selectedMemberAchievementList.appendChild(card);
+  });
+}
+
+function renderSelectedMemberChart(history) {
+  if (!selectedMemberLevelChart) {
+    return;
+  }
+
+  if (typeof Chart === "undefined") {
+    console.error(
+      "Chart.js 尚未載入，請確認 leaderboard.html 中 Chart.js 在 leaderboard.js 前面。"
+    );
+
+    return;
+  }
+
+  if (levelChartInstance) {
+    levelChartInstance.destroy();
+    levelChartInstance = null;
+  }
+
+  if (history.length === 0) {
+    return;
+  }
+
+  const labels =
+    history.map(
+      (item) =>
+        formatDate(item.unlockedAt)
+    );
+
+  const values =
+    history.map(
+      (item) =>
+        Number(item.levelValue) || 0
+    );
+
+  levelChartInstance =
+    new Chart(
+      selectedMemberLevelChart,
+      {
+        type: "line",
+
+        data: {
+          labels,
+
+          datasets: [
+            {
+              label: "Level 成長",
+              data: values,
+              tension: 0.3,
+              fill: false
+            }
+          ]
+        },
+
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+
+          plugins: {
+            legend: {
+              display: true
+            }
+          },
+
+          scales: {
+            y: {
+              beginAtZero: true,
+              suggestedMax: 5,
+
+              ticks: {
+                stepSize: 1
+              }
+            }
+          }
+        }
+      }
+    );
 }
 
 /* =========================================================
@@ -505,106 +754,69 @@ function renderFamilyRanking(
    ========================================================= */
 
 async function loadLeaderboard() {
-  console.log(
-    "開始讀取積分資料"
-  );
-
   showLoading();
   clearError();
 
   try {
-    /*
-     * 必須配合 Firestore Rules，
-     * 僅查詢 status == approved。
-     */
     const approvedUsersQuery =
       query(
-        collection(
-          db,
-          "users"
-        ),
-
-        where(
-          "status",
-          "==",
-          "approved"
-        )
+        collection(db, "users"),
+        where("status", "==", "approved")
       );
 
     const snapshot =
-      await getDocs(
-        approvedUsersQuery
-      );
+      await getDocs(approvedUsersQuery);
 
-    console.log(
-      "符合條件的社員筆數：",
-      snapshot.size
-    );
-
-    const members =
+    allMembers =
       snapshot.docs
-        .map(
-          (documentSnapshot) => {
-            const data =
-              documentSnapshot.data();
+        .map((documentSnapshot) => {
+          const data =
+            documentSnapshot.data();
 
-            return {
-              uid:
-                documentSnapshot.id,
+          return {
+            uid: documentSnapshot.id,
 
-              name:
-                String(
-                  data.name ||
-                  "未命名社員"
-                ).trim(),
+            name:
+              String(
+                data.name ||
+                "未命名社員"
+              ).trim(),
 
-              family:
-                String(
-                  data.family || ""
-                ).trim(),
+            family:
+              String(
+                data.family ||
+                ""
+              ).trim(),
 
-              points:
-                normalizePoints(
-                  data.points
-                )
-            };
+            level:
+              String(
+                data.level ||
+                ""
+              ).trim(),
+
+            points:
+              normalizePoints(
+                data.points
+              )
+          };
+        })
+        .sort((first, second) => {
+          if (second.points !== first.points) {
+            return second.points - first.points;
           }
-        )
-        .sort(
-          (first, second) => {
-            if (
-              second.points !==
-              first.points
-            ) {
-              return (
-                second.points -
-                first.points
-              );
-            }
 
-            return first.name.localeCompare(
-              second.name,
-              "zh-Hant"
-            );
-          }
-        );
+          return first.name.localeCompare(
+            second.name,
+            "zh-Hant"
+          );
+        });
 
-    renderPersonalRanking(
-      members
-    );
+    renderPersonalRanking(allMembers);
 
     const families =
-      buildFamilyRanking(
-        members
-      );
+      buildFamilyRanking(allMembers);
 
-    renderFamilyRanking(
-      families
-    );
-
-    console.log(
-      "積分榜渲染完成"
-    );
+    renderFamilyRanking(families);
   } catch (error) {
     console.error(
       "積分資料載入失敗：",
@@ -612,10 +824,7 @@ async function loadLeaderboard() {
     );
 
     showError(
-      `積分資料載入失敗：${
-        error?.message ||
-        "未知錯誤"
-      }`
+      `積分資料載入失敗：${error?.message || "未知錯誤"}`
     );
 
     if (personalRankingList) {
@@ -639,7 +848,7 @@ async function loadLeaderboard() {
 }
 
 /* =========================================================
-   登入狀態與權限驗證
+   Auth
    ========================================================= */
 
 showLoading();
@@ -650,18 +859,10 @@ onAuthStateChanged(
   auth,
 
   async (user) => {
-    console.log(
-      "登入狀態：",
-      user?.uid ||
-      "尚未登入"
-    );
-
     if (!user) {
       stopLoadingTimeout();
 
-      window.location.replace(
-        "./login.html"
-      );
+      window.location.replace("./login.html");
 
       return;
     }
@@ -676,9 +877,7 @@ onAuthStateChanged(
           )
         );
 
-      if (
-        !currentUserSnapshot.exists()
-      ) {
+      if (!currentUserSnapshot.exists()) {
         throw new Error(
           "Firestore 中找不到目前登入者的 users 文件。"
         );
@@ -696,21 +895,6 @@ onAuthStateChanged(
           "member" &&
         currentUserData.status ===
           "approved";
-
-      console.log(
-        "登入者權限：",
-        {
-          role:
-            currentUserData.role,
-
-          status:
-            currentUserData.status,
-
-          isAdmin,
-
-          isApprovedMember
-        }
-      );
 
       if (
         !isAdmin &&
@@ -733,10 +917,7 @@ onAuthStateChanged(
       );
 
       showError(
-        `積分榜初始化失敗：${
-          error?.message ||
-          "未知錯誤"
-        }`
+        `積分榜初始化失敗：${error?.message || "未知錯誤"}`
       );
     } finally {
       stopLoadingTimeout();
@@ -754,53 +935,37 @@ onAuthStateChanged(
     );
 
     showError(
-      `登入狀態讀取失敗：${
-        error?.message ||
-        "未知錯誤"
-      }`
+      `登入狀態讀取失敗：${error?.message || "未知錯誤"}`
     );
   }
 );
 
 /* =========================================================
-   登出
+   Logout
    ========================================================= */
 
 logoutButton?.addEventListener(
   "click",
 
   async () => {
-    logoutButton.disabled =
-      true;
-
-    logoutButton.textContent =
-      "登出中……";
+    logoutButton.disabled = true;
+    logoutButton.textContent = "登出中……";
 
     try {
-      await signOut(
-        auth
-      );
+      await signOut(auth);
 
-      window.location.replace(
-        "./login.html"
-      );
+      window.location.replace("./login.html");
     } catch (error) {
       console.error(
         "登出失敗：",
         error
       );
 
-      logoutButton.disabled =
-        false;
-
-      logoutButton.textContent =
-        "登出";
+      logoutButton.disabled = false;
+      logoutButton.textContent = "登出";
 
       showError(
-        `登出失敗：${
-          error?.message ||
-          "未知錯誤"
-        }`
+        `登出失敗：${error?.message || "未知錯誤"}`
       );
     }
   }

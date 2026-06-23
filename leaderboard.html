@@ -23,10 +23,6 @@
 
 <body class="leaderboard-body">
 
-  <!-- =====================================================
-       Header
-       ===================================================== -->
-
   <header class="site-header">
     <div class="site-header-inner">
 
@@ -49,7 +45,7 @@
           社員首頁
         </a>
 
-        <a href="./courses.html" >
+        <a href="./courses.html">
           社課資訊
         </a>
 
@@ -72,13 +68,7 @@
     </div>
   </header>
 
-  <!-- =====================================================
-       Main
-       ===================================================== -->
-
   <main class="leaderboard-page">
-
-    <!-- Hero -->
 
     <section class="leaderboard-hero">
 
@@ -108,11 +98,7 @@
 
     </section>
 
-    <!-- 排名主卡片 -->
-
     <section class="leaderboard-panel">
-
-      <!-- Tabs -->
 
       <div
         class="leaderboard-tabs"
@@ -156,8 +142,6 @@
 
       </div>
 
-      <!-- Loading -->
-
       <div
         id="leaderboardLoading"
         class="leaderboard-loading"
@@ -169,15 +153,11 @@
         </span>
       </div>
 
-      <!-- Error -->
-
       <div
         id="leaderboardError"
         class="leaderboard-error"
         hidden
       ></div>
-
-      <!-- 個人積分 -->
 
       <section
         id="personalLeaderboard"
@@ -198,7 +178,7 @@
           </div>
 
           <span class="leaderboard-section-note">
-            依積分高低排序
+            點選社員姓名可查看 Level 曲線與成就紀錄
           </span>
 
         </div>
@@ -208,9 +188,51 @@
           class="ranking-list"
         ></div>
 
-      </section>
+        <section
+          id="memberDetailPanel"
+          class="member-detail-panel"
+          hidden
+        >
+          <div class="member-detail-panel-header">
+            <div>
+              <p class="leaderboard-section-eyebrow">
+                MEMBER ACHIEVEMENTS
+              </p>
 
-      <!-- 家系積分 -->
+              <h2 id="selectedMemberName">
+                社員成就紀錄
+              </h2>
+
+              <p
+                id="selectedMemberMeta"
+                class="section-description"
+              ></p>
+            </div>
+
+            <button
+              id="closeMemberDetail"
+              class="button button-small button-secondary"
+              type="button"
+            >
+              關閉
+            </button>
+          </div>
+
+          <div class="level-chart-box">
+            <canvas id="selectedMemberLevelChart"></canvas>
+          </div>
+
+          <div
+            id="selectedMemberAchievementList"
+            class="achievement-timeline"
+          >
+            <p class="empty-state">
+              尚無成就紀錄
+            </p>
+          </div>
+        </section>
+
+      </section>
 
       <section
         id="familyLeaderboard"
@@ -232,7 +254,7 @@
           </div>
 
           <span class="leaderboard-section-note">
-            自動加總家系成員積分
+            自動加總家系成員積分，並顯示家系成員
           </span>
 
         </div>
@@ -247,6 +269,8 @@
     </section>
 
   </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <script
     type="module"
