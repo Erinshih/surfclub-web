@@ -22,9 +22,14 @@ const APP_FILES = [
   "./member.html",
   "./courses.html",
   "./js/index.js",
+  "./pending.html",
+  "./register.html",
+  "./login.html",
+  "./js/login.js",
 
   "./icons/icon-192-v2.png",
-  "./icons/icon-512-v2.png"
+  "./icons/icon-512-v2.png",
+  "./icons/apple-touch-icon.png"
 ];
 
 // const APP_FILES = [
