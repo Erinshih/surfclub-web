@@ -9,16 +9,30 @@
 
 const CACHE_NAME = "surfclub-cache-v8";
 
+// const APP_FILES = [
+//   "./",
+//   "./index.html",
+//   "./manifest.webmanifest",
+//   "./css/style.css",
+
+//   "./js/firebase-config.js",
+//   "./js/auth-nav.js",
+//   "./js/courses.js",
+
+//   "./icons/icon-192.png",
+//   "./icons/icon-512.png"
+// ];
+
 const APP_FILES = [
   "./",
   "./index.html",
-  "./manifest.webmanifest",
+  "./login.html",
+  "./member.html",
+  "./leaderboard.html",
   "./css/style.css",
-
   "./js/firebase-config.js",
-  "./js/auth-nav.js",
-  "./js/courses.js",
-
+  "./js/leaderboard.js",
+  "./manifest.json",
   "./icons/icon-192.png",
   "./icons/icon-512.png"
 ];
