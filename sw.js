@@ -32,7 +32,7 @@ const APP_FILES = [
   "./css/style.css",
   "./js/firebase-config.js",
   "./js/leaderboard.js",
-  "./manifest.json",
+  "./manifest.webmanifest",
   "./icons/icon-192-v2.png",
   "./icons/icon-512-v2.png"
 ];
