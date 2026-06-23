@@ -7,7 +7,7 @@
 //   "./css/style.css"
 // ];
 
-const CACHE_NAME = "surfclub-cache-v8";
+const CACHE_NAME = "surfclub-cache-v9";
 
 // const APP_FILES = [
 //   "./",
