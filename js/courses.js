@@ -166,7 +166,7 @@ function createPublicCourseCard(
     photoLink.href = course.photoUrl;
     photoLink.target = "_blank";
     photoLink.rel = "noopener noreferrer";
-    photoLink.textContent = "查看活動照片";
+    photoLink.textContent = "查看活動照片和影片";
 
     content.appendChild(photoLink);
   }

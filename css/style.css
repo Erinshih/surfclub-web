@@ -3578,3 +3578,43 @@ input[type="file"]::file-selector-button {
     justify-content: flex-start;
   }
 }
+
+.member-achievement-section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.08);
+}
+
+.achievement-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.achievement-item {
+  padding: 1rem;
+  border-left: 4px solid #315f65;
+  background: #f7fafb;
+  border-radius: 8px;
+}
+
+.achievement-date {
+  font-size: .9rem;
+  color: #666;
+}
+
+.level-chart-box {
+  height: 220px;
+  max-height: 220px;
+}
+
+.achievement-level {
+  font-weight: 700;
+  color: #315f65;
+}
+
+.achievement-title {
+  margin-top: .5rem;
+}

@@ -1,20 +1,5 @@
-
 /* =========================================================
    檔案：js/member.js
-
-   功能：
-   1. 驗證 Firebase Authentication 登入狀態
-   2. 讀取 Firestore users/{uid}
-   3. 驗證正式社員身分
-   4. 顯示姓名、Email、Level、家系
-   5. 讀取最新公告
-   6. 顯示公告網址按鈕
-   7. 登出
-
-   已移除：
-   - 近期社課載入
-   - member-course-list
-   - 快速入口相關邏輯
    ========================================================= */
 
 import {
@@ -36,76 +21,43 @@ import {
   db
 } from "./firebase-config.js";
 
-/* =========================================================
-   DOM：狀態與登出
-   ========================================================= */
-
 const memberStatus =
-  document.querySelector(
-    "#member-status"
-  );
+  document.querySelector("#member-status");
 
 const logoutButton =
-  document.querySelector(
-    "#logout-button"
-  );
-
-/* =========================================================
-   DOM：社員資料
-   ========================================================= */
+  document.querySelector("#logout-button");
 
 const memberName =
-  document.querySelector(
-    "#member-name"
-  );
+  document.querySelector("#member-name");
 
 const memberEmail =
-  document.querySelector(
-    "#member-email"
-  );
+  document.querySelector("#member-email");
 
 const memberLevel =
-  document.querySelector(
-    "#member-level"
-  );
+  document.querySelector("#member-level");
 
 const memberFamily =
-  document.querySelector(
-    "#member-family"
-  );
-
-/* =========================================================
-   DOM：公告
-   ========================================================= */
+  document.querySelector("#member-family");
 
 const announcementList =
-  document.querySelector(
-    "#announcement-list"
-  );
+  document.querySelector("#announcement-list");
 
-/* =========================================================
-   狀態
-   ========================================================= */
+const levelChartCanvas =
+  document.querySelector("#level-history-chart");
+
+const achievementTimeline =
+  document.querySelector("#achievement-timeline");
 
 let currentUser = null;
 let currentUserData = null;
-
-/* =========================================================
-   驗證登入狀態與社員身分
-   ========================================================= */
+let levelChartInstance = null;
 
 onAuthStateChanged(
   auth,
 
   async (user) => {
-    /*
-     * 沒有登入時，導向登入頁面。
-     */
     if (!user) {
-      window.location.replace(
-        "./login.html"
-      );
-
+      window.location.replace("./login.html");
       return;
     }
 
@@ -117,25 +69,12 @@ onAuthStateChanged(
     );
 
     try {
-      /*
-       * 讀取目前登入者的 Firestore 文件。
-       */
       const userReference =
-        doc(
-          db,
-          "users",
-          user.uid
-        );
+        doc(db, "users", user.uid);
 
       const userSnapshot =
-        await getDoc(
-          userReference
-        );
+        await getDoc(userReference);
 
-      /*
-       * Firebase Authentication 有帳號，
-       * 但 Firestore 找不到 users/{uid}。
-       */
       if (!userSnapshot.exists()) {
         clearMemberProfile();
 
@@ -157,36 +96,20 @@ onAuthStateChanged(
       const status =
         currentUserData.status;
 
-      /*
-       * 管理員登入時，導向管理後台。
-       */
       if (role === "admin") {
-        window.location.replace(
-          "./admin.html"
-        );
-
+        window.location.replace("./admin.html");
         return;
       }
 
-      /*
-       * 待審核或被拒絕者，
-       * 導向 pending.html。
-       */
       if (
         role === "pending" ||
         status === "pending" ||
         status === "rejected"
       ) {
-        window.location.replace(
-          "./pending.html"
-        );
-
+        window.location.replace("./pending.html");
         return;
       }
 
-      /*
-       * 只有正式社員可以留在社員首頁。
-       */
       if (
         role !== "member" ||
         status !== "approved"
@@ -202,17 +125,11 @@ onAuthStateChanged(
         return;
       }
 
-      /*
-       * 顯示社員個人資料。
-       */
       renderMemberProfile(
         user,
         currentUserData
       );
 
-      /*
-       * 顯示歡迎訊息。
-       */
       const displayName =
         currentUserData.name ||
         user.displayName ||
@@ -244,10 +161,9 @@ onAuthStateChanged(
         "success"
       );
 
-      /*
-       * 身分驗證完成後讀取公告。
-       */
       await loadAnnouncements();
+
+      await loadLevelHistory(user.uid);
     } catch (error) {
       console.error(
         "社員資料讀取失敗：",
@@ -258,9 +174,7 @@ onAuthStateChanged(
 
       showStatus(
         memberStatus,
-        `社員資料讀取失敗：${
-          getErrorMessage(error)
-        }`,
+        `社員資料讀取失敗：${getErrorMessage(error)}`,
         "error"
       );
     }
@@ -276,17 +190,11 @@ onAuthStateChanged(
 
     showStatus(
       memberStatus,
-      `登入狀態讀取失敗：${
-        getErrorMessage(error)
-      }`,
+      `登入狀態讀取失敗：${getErrorMessage(error)}`,
       "error"
     );
   }
 );
-
-/* =========================================================
-   顯示社員個人資料
-   ========================================================= */
 
 function renderMemberProfile(
   user,
@@ -319,10 +227,6 @@ function renderMemberProfile(
   }
 }
 
-/* =========================================================
-   清除社員資料顯示
-   ========================================================= */
-
 function clearMemberProfile() {
   if (memberName) {
     memberName.textContent =
@@ -343,6 +247,206 @@ function clearMemberProfile() {
     memberFamily.textContent =
       "尚未分配";
   }
+}
+
+async function loadLevelHistory(uid) {
+  console.log(
+    "準備讀取 levelHistory",
+    uid
+  );
+
+  if (
+    !levelChartCanvas ||
+    !achievementTimeline
+  ) {
+    console.warn(
+      "找不到 level chart 或 achievement timeline DOM。"
+    );
+
+    return;
+  }
+
+  try {
+    const historySnapshot =
+      await getDocs(
+        query(
+          collection(
+            db,
+            "users",
+            uid,
+            "levelHistory"
+          ),
+          orderBy(
+            "unlockedAt",
+            "asc"
+          )
+        )
+      );
+
+    const history =
+      historySnapshot.docs.map(
+        (docSnapshot) => ({
+          id: docSnapshot.id,
+          ...docSnapshot.data()
+        })
+      );
+
+    console.log(
+      "levelHistory 筆數",
+      history.length,
+      history
+    );
+
+    renderAchievementTimeline(history);
+    renderLevelChart(history);
+  } catch (error) {
+    console.error(
+      "Level History 載入失敗：",
+      error
+    );
+
+    achievementTimeline.innerHTML = `
+      <p class="status-message error">
+        Level / 成就紀錄載入失敗。
+      </p>
+    `;
+  }
+}
+
+function renderAchievementTimeline(history) {
+  if (!achievementTimeline) {
+    return;
+  }
+
+  achievementTimeline.innerHTML = "";
+
+  if (history.length === 0) {
+    achievementTimeline.innerHTML = `
+      <p class="empty-state">
+        尚無成就紀錄
+      </p>
+    `;
+
+    return;
+  }
+
+  history.forEach((item) => {
+    const card =
+      document.createElement("div");
+
+    card.className =
+      "achievement-item";
+
+    const date =
+      item.unlockedAt
+        ?.toDate?.()
+        ?.toLocaleDateString("zh-TW") ||
+      "未知日期";
+
+    const level =
+      item.levelText ||
+      "未設定 Level";
+
+    const achievement =
+      item.achievement ||
+      "";
+
+    card.innerHTML = `
+      <div class="achievement-date">
+        ${escapeHtml(date)}
+      </div>
+
+      <div class="achievement-level">
+        ${escapeHtml(level)}
+      </div>
+
+      <div class="achievement-title">
+        ${escapeHtml(achievement)}
+      </div>
+    `;
+
+    achievementTimeline.appendChild(card);
+  });
+}
+
+function renderLevelChart(history) {
+  if (!levelChartCanvas) {
+    return;
+  }
+
+  if (typeof Chart === "undefined") {
+    console.error(
+      "Chart.js 尚未載入，請確認 member.html 中 Chart.js 在 member.js 前面。"
+    );
+
+    return;
+  }
+
+  if (history.length === 0) {
+    return;
+  }
+
+  const labels =
+    history.map(
+      (item) =>
+        item.unlockedAt
+          ?.toDate?.()
+          ?.toLocaleDateString("zh-TW") ||
+        ""
+    );
+
+  const values =
+    history.map(
+      (item) =>
+        Number(item.levelValue) || 0
+    );
+
+  if (levelChartInstance) {
+    levelChartInstance.destroy();
+  }
+
+  levelChartInstance =
+    new Chart(
+      levelChartCanvas,
+      {
+        type: "line",
+
+        data: {
+          labels,
+
+          datasets: [
+            {
+              label: "Level 成長",
+              data: values,
+              tension: 0.3,
+              fill: false
+            }
+          ]
+        },
+
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+
+          plugins: {
+            legend: {
+              display: true
+            }
+          },
+
+          scales: {
+            y: {
+              beginAtZero: true,
+              suggestedMax: 5,
+
+              ticks: {
+                stepSize: 1
+              }
+            }
+          }
+        }
+      }
+    );
 }
 
 /* =========================================================
@@ -371,7 +475,6 @@ async function loadAnnouncements() {
           db,
           "announcements"
         ),
-
         orderBy(
           "createdAt",
           "desc"
@@ -379,12 +482,9 @@ async function loadAnnouncements() {
       );
 
     const querySnapshot =
-      await getDocs(
-        announcementQuery
-      );
+      await getDocs(announcementQuery);
 
-    announcementList.innerHTML =
-      "";
+    announcementList.innerHTML = "";
 
     if (querySnapshot.empty) {
       announcementList.innerHTML = `
@@ -399,16 +499,12 @@ async function loadAnnouncements() {
     querySnapshot.forEach(
       (announcementSnapshot) => {
         const announcement = {
-          id:
-            announcementSnapshot.id,
-
+          id: announcementSnapshot.id,
           ...announcementSnapshot.data()
         };
 
         announcementList.appendChild(
-          createAnnouncementCard(
-            announcement
-          )
+          createAnnouncementCard(announcement)
         );
       }
     );
@@ -418,54 +514,33 @@ async function loadAnnouncements() {
       error
     );
 
-    announcementList.innerHTML =
-      "";
+    announcementList.innerHTML = "";
 
     const errorMessage =
-      document.createElement(
-        "p"
-      );
+      document.createElement("p");
 
     errorMessage.className =
       "status-message error";
 
     errorMessage.textContent =
-      `公告讀取失敗：${
-        getErrorMessage(error)
-      }`;
+      `公告讀取失敗：${getErrorMessage(error)}`;
 
-    announcementList.appendChild(
-      errorMessage
-    );
+    announcementList.appendChild(errorMessage);
   }
 }
 
-/* =========================================================
-   建立公告卡片
-   ========================================================= */
-
-function createAnnouncementCard(
-  announcement
-) {
+function createAnnouncementCard(announcement) {
   const article =
-    document.createElement(
-      "article"
-    );
+    document.createElement("article");
 
   const title =
-    document.createElement(
-      "h3"
-    );
+    document.createElement("h3");
 
   const content =
-    document.createElement(
-      "p"
-    );
+    document.createElement("p");
 
   const metadata =
-    document.createElement(
-      "small"
-    );
+    document.createElement("small");
 
   article.className =
     "card announcement-card";
@@ -497,25 +572,15 @@ function createAnnouncementCard(
     content
   );
 
-  /*
-   * 公告有合法的 HTTP／HTTPS 網址時，
-   * 顯示可點擊的連結按鈕。
-   */
   if (
     announcement.linkUrl &&
-    isSafeHttpUrl(
-      announcement.linkUrl
-    )
+    isSafeHttpUrl(announcement.linkUrl)
   ) {
     const linkWrapper =
-      document.createElement(
-        "div"
-      );
+      document.createElement("div");
 
     const link =
-      document.createElement(
-        "a"
-      );
+      document.createElement("a");
 
     linkWrapper.className =
       "announcement-link-wrapper";
@@ -538,34 +603,19 @@ function createAnnouncementCard(
     link.rel =
       "noopener noreferrer";
 
-    linkWrapper.appendChild(
-      link
-    );
+    linkWrapper.appendChild(link);
 
-    article.appendChild(
-      linkWrapper
-    );
+    article.appendChild(linkWrapper);
   }
 
-  /*
-   * 有時間資料才顯示時間。
-   */
   if (metadata.textContent) {
-    article.appendChild(
-      metadata
-    );
+    article.appendChild(metadata);
   }
 
   return article;
 }
 
-/* =========================================================
-   網址安全檢查
-   ========================================================= */
-
-function isSafeHttpUrl(
-  value
-) {
+function isSafeHttpUrl(value) {
   try {
     const parsedUrl =
       new URL(
@@ -581,20 +631,11 @@ function isSafeHttpUrl(
   }
 }
 
-/* =========================================================
-   公告時間格式
-   ========================================================= */
-
-function formatTimestamp(
-  timestamp
-) {
+function formatTimestamp(timestamp) {
   if (!timestamp) {
     return "";
   }
 
-  /*
-   * Firestore Timestamp。
-   */
   if (
     typeof timestamp.toDate ===
     "function"
@@ -622,9 +663,6 @@ function formatTimestamp(
     }
   }
 
-  /*
-   * 相容一般日期字串或毫秒數。
-   */
   try {
     const date =
       new Date(timestamp);
@@ -667,9 +705,7 @@ logoutButton?.addEventListener(
       "登出中……";
 
     try {
-      await signOut(
-        auth
-      );
+      await signOut(auth);
 
       window.location.replace(
         "./login.html"
@@ -688,18 +724,12 @@ logoutButton?.addEventListener(
 
       showStatus(
         memberStatus,
-        `登出失敗：${
-          getErrorMessage(error)
-        }`,
+        `登出失敗：${getErrorMessage(error)}`,
         "error"
       );
     }
   }
 );
-
-/* =========================================================
-   顯示狀態訊息
-   ========================================================= */
 
 function showStatus(
   element,
@@ -717,19 +747,11 @@ function showStatus(
     "status-message";
 
   if (type) {
-    element.classList.add(
-      type
-    );
+    element.classList.add(type);
   }
 }
 
-/* =========================================================
-   錯誤訊息處理
-   ========================================================= */
-
-function getErrorMessage(
-  error
-) {
+function getErrorMessage(error) {
   const errorCode =
     error?.code ||
     "";
@@ -750,7 +772,7 @@ function getErrorMessage(
 
   if (
     errorCode ===
-      "auth/network-request-failed"
+    "auth/network-request-failed"
   ) {
     return "網路連線失敗，請檢查網路狀態。";
   }
@@ -761,3 +783,11 @@ function getErrorMessage(
   );
 }
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}

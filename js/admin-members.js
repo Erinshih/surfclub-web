@@ -1,4 +1,3 @@
-
 /* =========================================================
    檔案：js/admin-members.js
    功能：
@@ -6,8 +5,9 @@
    2. 待審核社員管理
    3. 正式社員資料管理
    4. 家系與個人積分管理
-   5. 社員刪除
-   6. CSV 匯出
+   5. Level / 成就紀錄新增與刪除
+   6. 社員刪除
+   7. CSV 匯出
    ========================================================= */
 
 import {
@@ -16,11 +16,14 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
 
 import {
+  addDoc,
   collection,
   deleteDoc,
   doc,
   getDoc,
   getDocs,
+  orderBy,
+  query,
   serverTimestamp,
   updateDoc
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
@@ -29,10 +32,6 @@ import {
   auth,
   db
 } from "./firebase-config.js";
-
-/* =========================================================
-   DOM
-   ========================================================= */
 
 const adminStatus =
   document.querySelector("#admin-status");
@@ -58,43 +57,26 @@ const exportMembersButton =
 const exportMessage =
   document.querySelector("#export-message");
 
-/* =========================================================
-   狀態
-   ========================================================= */
-
 let currentAdmin = null;
 let allUsers = [];
-
-/* =========================================================
-   管理員驗證
-   ========================================================= */
 
 onAuthStateChanged(
   auth,
 
   async (user) => {
     if (!user) {
-      window.location.replace(
-        "./login.html"
-      );
-
+      window.location.replace("./login.html");
       return;
     }
 
     try {
       const userSnapshot =
         await getDoc(
-          doc(
-            db,
-            "users",
-            user.uid
-          )
+          doc(db, "users", user.uid)
         );
 
       if (!userSnapshot.exists()) {
-        throw new Error(
-          "Firestore 中找不到管理員資料。"
-        );
+        throw new Error("Firestore 中找不到管理員資料。");
       }
 
       const userData =
@@ -105,13 +87,9 @@ onAuthStateChanged(
           userData.status === "pending" ||
           userData.status === "rejected"
         ) {
-          window.location.replace(
-            "./pending.html"
-          );
+          window.location.replace("./pending.html");
         } else {
-          window.location.replace(
-            "./member.html"
-          );
+          window.location.replace("./member.html");
         }
 
         return;
@@ -121,66 +99,31 @@ onAuthStateChanged(
 
       showStatus(
         adminStatus,
-        `管理員：${
-          userData.name ||
-          user.email ||
-          "未命名"
-        }`,
+        `管理員：${userData.name || user.email || "未命名"}`,
         "success"
       );
 
-      adminContent?.classList.remove(
-        "hidden"
-      );
+      adminContent?.classList.remove("hidden");
 
       await loadUsers();
     } catch (error) {
-      console.error(
-        "管理員驗證失敗：",
-        error
-      );
+      console.error("管理員驗證失敗：", error);
 
       showStatus(
         adminStatus,
-        `驗證失敗：${
-          error?.message ||
-          "未知錯誤"
-        }`,
+        `驗證失敗：${error?.message || "未知錯誤"}`,
         "error"
       );
     }
-  },
-
-  (error) => {
-    console.error(
-      "登入狀態監聽失敗：",
-      error
-    );
-
-    showStatus(
-      adminStatus,
-      `登入狀態讀取失敗：${
-        error?.message ||
-        "未知錯誤"
-      }`,
-      "error"
-    );
   }
 );
-
-/* =========================================================
-   讀取所有使用者
-   ========================================================= */
 
 async function loadUsers() {
   if (
     !pendingMemberList ||
     !memberList
   ) {
-    console.error(
-      "admin-members.html 缺少必要元素。"
-    );
-
+    console.error("admin-members.html 缺少必要元素。");
     return;
   }
 
@@ -199,47 +142,28 @@ async function loadUsers() {
   try {
     const snapshot =
       await getDocs(
-        collection(
-          db,
-          "users"
-        )
+        collection(db, "users")
       );
 
     allUsers =
-      snapshot.docs.map(
-        (documentSnapshot) => {
-          const data =
-            documentSnapshot.data();
+      snapshot.docs.map((documentSnapshot) => {
+        const data =
+          documentSnapshot.data();
 
-          return {
-            uid:
-              documentSnapshot.id,
-
-            ...data,
-
-            /*
-             * 舊社員文件可能沒有 points。
-             * 沒有積分時預設為 0。
-             */
-            points:
-              normalizePoints(
-                data.points
-              )
-          };
-        }
-      );
+        return {
+          uid: documentSnapshot.id,
+          ...data,
+          points: normalizePoints(data.points)
+        };
+      });
 
     renderPendingMembers();
     renderApprovedMembers();
   } catch (error) {
-    console.error(
-      "社員資料載入失敗：",
-      error
-    );
+    console.error("社員資料載入失敗：", error);
 
     const errorText =
-      error?.message ||
-      "未知錯誤";
+      error?.message || "未知錯誤";
 
     pendingMemberList.innerHTML = `
       <p class="status-message error">
@@ -255,38 +179,20 @@ async function loadUsers() {
   }
 }
 
-/* =========================================================
-   待審核社員列表
-   ========================================================= */
-
 function renderPendingMembers() {
-  if (!pendingMemberList) {
-    return;
-  }
-
   pendingMemberList.innerHTML = "";
 
   const pendingMembers =
     allUsers
-      .filter(
-        (user) =>
-          user.status === "pending"
-      )
-      .sort(
-        (first, second) =>
-          String(
-            first.name || ""
-          ).localeCompare(
-            String(
-              second.name || ""
-            ),
-            "zh-Hant"
-          )
+      .filter((user) => user.status === "pending")
+      .sort((a, b) =>
+        String(a.name || "").localeCompare(
+          String(b.name || ""),
+          "zh-Hant"
+        )
       );
 
-  if (
-    pendingMembers.length === 0
-  ) {
+  if (pendingMembers.length === 0) {
     pendingMemberList.innerHTML = `
       <p class="empty-state">
         目前沒有待審核社員。
@@ -296,137 +202,66 @@ function renderPendingMembers() {
     return;
   }
 
-  pendingMembers.forEach(
-    (member) => {
-      pendingMemberList.appendChild(
-        createPendingMemberCard(
-          member
-        )
-      );
-    }
-  );
+  pendingMembers.forEach((member) => {
+    pendingMemberList.appendChild(
+      createPendingMemberCard(member)
+    );
+  });
 }
 
-/* =========================================================
-   建立待審核社員卡片
-   ========================================================= */
-
-function createPendingMemberCard(
-  member
-) {
+function createPendingMemberCard(member) {
   const article =
-    document.createElement(
-      "article"
-    );
+    document.createElement("article");
 
   const information =
-    document.createElement(
-      "div"
-    );
+    document.createElement("div");
 
   const title =
-    document.createElement(
-      "h3"
-    );
+    document.createElement("h3");
 
   const details =
-    document.createElement(
-      "div"
-    );
+    document.createElement("div");
 
   const controls =
-    document.createElement(
-      "div"
-    );
+    document.createElement("div");
 
   const paymentSelect =
-    createPaymentSelect(
-      member.paymentStatus ||
-      "pending"
-    );
+    createPaymentSelect(member.paymentStatus || "pending");
 
   const approveButton =
-    document.createElement(
-      "button"
-    );
+    document.createElement("button");
 
   const rejectButton =
-    document.createElement(
-      "button"
-    );
+    document.createElement("button");
 
-  article.className =
-    "member-review-card";
-
-  information.className =
-    "member-review-information";
-
-  details.className =
-    "member-detail-grid";
-
-  controls.className =
-    "member-review-controls";
+  article.className = "member-review-card";
+  information.className = "member-review-information";
+  details.className = "member-detail-grid";
+  controls.className = "member-review-controls";
 
   title.textContent =
-    member.name ||
-    "未命名申請者";
+    member.name || "未命名申請者";
 
   details.append(
-    createDetail(
-      "Email",
-      member.email
-    ),
-
-    createDetail(
-      "學號",
-      member.studentId
-    ),
-
-    createDetail(
-      "系級",
-      member.department
-    ),
-
-    createDetail(
-      "電話",
-      member.phone
-    ),
-
-    createDetail(
-      "審核狀態",
-      getApplicationStatusText(
-        member.status
-      )
-    )
+    createDetail("Email", member.email),
+    createDetail("學號", member.studentId),
+    createDetail("系級", member.department),
+    createDetail("電話", member.phone),
+    createDetail("審核狀態", getApplicationStatusText(member.status))
   );
 
-  /* =====================================================
-     通過申請
-     ===================================================== */
-
-  approveButton.type =
-    "button";
-
-  approveButton.className =
-    "button button-small";
-
-  approveButton.textContent =
-    "通過申請";
+  approveButton.type = "button";
+  approveButton.className = "button button-small";
+  approveButton.textContent = "通過申請";
 
   approveButton.addEventListener(
     "click",
 
     async () => {
-      if (
-        paymentSelect.value !==
-        "paid"
-      ) {
+      if (paymentSelect.value !== "paid") {
         showStatus(
           memberMessage,
-          `請先將 ${
-            member.name ||
-            "該申請者"
-          } 的社費狀態設定為「已繳費」。`,
+          `請先將 ${member.name || "該申請者"} 的社費狀態設定為「已繳費」。`,
           "error"
         );
 
@@ -435,119 +270,58 @@ function createPendingMemberCard(
 
       const confirmed =
         window.confirm(
-          `確定要通過 ${
-            member.name ||
-            "這位申請者"
-          } 的社員申請嗎？`
+          `確定要通過 ${member.name || "這位申請者"} 的社員申請嗎？`
         );
 
       if (!confirmed) {
         return;
       }
 
-      approveButton.disabled =
-        true;
-
-      rejectButton.disabled =
-        true;
-
-      approveButton.textContent =
-        "處理中……";
+      approveButton.disabled = true;
+      rejectButton.disabled = true;
+      approveButton.textContent = "處理中……";
 
       try {
         await updateDoc(
-          doc(
-            db,
-            "users",
-            member.uid
-          ),
+          doc(db, "users", member.uid),
           {
-            role:
-              "member",
-
-            status:
-              "approved",
-
-            paymentStatus:
-              "paid",
-
-            /*
-             * 新社員通過審核時，
-             * 預設個人積分為 0。
-             */
-            points:
-              normalizePoints(
-                member.points
-              ),
-
-            /*
-             * 沒有家系時預設空字串。
-             */
-            family:
-              String(
-                member.family || ""
-              ).trim(),
-
-            approvedBy:
-              currentAdmin.uid,
-
-            approvedAt:
-              serverTimestamp(),
-
-            updatedAt:
-              serverTimestamp()
+            role: "member",
+            status: "approved",
+            paymentStatus: "paid",
+            points: normalizePoints(member.points),
+            family: String(member.family || "").trim(),
+            approvedBy: currentAdmin.uid,
+            approvedAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
           }
         );
 
         showStatus(
           memberMessage,
-          `${
-            member.name ||
-            "社員"
-          } 已通過認證。`,
+          `${member.name || "社員"} 已通過認證。`,
           "success"
         );
 
         await loadUsers();
       } catch (error) {
-        console.error(
-          "通過社員申請失敗：",
-          error
-        );
+        console.error("通過社員申請失敗：", error);
 
         showStatus(
           memberMessage,
-          `通過申請失敗：${
-            error?.message ||
-            "未知錯誤"
-          }`,
+          `通過申請失敗：${error?.message || "未知錯誤"}`,
           "error"
         );
 
-        approveButton.disabled =
-          false;
-
-        rejectButton.disabled =
-          false;
-
-        approveButton.textContent =
-          "通過申請";
+        approveButton.disabled = false;
+        rejectButton.disabled = false;
+        approveButton.textContent = "通過申請";
       }
     }
   );
 
-  /* =====================================================
-     拒絕申請
-     ===================================================== */
-
-  rejectButton.type =
-    "button";
-
-  rejectButton.className =
-    "button button-small delete-button";
-
-  rejectButton.textContent =
-    "拒絕申請";
+  rejectButton.type = "button";
+  rejectButton.className = "button button-small delete-button";
+  rejectButton.textContent = "拒絕申請";
 
   rejectButton.addEventListener(
     "click",
@@ -555,86 +329,49 @@ function createPendingMemberCard(
     async () => {
       const confirmed =
         window.confirm(
-          `確定要拒絕 ${
-            member.name ||
-            "這位申請者"
-          } 的社員申請嗎？`
+          `確定要拒絕 ${member.name || "這位申請者"} 的社員申請嗎？`
         );
 
       if (!confirmed) {
         return;
       }
 
-      approveButton.disabled =
-        true;
-
-      rejectButton.disabled =
-        true;
-
-      rejectButton.textContent =
-        "處理中……";
+      approveButton.disabled = true;
+      rejectButton.disabled = true;
+      rejectButton.textContent = "處理中……";
 
       try {
         await updateDoc(
-          doc(
-            db,
-            "users",
-            member.uid
-          ),
+          doc(db, "users", member.uid),
           {
-            role:
-              "pending",
-
-            status:
-              "rejected",
-
-            paymentStatus:
-              "rejected",
-
-            reviewedBy:
-              currentAdmin.uid,
-
-            reviewedAt:
-              serverTimestamp(),
-
-            updatedAt:
-              serverTimestamp()
+            role: "pending",
+            status: "rejected",
+            paymentStatus: "rejected",
+            reviewedBy: currentAdmin.uid,
+            reviewedAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
           }
         );
 
         showStatus(
           memberMessage,
-          `${
-            member.name ||
-            "申請者"
-          } 的申請已拒絕。`,
+          `${member.name || "申請者"} 的申請已拒絕。`,
           "success"
         );
 
         await loadUsers();
       } catch (error) {
-        console.error(
-          "拒絕社員申請失敗：",
-          error
-        );
+        console.error("拒絕社員申請失敗：", error);
 
         showStatus(
           memberMessage,
-          `拒絕申請失敗：${
-            error?.message ||
-            "未知錯誤"
-          }`,
+          `拒絕申請失敗：${error?.message || "未知錯誤"}`,
           "error"
         );
 
-        approveButton.disabled =
-          false;
-
-        rejectButton.disabled =
-          false;
-
-        rejectButton.textContent =
-          "拒絕申請";
+        approveButton.disabled = false;
+        rejectButton.disabled = false;
+        rejectButton.textContent = "拒絕申請";
       }
     }
   );
@@ -645,11 +382,7 @@ function createPendingMemberCard(
   );
 
   controls.append(
-    createLabeledControl(
-      "社費狀態",
-      paymentSelect
-    ),
-
+    createLabeledControl("社費狀態", paymentSelect),
     approveButton,
     rejectButton
   );
@@ -662,15 +395,7 @@ function createPendingMemberCard(
   return article;
 }
 
-/* =========================================================
-   正式社員列表
-   ========================================================= */
-
 function renderApprovedMembers() {
-  if (!memberList) {
-    return;
-  }
-
   memberList.innerHTML = "";
 
   const approvedMembers =
@@ -680,25 +405,17 @@ function renderApprovedMembers() {
           user.role === "admin" ||
           (
             user.role === "member" &&
-            user.status ===
-              "approved"
+            user.status === "approved"
           )
       )
-      .sort(
-        (first, second) =>
-          String(
-            first.name || ""
-          ).localeCompare(
-            String(
-              second.name || ""
-            ),
-            "zh-Hant"
-          )
+      .sort((a, b) =>
+        String(a.name || "").localeCompare(
+          String(b.name || ""),
+          "zh-Hant"
+        )
       );
 
-  if (
-    approvedMembers.length === 0
-  ) {
+  if (approvedMembers.length === 0) {
     memberList.innerHTML = `
       <p class="empty-state">
         目前沒有正式社員。
@@ -708,166 +425,102 @@ function renderApprovedMembers() {
     return;
   }
 
-  approvedMembers.forEach(
-    (member) => {
-      memberList.appendChild(
-        createMemberEditor(
-          member
-        )
-      );
-    }
-  );
+  approvedMembers.forEach((member) => {
+    memberList.appendChild(
+      createMemberEditor(member)
+    );
+  });
 }
 
-/* =========================================================
-   建立正式社員編輯列
-   ========================================================= */
-
-function createMemberEditor(
-  member
-) {
+function createMemberEditor(member) {
   const row =
-    document.createElement(
-      "article"
-    );
+    document.createElement("article");
 
   const identity =
-    document.createElement(
-      "div"
-    );
+    document.createElement("div");
 
   const name =
-    document.createElement(
-      "strong"
-    );
+    document.createElement("strong");
 
   const detail =
-    document.createElement(
-      "span"
-    );
+    document.createElement("span");
 
   const levelWrapper =
-    document.createElement(
-      "label"
-    );
+    document.createElement("label");
 
   const levelLabel =
-    document.createElement(
-      "span"
-    );
+    document.createElement("span");
 
   const levelSelect =
-    document.createElement(
-      "select"
-    );
+    document.createElement("select");
 
   const familyWrapper =
-    document.createElement(
-      "label"
-    );
+    document.createElement("label");
 
   const familyLabel =
-    document.createElement(
-      "span"
-    );
+    document.createElement("span");
 
   const familyInput =
-    document.createElement(
-      "input"
-    );
+    document.createElement("input");
 
   const pointsWrapper =
-    document.createElement(
-      "label"
-    );
+    document.createElement("label");
 
   const pointsLabel =
-    document.createElement(
-      "span"
-    );
+    document.createElement("span");
 
   const pointsInput =
-    document.createElement(
-      "input"
-    );
+    document.createElement("input");
 
   const paymentWrapper =
-    document.createElement(
-      "label"
-    );
+    document.createElement("label");
 
   const paymentLabel =
-    document.createElement(
-      "span"
-    );
+    document.createElement("span");
 
   const paymentSelect =
-    createPaymentSelect(
-      member.paymentStatus ||
-      "unpaid"
-    );
+    createPaymentSelect(member.paymentStatus || "unpaid");
+
+  const achievementWrapper =
+    document.createElement("label");
+
+  const achievementLabel =
+    document.createElement("span");
+
+  const achievementInput =
+    document.createElement("input");
+
+  const achievementButton =
+    document.createElement("button");
+
+  const viewAchievementButton =
+    document.createElement("button");
 
   const actions =
-    document.createElement(
-      "div"
-    );
+    document.createElement("div");
 
   const saveButton =
-    document.createElement(
-      "button"
-    );
+    document.createElement("button");
 
   const deleteButton =
-    document.createElement(
-      "button"
-    );
+    document.createElement("button");
 
-  /* =====================================================
-     樣式 class
-     ===================================================== */
+  row.className = "member-row";
+  row.dataset.userId = member.uid;
 
-  row.className =
-    "member-row";
+  identity.className = "member-row-identity";
+  name.className = "member-row-name";
+  detail.className = "member-row-detail";
 
-  /*
-   * 方便 CSS 或其他程式取得社員 UID。
-   */
-  row.dataset.userId =
-    member.uid;
-
-  identity.className =
-    "member-row-identity";
-
-  name.className =
-    "member-row-name";
-
-  detail.className =
-    "member-row-detail";
-
-  levelWrapper.className =
-    "member-row-field";
-
-  familyWrapper.className =
-    "member-row-field member-row-family";
-
-  pointsWrapper.className =
-    "member-row-field member-row-points";
-
-  paymentWrapper.className =
-    "member-row-field";
-
-  actions.className =
-    "member-row-actions";
-
-  /* =====================================================
-     基本資料
-     ===================================================== */
+  levelWrapper.className = "member-row-field";
+  familyWrapper.className = "member-row-field member-row-family";
+  pointsWrapper.className = "member-row-field member-row-points";
+  paymentWrapper.className = "member-row-field";
+  achievementWrapper.className = "member-row-field member-row-achievement";
+  actions.className = "member-row-actions";
 
   name.textContent =
-    `${
-      member.name ||
-      "未命名社員"
-    }${
+    `${member.name || "未命名社員"}${
       member.role === "admin"
         ? "（管理員）"
         : ""
@@ -876,32 +529,22 @@ function createMemberEditor(
   const detailParts = [];
 
   if (member.email) {
-    detailParts.push(
-      member.email
-    );
+    detailParts.push(member.email);
   }
 
   if (member.studentId) {
-    detailParts.push(
-      member.studentId
-    );
+    detailParts.push(member.studentId);
   }
 
   detail.textContent =
-    detailParts.join("｜") ||
-    "無其他資料";
+    detailParts.join("｜") || "無其他資料";
 
   identity.append(
     name,
     detail
   );
 
-  /* =====================================================
-     Level
-     ===================================================== */
-
-  levelLabel.textContent =
-    "Level";
+  levelLabel.textContent = "Level";
 
   [
     "",
@@ -910,107 +553,57 @@ function createMemberEditor(
     "Lv.3：漁光三寶",
     "Lv.4：奧賽四超人",
     "Lv.5：漁光電線桿"
-  ].forEach(
-    (level) => {
-      const option =
-        document.createElement(
-          "option"
-        );
+  ].forEach((level) => {
+    const option =
+      document.createElement("option");
 
-      option.value =
-        level;
+    option.value = level;
+    option.textContent = level || "尚未設定";
+    option.selected = member.level === level;
 
-      option.textContent =
-        level ||
-        "尚未設定";
-
-      option.selected =
-        member.level === level;
-
-      levelSelect.appendChild(
-        option
-      );
-    }
-  );
+    levelSelect.appendChild(option);
+  });
 
   levelWrapper.append(
     levelLabel,
     levelSelect
   );
 
-  /* =====================================================
-     家系
-     ===================================================== */
+  familyLabel.textContent = "家系";
 
-  familyLabel.textContent =
-    "家系";
-
-  familyInput.type =
-    "text";
-
-  familyInput.maxLength =
-    50;
-
-  familyInput.placeholder =
-    "尚未分配";
-
-  familyInput.value =
-    member.family || "";
+  familyInput.type = "text";
+  familyInput.maxLength = 50;
+  familyInput.placeholder = "尚未分配";
+  familyInput.value = member.family || "";
 
   familyWrapper.append(
     familyLabel,
     familyInput
   );
 
-  /* =====================================================
-     個人積分
-     ===================================================== */
+  pointsLabel.textContent = "個人積分";
 
-  pointsLabel.textContent =
-    "個人積分";
-
-  pointsInput.type =
-    "number";
-
-  pointsInput.min =
-    "0";
-
-  pointsInput.step =
-    "1";
-
-  pointsInput.inputMode =
-    "numeric";
-
-  pointsInput.placeholder =
-    "0";
-
+  pointsInput.type = "number";
+  pointsInput.min = "0";
+  pointsInput.step = "1";
+  pointsInput.inputMode = "numeric";
+  pointsInput.placeholder = "0";
   pointsInput.value =
-    String(
-      normalizePoints(
-        member.points
-      )
-    );
+    String(normalizePoints(member.points));
+  pointsInput.className = "member-points-input";
 
-  pointsInput.className =
-    "member-points-input";
-
-  /*
-   * 避免輸入負數。
-   */
   pointsInput.addEventListener(
     "input",
+
     () => {
       const value =
-        Number(
-          pointsInput.value
-        );
+        Number(pointsInput.value);
 
       if (
         Number.isFinite(value) &&
         value < 0
       ) {
-        pointsInput.value =
-          "0";
+        pointsInput.value = "0";
       }
     }
   );
@@ -1020,47 +613,157 @@ function createMemberEditor(
     pointsInput
   );
 
-  /* =====================================================
-     社費
-     ===================================================== */
-
-  paymentLabel.textContent =
-    "社費";
+  paymentLabel.textContent = "社費";
 
   paymentWrapper.append(
     paymentLabel,
     paymentSelect
   );
 
-  /* =====================================================
-     儲存按鈕
-     ===================================================== */
+  achievementLabel.textContent = "解鎖成就";
 
-  saveButton.type =
-    "button";
+  achievementInput.type = "text";
+  achievementInput.placeholder = "例如：完成第一次下水";
+  achievementInput.maxLength = 100;
 
-  saveButton.className =
-    "button button-small member-row-save";
+  achievementButton.type = "button";
+  achievementButton.className = "button button-small";
+  achievementButton.textContent = "新增紀錄";
 
-  saveButton.textContent =
-    "儲存";
+  achievementButton.addEventListener(
+    "click",
+
+    async () => {
+      const levelText =
+        levelSelect.value.trim();
+
+      const achievement =
+        achievementInput.value.trim();
+
+      const levelValue =
+        getLevelValue(levelText);
+
+      if (!levelText) {
+        showStatus(
+          memberMessage,
+          "請先選擇 Level。",
+          "error"
+        );
+
+        return;
+      }
+
+      if (!achievement) {
+        showStatus(
+          memberMessage,
+          "請輸入解鎖成就內容。",
+          "error"
+        );
+
+        achievementInput.focus();
+
+        return;
+      }
+
+      if (!currentAdmin) {
+        showStatus(
+          memberMessage,
+          "尚未完成管理員驗證。",
+          "error"
+        );
+
+        return;
+      }
+
+      achievementButton.disabled = true;
+      achievementButton.textContent = "新增中……";
+
+      try {
+        const historyReference =
+          await addDoc(
+            collection(
+              db,
+              "users",
+              member.uid,
+              "levelHistory"
+            ),
+            {
+              levelText,
+              levelValue,
+              achievement,
+              unlockedAt: serverTimestamp(),
+              createdAt: serverTimestamp(),
+              createdBy: currentAdmin.uid
+            }
+          );
+
+        console.log(
+          "levelHistory 寫入成功",
+          {
+            memberUid: member.uid,
+            historyId: historyReference.id
+          }
+        );
+
+        showStatus(
+          memberMessage,
+          `${member.name || "社員"} 的 Level / 成就紀錄已新增。`,
+          "success"
+        );
+
+        achievementInput.value = "";
+      } catch (error) {
+        console.error(
+          "新增 Level / 成就紀錄失敗：",
+          error
+        );
+
+        showStatus(
+          memberMessage,
+          `新增紀錄失敗：${error?.message || "未知錯誤"}`,
+          "error"
+        );
+      } finally {
+        achievementButton.disabled = false;
+        achievementButton.textContent = "新增紀錄";
+      }
+    }
+  );
+
+  viewAchievementButton.type = "button";
+  viewAchievementButton.className = "button button-small button-secondary";
+  viewAchievementButton.textContent = "查看/刪除紀錄";
+
+  viewAchievementButton.addEventListener(
+    "click",
+
+    async () => {
+      await showMemberLevelHistory(member);
+    }
+  );
+
+  achievementWrapper.append(
+    achievementLabel,
+    achievementInput,
+    achievementButton,
+    viewAchievementButton
+  );
+
+  saveButton.type = "button";
+  saveButton.className = "button button-small member-row-save";
+  saveButton.textContent = "儲存";
 
   saveButton.addEventListener(
     "click",
 
     async () => {
       const points =
-        validatePointsInput(
-          pointsInput.value
-        );
+        validatePointsInput(pointsInput.value);
 
       if (points === null) {
         showStatus(
           memberMessage,
-          `${
-            member.name ||
-            "社員"
-          } 的個人積分必須是大於或等於 0 的整數。`,
+          `${member.name || "社員"} 的個人積分必須是大於或等於 0 的整數。`,
           "error"
         );
 
@@ -1069,75 +772,41 @@ function createMemberEditor(
         return;
       }
 
-      saveButton.disabled =
-        true;
-
-      deleteButton.disabled =
-        true;
-
-      saveButton.textContent =
-        "儲存中……";
+      saveButton.disabled = true;
+      deleteButton.disabled = true;
+      saveButton.textContent = "儲存中……";
 
       try {
         const family =
-          familyInput
-            .value
-            .trim();
+          familyInput.value.trim();
 
         await updateDoc(
-          doc(
-            db,
-            "users",
-            member.uid
-          ),
+          doc(db, "users", member.uid),
           {
-            level:
-              levelSelect.value,
-
+            level: levelSelect.value,
             family,
-
             points,
-
-            paymentStatus:
-              paymentSelect.value,
-
-            updatedAt:
-              serverTimestamp()
+            paymentStatus: paymentSelect.value,
+            updatedAt: serverTimestamp()
           }
         );
 
-        /*
-         * 同步更新瀏覽器記憶體中的資料，
-         * 不必重新讀取 Firestore。
-         */
-        member.level =
-          levelSelect.value;
-
-        member.family =
-          family;
-
-        member.points =
-          points;
-
-        member.paymentStatus =
-          paymentSelect.value;
+        member.level = levelSelect.value;
+        member.family = family;
+        member.points = points;
+        member.paymentStatus = paymentSelect.value;
 
         showStatus(
           memberMessage,
-          `${
-            member.name ||
-            "社員"
-          } 的資料與積分已更新。`,
+          `${member.name || "社員"} 的資料與積分已更新。`,
           "success"
         );
 
-        saveButton.textContent =
-          "已儲存";
+        saveButton.textContent = "已儲存";
 
         window.setTimeout(
           () => {
-            saveButton.textContent =
-              "儲存";
+            saveButton.textContent = "儲存";
           },
           1200
         );
@@ -1149,66 +818,37 @@ function createMemberEditor(
 
         showStatus(
           memberMessage,
-          `更新失敗：${
-            error?.message ||
-            "未知錯誤"
-          }`,
+          `更新失敗：${error?.message || "未知錯誤"}`,
           "error"
         );
 
-        saveButton.textContent =
-          "儲存";
+        saveButton.textContent = "儲存";
       } finally {
-        saveButton.disabled =
-          false;
+        saveButton.disabled = false;
 
-        /*
-         * 目前登入的管理員不能刪除自己，
-         * 因此不能在這裡直接一律解除 disabled。
-         */
         if (
           currentAdmin &&
-          member.uid ===
-            currentAdmin.uid
+          member.uid === currentAdmin.uid
         ) {
-          deleteButton.disabled =
-            true;
+          deleteButton.disabled = true;
         } else {
-          deleteButton.disabled =
-            false;
+          deleteButton.disabled = false;
         }
       }
     }
   );
 
-  /* =====================================================
-     刪除按鈕
-     ===================================================== */
+  deleteButton.type = "button";
+  deleteButton.className = "button button-small delete-button member-row-delete";
+  deleteButton.textContent = "刪除";
 
-  deleteButton.type =
-    "button";
-
-  deleteButton.className =
-    "button button-small delete-button member-row-delete";
-
-  deleteButton.textContent =
-    "刪除";
-
-  /*
-   * 避免管理員刪除自己的 Firestore 文件。
-   */
   if (
     currentAdmin &&
     member.uid === currentAdmin.uid
   ) {
-    deleteButton.disabled =
-      true;
-
-    deleteButton.textContent =
-      "目前管理員";
-
-    deleteButton.title =
-      "不能刪除目前登入中的管理員帳號";
+    deleteButton.disabled = true;
+    deleteButton.textContent = "目前管理員";
+    deleteButton.title = "不能刪除目前登入中的管理員帳號";
   }
 
   deleteButton.addEventListener(
@@ -1251,22 +891,13 @@ function createMemberEditor(
         return;
       }
 
-      saveButton.disabled =
-        true;
-
-      deleteButton.disabled =
-        true;
-
-      deleteButton.textContent =
-        "刪除中……";
+      saveButton.disabled = true;
+      deleteButton.disabled = true;
+      deleteButton.textContent = "刪除中……";
 
       try {
         await deleteDoc(
-          doc(
-            db,
-            "users",
-            member.uid
-          )
+          doc(db, "users", member.uid)
         );
 
         showStatus(
@@ -1284,28 +915,16 @@ function createMemberEditor(
 
         showStatus(
           memberMessage,
-          `刪除失敗：${
-            error?.message ||
-            "未知錯誤"
-          }`,
+          `刪除失敗：${error?.message || "未知錯誤"}`,
           "error"
         );
 
-        saveButton.disabled =
-          false;
-
-        deleteButton.disabled =
-          false;
-
-        deleteButton.textContent =
-          "刪除";
+        saveButton.disabled = false;
+        deleteButton.disabled = false;
+        deleteButton.textContent = "刪除";
       }
     }
   );
-
-  /* =====================================================
-     組合社員列
-     ===================================================== */
 
   actions.append(
     saveButton,
@@ -1318,15 +937,112 @@ function createMemberEditor(
     familyWrapper,
     pointsWrapper,
     paymentWrapper,
+    achievementWrapper,
     actions
   );
 
   return row;
 }
 
-/* =========================================================
-   CSV 匯出
-   ========================================================= */
+async function showMemberLevelHistory(member) {
+  try {
+    const snapshot =
+      await getDocs(
+        query(
+          collection(
+            db,
+            "users",
+            member.uid,
+            "levelHistory"
+          ),
+          orderBy(
+            "unlockedAt",
+            "asc"
+          )
+        )
+      );
+
+    if (snapshot.empty) {
+      window.alert("這位社員目前沒有成就紀錄。");
+      return;
+    }
+
+    const records =
+      snapshot.docs.map(
+        (docSnapshot, index) => {
+          const data =
+            docSnapshot.data();
+
+          const date =
+            data.unlockedAt
+              ?.toDate?.()
+              ?.toLocaleDateString("zh-TW") ||
+            "未知日期";
+
+          return {
+            id: docSnapshot.id,
+            text:
+              `${index + 1}. ${date}｜${data.levelText || ""}｜${data.achievement || ""}`
+          };
+        }
+      );
+
+    const message =
+      records
+        .map((record) => record.text)
+        .join("\n") +
+      "\n\n請輸入要刪除的編號：";
+
+    const input =
+      window.prompt(message);
+
+    if (!input) {
+      return;
+    }
+
+    const index =
+      Number(input) - 1;
+
+    if (
+      !Number.isInteger(index) ||
+      index < 0 ||
+      index >= records.length
+    ) {
+      window.alert("編號不正確。");
+      return;
+    }
+
+    const confirmed =
+      window.confirm(
+        `確定要刪除這筆紀錄嗎？\n\n${records[index].text}`
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    await deleteDoc(
+      doc(
+        db,
+        "users",
+        member.uid,
+        "levelHistory",
+        records[index].id
+      )
+    );
+
+    window.alert("成就紀錄已刪除。");
+  } catch (error) {
+    console.error(
+      "刪除成就紀錄失敗：",
+      error
+    );
+
+    window.alert(
+      `刪除成就紀錄失敗：${error?.message || "未知錯誤"}`
+    );
+  }
+}
 
 exportMembersButton?.addEventListener(
   "click",
@@ -1338,14 +1054,11 @@ exportMembersButton?.addEventListener(
           user.role === "admin" ||
           (
             user.role === "member" &&
-            user.status ===
-              "approved"
+            user.status === "approved"
           )
       );
 
-    if (
-      members.length === 0
-    ) {
+    if (members.length === 0) {
       showStatus(
         exportMessage,
         "目前沒有可以匯出的正式社員。",
@@ -1372,37 +1085,30 @@ exportMembersButton?.addEventListener(
       ]
     ];
 
-    members.forEach(
-      (member) => {
-        rows.push([
-          member.name ?? "",
-          member.email ?? "",
-          member.studentId ?? "",
-          member.department ?? "",
-          member.phone ?? "",
-          member.role ?? "",
-          member.level ?? "",
-          member.family ?? "",
-          normalizePoints(
-            member.points
-          ),
-          member.paymentStatus ?? "",
-          member.status ?? "",
-          member.uid
-        ]);
-      }
-    );
+    members.forEach((member) => {
+      rows.push([
+        member.name ?? "",
+        member.email ?? "",
+        member.studentId ?? "",
+        member.department ?? "",
+        member.phone ?? "",
+        member.role ?? "",
+        member.level ?? "",
+        member.family ?? "",
+        normalizePoints(member.points),
+        member.paymentStatus ?? "",
+        member.status ?? "",
+        member.uid
+      ]);
+    });
 
     const csvContent =
       "\uFEFF" +
       rows
-        .map(
-          (row) =>
-            row
-              .map(
-                escapeCsvValue
-              )
-              .join(",")
+        .map((row) =>
+          row
+            .map(escapeCsvValue)
+            .join(",")
         )
         .join("\r\n");
 
@@ -1410,176 +1116,99 @@ exportMembersButton?.addEventListener(
       new Blob(
         [csvContent],
         {
-          type:
-            "text/csv;charset=utf-8;"
+          type: "text/csv;charset=utf-8;"
         }
       );
 
     const url =
-      URL.createObjectURL(
-        blob
-      );
+      URL.createObjectURL(blob);
 
     const link =
-      document.createElement(
-        "a"
-      );
+      document.createElement("a");
 
-    link.href =
-      url;
+    link.href = url;
 
     link.download =
       `surf-club-members-${
-        new Date()
-          .toISOString()
-          .slice(0, 10)
+        new Date().toISOString().slice(0, 10)
       }.csv`;
 
-    document.body.appendChild(
-      link
-    );
+    document.body.appendChild(link);
 
     link.click();
     link.remove();
 
-    URL.revokeObjectURL(
-      url
-    );
+    URL.revokeObjectURL(url);
 
     showStatus(
       exportMessage,
-      `已匯出 ${
-        members.length
-      } 筆正式社員資料。`,
+      `已匯出 ${members.length} 筆正式社員資料。`,
       "success"
     );
   }
 );
 
-/* =========================================================
-   登出
-   ========================================================= */
-
 logoutButton?.addEventListener(
   "click",
 
   async () => {
-    logoutButton.disabled =
-      true;
-
-    logoutButton.textContent =
-      "登出中……";
+    logoutButton.disabled = true;
+    logoutButton.textContent = "登出中……";
 
     try {
       await signOut(auth);
 
-      window.location.replace(
-        "./login.html"
-      );
+      window.location.replace("./login.html");
     } catch (error) {
-      console.error(
-        "登出失敗：",
-        error
-      );
+      console.error("登出失敗：", error);
 
-      logoutButton.disabled =
-        false;
-
-      logoutButton.textContent =
-        "登出";
+      logoutButton.disabled = false;
+      logoutButton.textContent = "登出";
 
       showStatus(
         adminStatus,
-        `登出失敗：${
-          error?.message ||
-          "未知錯誤"
-        }`,
+        `登出失敗：${error?.message || "未知錯誤"}`,
         "error"
       );
     }
   }
 );
 
-/* =========================================================
-   建立社費選單
-   ========================================================= */
-
-function createPaymentSelect(
-  currentValue
-) {
+function createPaymentSelect(currentValue) {
   const select =
-    document.createElement(
-      "select"
-    );
+    document.createElement("select");
 
   [
-    [
-      "pending",
-      "尚未確認"
-    ],
+    ["pending", "尚未確認"],
+    ["paid", "已繳費"],
+    ["unpaid", "尚未繳費"],
+    ["rejected", "資料有誤"]
+  ].forEach(([value, label]) => {
+    const option =
+      document.createElement("option");
 
-    [
-      "paid",
-      "已繳費"
-    ],
+    option.value = value;
+    option.textContent = label;
+    option.selected = currentValue === value;
 
-    [
-      "unpaid",
-      "尚未繳費"
-    ],
-
-    [
-      "rejected",
-      "資料有誤"
-    ]
-  ].forEach(
-    ([value, label]) => {
-      const option =
-        document.createElement(
-          "option"
-        );
-
-      option.value =
-        value;
-
-      option.textContent =
-        label;
-
-      option.selected =
-        currentValue === value;
-
-      select.appendChild(
-        option
-      );
-    }
-  );
+    select.appendChild(option);
+  });
 
   return select;
 }
-
-/* =========================================================
-   建立有標題的控制元件
-   ========================================================= */
 
 function createLabeledControl(
   labelText,
   control
 ) {
   const wrapper =
-    document.createElement(
-      "label"
-    );
+    document.createElement("label");
 
   const label =
-    document.createElement(
-      "span"
-    );
+    document.createElement("span");
 
-  wrapper.className =
-    "field-stack";
-
-  label.textContent =
-    labelText;
+  wrapper.className = "field-stack";
+  label.textContent = labelText;
 
   wrapper.append(
     label,
@@ -1589,39 +1218,24 @@ function createLabeledControl(
   return wrapper;
 }
 
-/* =========================================================
-   建立資料顯示欄位
-   ========================================================= */
-
 function createDetail(
   labelText,
   value
 ) {
   const wrapper =
-    document.createElement(
-      "div"
-    );
+    document.createElement("div");
 
   const label =
-    document.createElement(
-      "span"
-    );
+    document.createElement("span");
 
   const data =
-    document.createElement(
-      "strong"
-    );
+    document.createElement("strong");
 
-  wrapper.className =
-    "member-detail-item";
-
-  label.textContent =
-    labelText;
+  wrapper.className = "member-detail-item";
+  label.textContent = labelText;
 
   data.textContent =
-    String(
-      value ?? ""
-    ).trim() ||
+    String(value ?? "").trim() ||
     "未填寫";
 
   wrapper.append(
@@ -1632,22 +1246,11 @@ function createDetail(
   return wrapper;
 }
 
-/* =========================================================
-   審核狀態文字
-   ========================================================= */
-
-function getApplicationStatusText(
-  status
-) {
+function getApplicationStatusText(status) {
   const statusMap = {
-    pending:
-      "待審核",
-
-    approved:
-      "已通過",
-
-    rejected:
-      "已拒絕"
+    pending: "待審核",
+    approved: "已通過",
+    rejected: "已拒絕"
   };
 
   return (
@@ -1656,13 +1259,7 @@ function getApplicationStatusText(
   );
 }
 
-/* =========================================================
-   積分轉換
-   ========================================================= */
-
-function normalizePoints(
-  value
-) {
+function normalizePoints(value) {
   const points =
     Number(value);
 
@@ -1676,16 +1273,22 @@ function normalizePoints(
   return Math.floor(points);
 }
 
-/* =========================================================
-   驗證積分輸入
+function getLevelValue(levelText) {
+  if (!levelText) {
+    return 0;
+  }
 
-   成功：回傳整數
-   失敗：回傳 null
-   ========================================================= */
+  const match =
+    levelText.match(/Lv\.(\d+)/);
 
-function validatePointsInput(
-  value
-) {
+  if (!match) {
+    return 0;
+  }
+
+  return Number(match[1]);
+}
+
+function validatePointsInput(value) {
   if (
     value === null ||
     value === undefined ||
@@ -1708,69 +1311,25 @@ function validatePointsInput(
   return points;
 }
 
-/* =========================================================
-   CSV 欄位跳脫
-   ========================================================= */
-
-function escapeCsvValue(
-  value
-) {
+function escapeCsvValue(value) {
   let text =
-    String(
-      value ?? ""
-    );
+    String(value ?? "");
 
-  /*
-   * 避免 Excel 將內容視為公式。
-   */
-  if (
-    /^[=+\-@]/.test(text)
-  ) {
-    text =
-      `'${text}`;
+  if (/^[=+\-@]/.test(text)) {
+    text = `'${text}`;
   }
 
-  return `"${text.replaceAll(
-    '"',
-    '""'
-  )}"`;
+  return `"${text.replaceAll('"', '""')}"`;
 }
 
-/* =========================================================
-   HTML 跳脫
-   ========================================================= */
-
-function escapeHtml(
-  value
-) {
-  return String(
-    value ?? ""
-  )
-    .replaceAll(
-      "&",
-      "&amp;"
-    )
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
-    .replaceAll(
-      ">",
-      "&gt;"
-    )
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
-    .replaceAll(
-      "'",
-      "&#039;"
-    );
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
-
-/* =========================================================
-   顯示狀態訊息
-   ========================================================= */
 
 function showStatus(
   element,
@@ -1781,15 +1340,10 @@ function showStatus(
     return;
   }
 
-  element.textContent =
-    text;
-
-  element.className =
-    "status-message";
+  element.textContent = text;
+  element.className = "status-message";
 
   if (type) {
-    element.classList.add(
-      type
-    );
+    element.classList.add(type);
   }
 }

@@ -167,10 +167,31 @@
       </div>
     </section>
 
+    <section class="member-achievement-section">
+  <h2>Level 成長紀錄</h2>
+
+  <div class="level-chart-box">
+  <canvas id="level-history-chart"></canvas>
+</div>
+</section>
+
+<section class="member-achievement-section">
+  <h2>成就解鎖紀錄</h2>
+
+  <div
+    id="achievement-timeline"
+    class="achievement-timeline"
+  >
+    <p class="empty-state">
+      尚無成就紀錄
+    </p>
+  </div>
+</section>
+
     <!-- ===================================================
          最新公告
          =================================================== -->
-
+</main>
     <section class="content-card">
       <div class="section-heading left">
         <p class="eyebrow">
@@ -194,15 +215,17 @@
        JavaScript
        ===================================================== -->
 
-  <script
-    type="module"
-    src="./js/member.js"
-  ></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <!-- 有做 PWA 時才保留 -->
-  <script
-    type="module"
-    src="./js/register.js"
-  ></script>
+<script
+  type="module"
+  src="./js/member.js"
+></script>
+
+<!-- 有做 PWA 時才保留 -->
+<script
+  type="module"
+  src="./js/register.js"
+></script>
 </body>
 </html>
