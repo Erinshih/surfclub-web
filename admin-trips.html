@@ -1,0 +1,288 @@
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon-v2.png">
+  <link
+    rel="manifest"
+    href="./manifest.webmanifest"
+  >
+
+  <title>Surf Club Admin｜出團紀錄</title>
+
+  <link
+    rel="stylesheet"
+    href="./css/style.css"
+  >
+</head>
+
+<body>
+  <header class="site-header">
+    <nav class="navbar">
+      <a
+        class="brand"
+        href="./admin.html"
+      >
+        SURF CLUB ADMIN
+      </a>
+
+      <div class="nav-links">
+        <a href="./admin.html">
+          管理首頁
+        </a>
+
+        <a href="./admin-announcements.html">
+          公告管理
+        </a>
+
+        <a href="./admin-courses.html">
+          社課管理
+        </a>
+
+        <a href="./admin-members.html">
+          社員管理
+        </a>
+
+        <a href="./admin-trips.html">
+          出團紀錄
+        </a>
+
+        <!-- <a href="./index.html">
+          公開網站
+        </a> -->
+
+        <button
+          id="logout-button"
+          class="button button-small button-secondary"
+          type="button"
+        >
+          登出
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="dashboard">
+    <section class="dashboard-header">
+      <div>
+        <p class="eyebrow">
+          TRIP RECORDS
+        </p>
+
+        <h1>
+          出團紀錄
+        </h1>
+      </div>
+
+      <p
+        id="admin-status"
+        class="status-message"
+      >
+        正在驗證管理員身分……
+      </p>
+    </section>
+
+    <div
+      id="admin-content"
+      class="hidden"
+    >
+      <!-- ===============================================
+           新增／編輯出團紀錄
+           =============================================== -->
+
+      <section class="content-card">
+        <h2 id="trip-form-title">
+          新增出團紀錄
+        </h2>
+
+        <p class="panel-hint">
+          會出現在社員首頁的「最近一次出團」、回憶牆和年度回顧。
+        </p>
+
+        <form id="trip-form">
+          <div class="form-grid">
+            <div class="field-stack">
+              <label for="trip-date">
+                日期 *
+              </label>
+
+              <input
+                id="trip-date"
+                type="date"
+                required
+              >
+            </div>
+
+            <div class="field-stack">
+              <label for="trip-title">
+                標題 *
+              </label>
+
+              <input
+                id="trip-title"
+                type="text"
+                maxlength="40"
+                placeholder="例如：漁光島團"
+                required
+              >
+            </div>
+          </div>
+
+          <label for="trip-spot">
+            浪點
+          </label>
+
+          <input
+            id="trip-spot"
+            type="text"
+            maxlength="30"
+            placeholder="例如：漁光島"
+          >
+
+          <label>
+            下水的社員（<span id="participant-count">0</span> 人）
+          </label>
+
+          <div class="participant-tools">
+            <input
+              id="participant-search"
+              type="search"
+              placeholder="搜尋名字或綽號"
+              aria-label="搜尋社員"
+            >
+
+            <button
+              id="select-checkins-button"
+              class="button button-small"
+              type="button"
+            >
+              選取當天有打卡的社員
+            </button>
+
+            <button
+              id="clear-participants-button"
+              class="button button-small button-secondary"
+              type="button"
+            >
+              全部取消
+            </button>
+          </div>
+
+          <div
+            id="participant-picker"
+            class="participant-picker"
+          ></div>
+
+          <label for="trip-highlights">
+            當天發生的事（一行一件）
+          </label>
+
+          <textarea
+            id="trip-highlights"
+            maxlength="1000"
+            placeholder="4 個人第一次自己追到浪&#10;小明摔斷 fin"
+          ></textarea>
+
+          <label for="trip-links">
+            照片／影片連結（一行一個，網址前面可以加名稱）
+          </label>
+
+          <textarea
+            id="trip-links"
+            class="trip-links-input"
+            maxlength="2000"
+            placeholder="照片 https://drive.google.com/...&#10;浪況影片 https://youtu.be/..."
+          ></textarea>
+
+          <p class="panel-hint">
+            先把檔案上傳到 Google 雲端硬碟、Google 相簿或 YouTube，
+            並把分享權限設成「知道連結的人都能查看」，再把連結貼在這裡。
+          </p>
+
+          <div class="form-grid">
+            <div class="field-stack">
+              <label for="trip-quote">
+                今日名言
+              </label>
+
+              <input
+                id="trip-quote"
+                type="text"
+                maxlength="80"
+                placeholder="例如：今天的浪是我見過最平的"
+              >
+            </div>
+
+            <div class="field-stack">
+              <label for="trip-quote-by">
+                誰說的
+              </label>
+
+              <input
+                id="trip-quote-by"
+                type="text"
+                maxlength="20"
+              >
+            </div>
+          </div>
+
+          <p
+            id="trip-message"
+            class="status-message"
+          ></p>
+
+          <div class="dialog-actions">
+            <button
+              id="cancel-edit-button"
+              class="button button-small button-secondary"
+              type="button"
+              hidden
+            >
+              取消編輯
+            </button>
+
+            <button
+              id="trip-save-button"
+              class="button"
+              type="submit"
+            >
+              儲存
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- ===============================================
+           出團紀錄列表
+           =============================================== -->
+
+      <section class="content-card">
+        <h2>
+          所有出團紀錄
+        </h2>
+
+        <div
+          id="trip-list"
+          class="admin-trip-list"
+        >
+          <p class="empty-state">
+            正在載入……
+          </p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script
+    type="module"
+    src="./js/admin-trips.js"
+  ></script>
+</body>
+</html>

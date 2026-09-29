@@ -33,6 +33,16 @@ import {
 } from "./levels.js";
 
 import {
+  getParticipants,
+  loadTripLevelUps,
+  loadTrips,
+  renderQuote,
+  renderTripFacts,
+  renderTripLinks,
+  renderTripTitle
+} from "./trips.js";
+
+import {
   escapeHtml,
   getBasicInfoItems,
   getProfile,
@@ -121,6 +131,9 @@ const memoryText =
 
 const announcementList =
   document.querySelector("#announcement-list");
+
+const latestTrip =
+  document.querySelector("#latest-trip");
 
 const editProfileButton =
   document.querySelector("#edit-profile-button");
@@ -238,6 +251,7 @@ onAuthStateChanged(
       await Promise.all([
         loadHistory(),
         loadCheckins(),
+        loadLatestTrip(),
         loadAnnouncements()
       ]);
     } catch (error) {
@@ -1075,6 +1089,68 @@ function renderLevelChart(history) {
         }
       }
     );
+}
+
+/* =========================================================
+   最近一次出團
+   ========================================================= */
+
+async function loadLatestTrip() {
+  try {
+    const [trip] =
+      await loadTrips(db, 1);
+
+    if (!trip) {
+      return;
+    }
+
+    const isToday =
+      trip.date === todayString();
+
+    const joined =
+      getParticipants(trip).includes(currentUser.uid);
+
+    const renderTrip = (levelUps) => {
+      latestTrip.innerHTML = `
+        <p class="eyebrow">
+          ${isToday ? "今天的衝浪社" : "最近一次出團"}
+        </p>
+
+        <h2>
+          ${renderTripTitle(trip)}
+          ${joined ? `<span class="trip-joined">你有參加</span>` : ""}
+        </h2>
+
+        ${trip.spot ? `<p class="panel-hint">📍 ${escapeHtml(trip.spot)}</p>` : ""}
+
+        ${renderTripFacts(trip, levelUps)}
+
+        ${renderQuote(trip)}
+
+        ${renderTripLinks(trip)}
+
+        <a
+          class="button button-small button-secondary"
+          href="./memories.html#trip-${encodeURIComponent(trip.id)}"
+        >
+          看完整紀錄
+        </a>
+      `;
+    };
+
+    renderTrip(null);
+    latestTrip.hidden = false;
+
+    renderTrip(await loadTripLevelUps(db, trip));
+  } catch (error) {
+    /*
+     * 出團紀錄只是補充資訊，讀不到就不顯示
+     */
+    console.error(
+      "出團紀錄載入失敗：",
+      error
+    );
+  }
 }
 
 /* =========================================================

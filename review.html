@@ -20,7 +20,7 @@
     content="#315f65"
   >
 
-  <title>社員圖鑑｜Surf Club</title>
+  <title>年度回顧｜Surf Club</title>
 
   <link
     rel="stylesheet"
@@ -50,14 +50,14 @@
           社員首頁
         </a>
 
-        <a
-          class="active"
-          href="./dex.html"
-        >
+        <a href="./dex.html">
           社員圖鑑
         </a>
 
-        <a href="./memories.html">
+        <a
+          class="active"
+          href="./memories.html"
+        >
           回憶牆
         </a>
 
@@ -81,63 +81,35 @@
   </header>
 
   <main class="leaderboard-page">
-    <section class="dex-hero">
+    <section class="dex-hero review-hero">
       <p class="leaderboard-eyebrow">
-        SURF CLUB DEX
+        YEAR IN REVIEW
       </p>
 
-      <h1>
-        社員圖鑑
+      <h1 id="reviewTitle">
+        年度回顧
       </h1>
 
-      <p class="leaderboard-description">
-        從漂流木到漁光電線桿，每一隻都是本社的珍稀物種。
-      </p>
+      <nav
+        id="reviewYearNav"
+        class="review-links"
+        aria-label="切換年份"
+      ></nav>
     </section>
 
     <p
-      id="dexStatus"
+      id="reviewStatus"
       class="status-message"
     >
-      正在載入圖鑑……
+      正在統計這一年……
     </p>
 
-    <section
-      id="dexLevels"
-      class="dex-levels"
-      aria-label="等級"
-    ></section>
-
-    <section
-      id="dexDetail"
-      class="leaderboard-panel dex-detail"
-      hidden
-    ></section>
+    <div id="reviewContent"></div>
   </main>
-
-  <!-- =====================================================
-       社員角色卡
-       ===================================================== -->
-
-  <dialog
-    id="memberDialog"
-    class="profile-dialog dex-dialog"
-  >
-    <button
-      id="closeMemberDialog"
-      class="icon-button dialog-close"
-      type="button"
-      aria-label="關閉"
-    >
-      ×
-    </button>
-
-    <div id="memberDialogContent"></div>
-  </dialog>
 
   <script
     type="module"
-    src="./js/dex.js"
+    src="./js/review.js"
   ></script>
 </body>
 </html>

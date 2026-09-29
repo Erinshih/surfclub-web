@@ -795,7 +795,8 @@ textarea {
    共用工具
    ========================================================= */
 
-.hidden {
+.hidden,
+[hidden] {
   display: none !important;
 }
 
@@ -2276,10 +2277,6 @@ input[type="file"]::file-selector-button {
   text-align: center;
 }
 
-.leaderboard-loading[hidden] {
-  display: none;
-}
-
 .leaderboard-spinner {
   width: 24px;
   height: 24px;
@@ -3194,6 +3191,10 @@ input[type="file"]::file-selector-button {
   gap: 10px;
 }
 
+.dialog-actions .button {
+  margin-top: 0;
+}
+
 /* =========================================================
    社員圖鑑
    ========================================================= */
@@ -3644,4 +3645,373 @@ input[type="file"]::file-selector-button {
   .board-card {
     padding: 18px 16px;
   }
+}
+
+
+/* =========================================================
+   出團紀錄（社員首頁、回憶牆、年度回顧）
+   ========================================================= */
+
+.trip-latest {
+  border-left: 5px solid #63bdb6;
+}
+
+.trip-joined {
+  margin-left: 6px;
+  padding: 3px 10px;
+
+  display: inline-block;
+  vertical-align: middle;
+
+  color: #2f7a73;
+  background: #dff3f1;
+
+  border-radius: 999px;
+
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.trip-facts {
+  margin: 0 0 16px;
+  padding: 0;
+
+  display: grid;
+  gap: 6px;
+
+  list-style: none;
+}
+
+.trip-facts li::before {
+  content: "🌊 ";
+}
+
+.trip-facts li:first-child {
+  color: var(--navy);
+  font-weight: 700;
+}
+
+.trip-facts strong {
+  color: var(--primary-dark);
+  font-size: 1.3rem;
+}
+
+.trip-quote {
+  margin: 0 0 16px;
+  padding: 14px 18px;
+
+  background: #fff8e3;
+
+  border-left: 4px solid #e9c46a;
+  border-radius: 0 14px 14px 0;
+}
+
+.trip-quote p {
+  margin: 0;
+
+  color: #5b4a17;
+
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.trip-quote p::before {
+  content: "💬 「";
+}
+
+.trip-quote p::after {
+  content: "」";
+}
+
+.trip-quote cite {
+  display: block;
+  margin-top: 4px;
+
+  color: #8a7a4a;
+
+  font-size: 0.85rem;
+  font-style: normal;
+}
+
+.trip-participants {
+  margin: 0;
+  padding: 0;
+
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  gap: 12px;
+
+  list-style: none;
+}
+
+.trip-participants li {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+
+  font-size: 0.82rem;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.trip-participants .character-avatar {
+  width: 52px;
+  height: 52px;
+
+  border-width: 3px;
+
+  font-size: 1.3rem;
+}
+
+.trip-detail h2 {
+  margin: 4px 0 6px;
+  color: var(--navy);
+}
+
+.trip-detail h3 {
+  margin: 20px 0 12px;
+  color: var(--navy);
+}
+
+#tripDialogContent {
+  padding: 28px;
+}
+
+/* 回憶牆時間軸 */
+
+.review-links {
+  margin-top: 20px;
+
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.review-links .button {
+  margin-top: 0;
+}
+
+.trip-month {
+  margin-bottom: 30px;
+}
+
+.trip-month h2 {
+  margin: 0 0 14px;
+  color: #244f54;
+  font-size: 1.2rem;
+}
+
+.trip-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.trip-card {
+  padding: 20px;
+
+  display: grid;
+  align-content: start;
+  gap: 6px;
+
+  color: #244f54;
+  background: #ffffff;
+
+  border: 1px solid rgba(49, 95, 101, 0.1);
+  border-radius: 20px;
+
+  box-shadow: 0 10px 26px rgba(35, 76, 81, 0.07);
+
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.trip-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 34px rgba(35, 76, 81, 0.12);
+}
+
+.trip-card-date {
+  color: #63bdb6;
+  font-size: 1.6rem;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.trip-card strong {
+  font-size: 1.1rem;
+}
+
+.trip-card-meta,
+.trip-card-highlight {
+  color: #6b8285;
+  font-size: 0.88rem;
+}
+
+.trip-card-quote {
+  color: #8a7a4a;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.trip-card .trip-joined {
+  width: fit-content;
+  margin: 4px 0 0;
+}
+
+/* 年度回顧 */
+
+.review-numbers {
+  margin: 0 0 24px;
+
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.review-numbers div {
+  padding: 20px;
+
+  background: #ffffff;
+  border-radius: 20px;
+
+  box-shadow: 0 10px 26px rgba(35, 76, 81, 0.07);
+}
+
+.review-numbers dt {
+  color: #6b8285;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.review-numbers dd {
+  margin: 0;
+  color: #6b8285;
+}
+
+.review-numbers strong {
+  color: #244f54;
+  font-size: 2.2rem;
+  line-height: 1.2;
+}
+
+.review-grid {
+  margin-bottom: 24px;
+
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.review-grid .character-panel {
+  margin-bottom: 0;
+}
+
+.review-big {
+  margin: 0;
+
+  color: #315f65;
+
+  font-size: 2rem;
+  font-weight: 900;
+}
+
+.review-list {
+  margin: 0;
+  padding-left: 20px;
+
+  display: grid;
+  gap: 6px;
+}
+
+.review-list strong {
+  color: var(--primary-dark);
+}
+
+.review-quotes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 後台：選擇參加社員 */
+
+.participant-tools {
+  margin-bottom: 10px;
+
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.participant-tools input {
+  width: auto;
+  min-width: 0;
+  flex: 1 1 200px;
+  padding: 9px 12px;
+}
+
+.participant-tools .button {
+  margin-top: 0;
+}
+
+.participant-picker {
+  max-height: 320px;
+  overflow-y: auto;
+
+  padding: 10px;
+
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 6px 14px;
+
+  background: var(--surface-soft);
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-small);
+}
+
+.participant-option {
+  padding: 6px 4px;
+}
+
+.participant-option small {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+@media screen and (max-width: 640px) {
+  .review-grid {
+    grid-template-columns: 1fr;
+  }
+
+  #tripDialogContent {
+    padding: 18px;
+  }
+}
+
+
+/* =========================================================
+   出團照片／影片連結
+   ========================================================= */
+
+.trip-links {
+  margin: 0 0 16px;
+
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.trip-links .button {
+  margin-top: 0;
+}
+
+.trip-links-input {
+  min-height: 90px;
 }
