@@ -3081,7 +3081,7 @@ input[type="file"]::file-selector-button {
   gap: 8px;
 }
 
-.inline-form input {
+.inline-form input:not([type="checkbox"]) {
   width: auto;
   min-width: 0;
   flex: 1 1 140px;
@@ -3457,5 +3457,191 @@ input[type="file"]::file-selector-button {
 
   #memberDialogContent {
     padding: 16px;
+  }
+}
+
+
+/* =========================================================
+   本學期榜單
+   ========================================================= */
+
+.boards-section {
+  margin-bottom: 34px;
+}
+
+.board-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.board-card {
+  padding: 22px;
+
+  display: flex;
+  flex-direction: column;
+
+  background: rgba(255, 255, 255, 0.92);
+
+  border: 1px solid rgba(49, 95, 101, 0.1);
+  border-radius: 24px;
+
+  box-shadow: 0 18px 44px rgba(35, 76, 81, 0.08);
+}
+
+.board-card-header {
+  margin-bottom: 14px;
+
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.board-card-header h3 {
+  margin: 0;
+  color: #244f54;
+  font-size: 1.15rem;
+}
+
+.board-card-header p {
+  margin: 0;
+  color: #7a8f92;
+  font-size: 0.82rem;
+}
+
+.board-card-emoji {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+
+  display: grid;
+  place-items: center;
+
+  background: #edf4f3;
+  border-radius: 16px;
+
+  font-size: 1.7rem;
+}
+
+.board-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.board-row {
+  padding: 8px 10px;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  border-radius: 14px;
+}
+
+.board-row:nth-child(1) {
+  background: #fff8e3;
+}
+
+.board-row.is-me {
+  outline: 2px solid #63bdb6;
+  outline-offset: -2px;
+}
+
+.board-rank {
+  width: 28px;
+  flex-shrink: 0;
+
+  color: #7a8f92;
+
+  font-weight: 900;
+  text-align: center;
+}
+
+.board-row .character-avatar {
+  width: 36px;
+  height: 36px;
+
+  border-width: 2px;
+  box-shadow: none;
+
+  font-size: 1rem;
+}
+
+.board-name {
+  min-width: 0;
+  flex: 1;
+
+  display: grid;
+}
+
+.board-name strong {
+  overflow: hidden;
+
+  color: #284f54;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.board-name small {
+  overflow: hidden;
+
+  color: #829497;
+
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.board-value {
+  flex-shrink: 0;
+
+  color: #6b8285;
+
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.board-value strong {
+  color: #315f65;
+  font-size: 1.2rem;
+}
+
+.board-empty {
+  margin: auto 0;
+  padding: 18px 0;
+
+  color: #829497;
+  text-align: center;
+}
+
+.board-my-rank {
+  margin: 12px 0 0;
+  padding-top: 12px;
+
+  color: #60787b;
+
+  border-top: 1px dashed #d5e2e4;
+
+  font-size: 0.88rem;
+}
+
+.board-my-rank strong {
+  color: #315f65;
+}
+
+.checkin-option {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+@media screen and (max-width: 480px) {
+  .board-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .board-card {
+    padding: 18px 16px;
   }
 }

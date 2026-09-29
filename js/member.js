@@ -86,6 +86,12 @@ const checkinDate =
 const checkinSpot =
   document.querySelector("#checkin-spot");
 
+const checkinDawn =
+  document.querySelector("#checkin-dawn");
+
+const checkinDusk =
+  document.querySelector("#checkin-dusk");
+
 const checkinStatus =
   document.querySelector("#checkin-status");
 
@@ -777,7 +783,7 @@ function renderCheckins() {
     recent.map((checkin) => `
       <li>
         <time>${escapeHtml(checkin.date)}</time>
-        <span>${escapeHtml(checkin.spot || "—")}</span>
+        <span>${checkin.dawn ? "🌅 " : ""}${checkin.dusk ? "🌇 " : ""}${escapeHtml(checkin.spot || "—")}</span>
 
         <button
           class="icon-button"
@@ -831,16 +837,38 @@ checkinForm?.addEventListener(
         return;
       }
 
-      await setDoc(
-        checkinReference,
-        {
-          date,
-          spot: checkinSpot.value.trim(),
-          createdAt: serverTimestamp()
-        }
-      );
+      const checkin = {
+        date,
+        spot: checkinSpot.value.trim(),
+        createdAt: serverTimestamp()
+      };
 
-      showStatus(checkinStatus, `打卡成功！${date} 🌊`, "success");
+      /*
+       * 開燈存在 dawn、關燈存在 dusk，沒勾就不寫欄位
+       */
+      if (checkinDawn.checked) {
+        checkin.dawn = true;
+      }
+
+      if (checkinDusk.checked) {
+        checkin.dusk = true;
+      }
+
+      await setDoc(checkinReference, checkin);
+
+      checkinDawn.checked = false;
+      checkinDusk.checked = false;
+
+      const badges = [
+        checkin.dawn ? "🌅 開燈" : "",
+        checkin.dusk ? "🌇 關燈" : ""
+      ].filter(Boolean).join("、");
+
+      showStatus(
+        checkinStatus,
+        `打卡成功！${date} ${badges || "🌊"}`,
+        "success"
+      );
 
       await loadCheckins();
     } catch (error) {

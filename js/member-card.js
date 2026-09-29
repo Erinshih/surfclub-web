@@ -120,13 +120,49 @@ export function daysSince(date) {
 }
 
 export function todayString() {
+  return toDateString(new Date());
+}
+
+export function toDateString(date) {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0")
+  ].join("-");
+}
+
+/*
+ * 學期起點：2 月 1 日、8 月 1 日
+ */
+export function getSemesterStart() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+
+  if (month >= 8) {
+    return new Date(year, 7, 1);
+  }
+
+  if (month >= 2) {
+    return new Date(year, 1, 1);
+  }
+
+  return new Date(year - 1, 7, 1);
+}
+
+/*
+ * 學年起點：8 月 1 日，這天之後入社的算新生
+ */
+export function getAcademicYearStart() {
   const now = new Date();
 
-  return [
-    now.getFullYear(),
-    String(now.getMonth() + 1).padStart(2, "0"),
-    String(now.getDate()).padStart(2, "0")
-  ].join("-");
+  return new Date(
+    now.getMonth() + 1 >= 8
+      ? now.getFullYear()
+      : now.getFullYear() - 1,
+    7,
+    1
+  );
 }
 
 /* =========================================================

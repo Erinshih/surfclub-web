@@ -634,7 +634,7 @@ function createMemberEditor(member) {
 
   titlesInput.type = "text";
   titlesInput.maxLength = 120;
-  titlesInput.placeholder = "例如：晨衝王、最會撿板的人";
+  titlesInput.placeholder = "例如：開燈王、最會撿板的人";
   titlesInput.value =
     Array.isArray(member.titles)
       ? member.titles.join("、")
@@ -977,7 +977,7 @@ function createMemberEditor(member) {
 }
 
 /*
- * 「晨衝王、最會撿板的人」→ ["晨衝王", "最會撿板的人"]
+ * 「開燈王、最會撿板的人」→ ["開燈王", "最會撿板的人"]
  */
 function parseTitles(value) {
   return [

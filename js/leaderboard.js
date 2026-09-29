@@ -28,6 +28,10 @@ import {
   db
 } from "./firebase-config.js";
 
+import {
+  renderBoards
+} from "./boards.js";
+
 /* =========================================================
    DOM
    ========================================================= */
@@ -908,6 +912,16 @@ onAuthStateChanged(
 
         return;
       }
+
+      /*
+       * 本學期榜單要讀每位社員的打卡紀錄，
+       * 自己顯示載入狀態，不佔用積分榜的逾時判斷
+       */
+      renderBoards(
+        db,
+        document.querySelector("#boardGrid"),
+        user.uid
+      );
 
       await loadLeaderboard();
     } catch (error) {

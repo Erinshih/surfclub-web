@@ -33,6 +33,7 @@ import {
   getInitial,
   getJoinDate,
   getProfile,
+  getSemesterStart,
   getSurfProfileItems,
   loadCheckinStats,
   loadLevelHistory,
@@ -400,25 +401,6 @@ function formatAverageMonths(members) {
     ) / dates.length / (1000 * 60 * 60 * 24 * 30.44);
 
   return `<strong>${averageMonths.toFixed(1)}</strong> 個月`;
-}
-
-/*
- * 學期起點：2 月 1 日、8 月 1 日
- */
-function getSemesterStart() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1;
-
-  if (month >= 8) {
-    return new Date(year, 7, 1);
-  }
-
-  if (month >= 2) {
-    return new Date(year, 1, 1);
-  }
-
-  return new Date(year - 1, 7, 1);
 }
 
 /*
