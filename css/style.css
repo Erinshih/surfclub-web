@@ -74,18 +74,6 @@ select {
    導覽列
    ========================================================= */
 
-.site-header {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-
-  background: rgba(255, 255, 255, 0.86);
-  border-bottom: 1px solid rgba(212, 225, 228, 0.9);
-
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-}
-
 .navbar {
   width: min(1180px, calc(100% - 36px));
   min-height: 76px;
@@ -161,71 +149,8 @@ select {
 }
 
 /* =========================================================
-   首頁 Hero
+   小標題
    ========================================================= */
-
-.hero {
-  min-height: 86vh;
-  padding: 0;
-
-  display: block;
-
-  background:
-    linear-gradient(
-      rgba(31, 55, 63, 0.20),
-      rgba(31, 55, 63, 0.42)
-    ),
-    url("../images/surf-hero.jpg")
-    center / cover no-repeat;
-}
-
-.hero-overlay {
-  min-height: 86vh;
-  padding: 110px 24px 145px;
-
-  display: grid;
-  place-items: center;
-
-  text-align: center;
-}
-
-.hero-content {
-  max-width: 820px;
-  padding: 46px 42px;
-
-  background: rgba(255, 255, 255, 0.17);
-  border: 1px solid rgba(255, 255, 255, 0.38);
-  border-radius: var(--radius-large);
-
-  box-shadow:
-    0 24px 60px rgba(19, 40, 47, 0.16);
-
-  backdrop-filter: blur(9px);
-  -webkit-backdrop-filter: blur(9px);
-}
-
-.hero h1 {
-  margin: 12px 0 22px;
-
-  color: #ffffff;
-
-  font-size: clamp(3.2rem, 8vw, 6.4rem);
-  font-weight: 900;
-  letter-spacing: -0.04em;
-  line-height: 0.98;
-
-  text-shadow:
-    0 8px 24px rgba(24, 43, 49, 0.22);
-}
-
-.hero p {
-  max-width: 660px;
-  margin: 0 auto;
-
-  color: rgba(255, 255, 255, 0.94);
-
-  font-size: 1.1rem;
-}
 
 .eyebrow {
   margin: 0;
@@ -238,74 +163,6 @@ select {
   text-transform: uppercase;
 }
 
-.hero .eyebrow {
-  color: #e7fbf8;
-}
-
-.hero-actions {
-  margin-top: 30px;
-
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-/* =========================================================
-   首頁統計資訊
-   ========================================================= */
-
-.stats-strip {
-  position: relative;
-  z-index: 10;
-
-  width: min(1120px, calc(100% - 32px));
-  margin: -66px auto 0;
-}
-
-.stats-grid {
-  overflow: hidden;
-
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(212, 225, 228, 0.95);
-  border-radius: var(--radius);
-
-  box-shadow: var(--shadow);
-
-  backdrop-filter: blur(12px);
-}
-
-.stat-item {
-  padding: 30px 18px;
-
-  text-align: center;
-
-  border-right: 1px solid var(--border);
-}
-
-.stat-item:last-child {
-  border-right: 0;
-}
-
-.stat-item strong {
-  display: block;
-
-  color: var(--navy);
-
-  font-size: 2.1rem;
-  font-weight: 900;
-  line-height: 1.2;
-}
-
-.stat-item span {
-  color: var(--muted);
-
-  font-size: 0.92rem;
-  font-weight: 700;
-}
 
 /* =========================================================
    一般內容區塊
@@ -364,10 +221,6 @@ select {
   margin-left: 0;
 }
 
-.section-action {
-  margin-top: 30px;
-  text-align: center;
-}
 
 /* =========================================================
    卡片
@@ -381,8 +234,7 @@ select {
 
 .card,
 .content-card,
-.course-card,
-.form-card {
+.course-card {
   color: var(--text);
   background: rgba(255, 255, 255, 0.96);
 
@@ -521,32 +373,6 @@ select {
 
 .button-secondary:hover {
   background: #4f626a;
-}
-
-.button-outline {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.09);
-
-  border: 1.5px solid rgba(255, 255, 255, 0.85);
-
-  box-shadow: none;
-}
-
-.button-outline:hover {
-  color: var(--navy);
-  background: rgba(255, 255, 255, 0.94);
-
-  box-shadow:
-    0 10px 24px rgba(27, 43, 49, 0.12);
-}
-
-.delete-button {
-  color: #ffffff;
-  background: var(--danger);
-}
-
-.delete-button:hover {
-  background: var(--danger-dark);
 }
 
 /* =========================================================
@@ -696,34 +522,6 @@ select {
   font-size: 1.45rem;
 }
 
-.course-date {
-  margin: 0;
-
-  color: var(--primary-dark);
-
-  font-weight: 800;
-}
-
-.course-tags {
-  margin-top: 18px;
-
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.course-tags span {
-  padding: 6px 13px;
-
-  color: #356d69;
-  background: var(--primary-light);
-
-  border: 1px solid rgba(99, 189, 182, 0.18);
-  border-radius: 999px;
-
-  font-size: 0.87rem;
-  font-weight: 800;
-}
 
 /* =========================================================
    資訊清單
@@ -911,47 +709,6 @@ textarea {
   color: var(--danger);
 }
 
-.status-message.success {
-  color: var(--success);
-}
-
-.announcement-card {
-  position: relative;
-}
-
-.announcement-card p {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-.announcement-meta {
-  display: block;
-  margin-top: 16px;
-
-  color: var(--muted);
-
-  font-size: 0.9rem;
-}
-
-.announcement-actions {
-  margin-top: 18px;
-
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-}
-
-.empty-state {
-  padding: 32px;
-
-  color: var(--muted);
-  background: rgba(255, 255, 255, 0.72);
-
-  border: 1px dashed #b9cccf;
-  border-radius: var(--radius);
-
-  text-align: center;
-}
 
 /* =========================================================
    社員專區
@@ -1050,18 +807,6 @@ textarea {
   .card-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .stat-item:nth-child(2) {
-    border-right: 0;
-  }
-
-  .stat-item:nth-child(-n + 2) {
-    border-bottom: 1px solid var(--border);
-  }
 }
 
 @media screen and (max-width: 760px) {
@@ -1080,17 +825,6 @@ textarea {
     gap: 12px 18px;
   }
 
-  .hero-overlay {
-    padding: 92px 18px 125px;
-  }
-
-  .hero-content {
-    padding: 34px 24px;
-  }
-
-  .hero h1 {
-    font-size: clamp(2.8rem, 14vw, 4.6rem);
-  }
 
   .section,
   .dashboard {
@@ -1140,28 +874,6 @@ textarea {
 }
 
 @media screen and (max-width: 520px) {
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .stat-item {
-    border-right: 0;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .stat-item:last-child {
-    border-bottom: 0;
-  }
-
-  .hero-actions {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .hero-actions .button {
-    width: 100%;
-  }
-
   .card,
   .content-card,
   .course-card {
@@ -1176,10 +888,6 @@ textarea {
 #admin-content {
   display: grid;
   gap: 28px;
-}
-
-#admin-content.hidden {
-  display: none;
 }
 
 #admin-course-list {
@@ -1213,51 +921,8 @@ textarea {
 }
 
 /* =========================================================
-   社員 Level 與家系
+   社員 Level 與家系管理
    ========================================================= */
-
-.member-profile-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-}
-
-.member-profile-item {
-  min-height: 110px;
-  padding: 20px;
-
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 8px;
-
-  background: var(--surface-soft);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-}
-
-.member-profile-label {
-  color: var(--muted);
-  font-size: 0.85rem;
-  font-weight: 700;
-}
-
-.member-profile-item strong {
-  color: var(--navy);
-  font-size: 1.1rem;
-  overflow-wrap: anywhere;
-}
-
-.member-level-badge,
-.member-family-badge {
-  width: fit-content;
-  padding: 6px 13px;
-
-  color: #356d69;
-  background: var(--primary-light);
-
-  border-radius: 999px;
-}
 
 #member-management-list {
   display: grid;
@@ -1302,20 +967,12 @@ textarea {
 }
 
 @media screen and (max-width: 900px) {
-  .member-profile-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
   .member-management-card {
     grid-template-columns: 1fr 1fr;
   }
 }
 
 @media screen and (max-width: 600px) {
-  .member-profile-grid {
-    grid-template-columns: 1fr;
-  }
-
   .member-management-card {
     grid-template-columns: 1fr;
   }
@@ -1325,12 +982,11 @@ textarea {
   }
 }
 
-/* 
-=========================================================
+/* =========================================================
    管理員社課列表
-   ========================================================= */ */
+   ========================================================= */
 
- #course-list {
+#course-list {
   display: grid;
   gap: 20px;
 }
@@ -1405,11 +1061,14 @@ textarea {
   font-weight: 700;
 }
 
-.delete-button,
-.button-danger {
+.delete-button {
   color: #ffffff;
   background: #e85d62;
   border-color: #e85d62;
+}
+
+.delete-button:hover {
+  background: var(--danger-dark);
 }
 
 @media (max-width: 760px) {
@@ -1515,9 +1174,6 @@ textarea {
 .member-row-field input {
   width: 100%;
   height: 38px;
-
-  box-sizing: border-box;
-
   padding: 7px 10px;
 
   border: 1px solid #c8d9da;
@@ -1526,7 +1182,6 @@ textarea {
   background: #ffffff;
   color: #294b50;
 
-  font: inherit;
   font-size: 0.9rem;
 }
 
@@ -1547,6 +1202,42 @@ textarea {
 }
 
 /* =========================================================
+   正式社員操作按鈕
+   ========================================================= */
+
+.member-row-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+
+  align-self: end;
+}
+
+.member-row-actions .button {
+  min-width: 68px;
+  height: 38px;
+  margin: 0;
+  padding: 7px 13px;
+}
+
+.member-row-delete {
+  background: var(--danger);
+  box-shadow:
+    0 6px 16px
+    rgba(217, 92, 92, 0.18);
+}
+
+.member-row-delete:hover {
+  background: var(--danger-dark);
+}
+
+.member-row-delete:disabled {
+  background: #9aa9ad;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* =========================================================
    平板
    ========================================================= */
 
@@ -1557,11 +1248,10 @@ textarea {
       minmax(100px, 0.7fr)
       minmax(140px, 1fr)
       minmax(120px, 0.8fr);
-
-    align-items: end;
   }
 
-  .member-row-save {
+  .member-row-save,
+  .member-row-actions {
     grid-column: 4;
   }
 }
@@ -1589,11 +1279,16 @@ textarea {
       1 / -1;
   }
 
-  .member-row-save {
+  .member-row-save,
+  .member-row-actions {
     grid-column:
       1 / -1;
 
     width: 100%;
+  }
+
+  .member-row-actions .button {
+    flex: 1;
   }
 }
 
@@ -1609,9 +1304,18 @@ textarea {
 
   .member-row-identity,
   .member-row-family,
-  .member-row-save {
+  .member-row-save,
+  .member-row-actions {
     grid-column:
       auto;
+  }
+
+  .member-row-actions {
+    flex-direction: column;
+  }
+
+  .member-row-actions .button {
+    width: 100%;
   }
 }
 
@@ -1679,563 +1383,6 @@ input[type="file"]::file-selector-button {
 
 
 /* =========================================================
-   正式社員操作按鈕
-   ========================================================= */
-
-.member-row-actions {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-
-  align-self: end;
-}
-
-.member-row-actions .button {
-  min-width: 68px;
-  height: 38px;
-  margin: 0;
-  padding: 7px 13px;
-}
-
-.member-row-delete {
-  background: var(--danger);
-  box-shadow:
-    0 6px 16px
-    rgba(217, 92, 92, 0.18);
-}
-
-.member-row-delete:hover {
-  background: var(--danger-dark);
-}
-
-.member-row-delete:disabled {
-  background: #9aa9ad;
-  box-shadow: none;
-  cursor: not-allowed;
-}
-
-/* 平板 */
-@media screen and (max-width: 980px) {
-  .member-row-actions {
-    grid-column: 4;
-  }
-}
-
-/* 手機 */
-@media screen and (max-width: 700px) {
-  .member-row-actions {
-    grid-column: 1 / -1;
-    width: 100%;
-  }
-
-  .member-row-actions .button {
-    flex: 1;
-  }
-}
-
-/* 小型手機 */
-@media screen and (max-width: 460px) {
-  .member-row-actions {
-    grid-column: auto;
-    flex-direction: column;
-  }
-
-  .member-row-actions .button {
-    width: 100%;
-  }
-}
-
-
-/* =========================================================
-   社員頁公告連結
-   ========================================================= */
-
-.announcement-card {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-.announcement-card > p {
-  width: 100%;
-  margin-bottom: 0;
-
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-.announcement-link {
-  width: fit-content;
-  margin-top: 16px;
-}
-
-.announcement-meta {
-  width: 100%;
-  margin-top: 16px;
-
-  color: var(--muted);
-  font-size: 0.9rem;
-}
-
-
-/* =========================================================
-   社員首頁：個人資料與公告完整樣式
-   建議放在 css/style.css 最底部
-   ========================================================= */
-
-
-/* =========================================================
-   社員資料區塊
-   ========================================================= */
-
-.member-profile-grid {
-  display: grid;
-  grid-template-columns:
-    repeat(4, minmax(0, 1fr));
-
-  gap: 16px;
-  width: 100%;
-  margin-top: 28px;
-}
-
-
-/* =========================================================
-   單一社員資料卡片
-   ========================================================= */
-
-.member-profile-item {
-  min-width: 0;
-  padding: 22px 18px;
-
-  background: #f8fbfb;
-
-  border:
-    1px solid
-    var(--border, #d4e3e5);
-
-  border-radius: 14px;
-
-  box-shadow:
-    0 5px 16px
-    rgba(34, 72, 78, 0.04);
-
-  transition:
-    transform 0.2s ease,
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.member-profile-item:hover {
-  transform: translateY(-2px);
-
-  border-color:
-    rgba(71, 164, 159, 0.45);
-
-  box-shadow:
-    0 10px 24px
-    rgba(34, 72, 78, 0.08);
-}
-
-
-/* =========================================================
-   社員資料欄位標題
-   ========================================================= */
-
-.member-profile-item span {
-  display: block;
-
-  margin-bottom: 12px;
-
-  color:
-    var(--muted, #667c82);
-
-  font-size: 0.86rem;
-  font-weight: 700;
-  line-height: 1.4;
-}
-
-
-/* =========================================================
-   社員資料欄位內容
-   ========================================================= */
-
-.member-profile-item strong {
-  display: block;
-
-  min-width: 0;
-
-  color:
-    var(--navy, #27474f);
-
-  font-size: 1.05rem;
-  font-weight: 800;
-  line-height: 1.5;
-
-  overflow-wrap: anywhere;
-  word-break: break-word;
-}
-
-
-/* =========================================================
-   Level 與家系膠囊
-   member.html 中若使用 strong，
-   會自動呈現為淺藍綠底
-   ========================================================= */
-
-#member-level,
-#member-family {
-  display: inline-flex;
-  align-items: center;
-
-  width: fit-content;
-  max-width: 100%;
-
-  padding: 6px 12px;
-
-  color: #315f65;
-  background: #ddf4f1;
-
-  border-radius: 999px;
-}
-
-
-/* =========================================================
-   公告列表
-   ========================================================= */
-
-#announcement-list {
-  display: grid;
-  gap: 18px;
-
-  width: 100%;
-  margin-top: 24px;
-}
-
-
-/* =========================================================
-   公告卡片
-   ========================================================= */
-
-.announcement-card {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-
-  width: 100%;
-  min-width: 0;
-  padding: 24px;
-
-  background: #ffffff;
-
-  border:
-    1px solid
-    var(--border, #d4e3e5);
-
-  border-radius: 16px;
-
-  box-shadow:
-    0 8px 22px
-    rgba(34, 72, 78, 0.06);
-
-  transition:
-    transform 0.2s ease,
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.announcement-card:hover {
-  transform: translateY(-2px);
-
-  border-color:
-    rgba(71, 164, 159, 0.45);
-
-  box-shadow:
-    0 14px 32px
-    rgba(34, 72, 78, 0.10);
-}
-
-
-/* =========================================================
-   公告標題
-   ========================================================= */
-
-.announcement-title {
-  width: 100%;
-  margin: 0 0 12px;
-
-  color:
-    var(--navy, #27474f);
-
-  font-size: 1.25rem;
-  font-weight: 900;
-  line-height: 1.45;
-
-  overflow-wrap: anywhere;
-}
-
-
-/* =========================================================
-   公告內容
-   ========================================================= */
-
-.announcement-content {
-  width: 100%;
-  margin: 0;
-
-  color:
-    var(--text, #354b50);
-
-  font-size: 1rem;
-  line-height: 1.8;
-
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-}
-
-
-/* =========================================================
-   公告網址容器
-   ========================================================= */
-
-.announcement-link-wrapper {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-
-  gap: 10px;
-
-  width: 100%;
-  margin-top: 18px;
-}
-
-
-/* =========================================================
-   公告網址按鈕
-   ========================================================= */
-
-.announcement-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  width: fit-content;
-  max-width: 100%;
-  min-height: 40px;
-
-  margin: 0;
-  padding: 9px 16px;
-
-  color: #ffffff;
-  background:
-    var(--primary, #54aaa5);
-
-  border:
-    1px solid
-    var(--primary, #54aaa5);
-
-  border-radius: 999px;
-
-  font-size: 0.92rem;
-  font-weight: 800;
-  line-height: 1.3;
-  text-align: center;
-  text-decoration: none;
-
-  overflow-wrap: anywhere;
-
-  box-shadow:
-    0 7px 16px
-    rgba(63, 151, 146, 0.18);
-
-  transition:
-    transform 0.2s ease,
-    background 0.2s ease,
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.announcement-link:hover {
-  transform: translateY(-1px);
-
-  color: #ffffff;
-  background:
-    var(--primary-dark, #367f7b);
-
-  border-color:
-    var(--primary-dark, #367f7b);
-
-  box-shadow:
-    0 10px 22px
-    rgba(63, 151, 146, 0.24);
-}
-
-.announcement-link:focus-visible {
-  outline:
-    3px solid
-    rgba(84, 170, 165, 0.28);
-
-  outline-offset: 3px;
-}
-
-
-/* =========================================================
-   公告發布時間
-   ========================================================= */
-
-.announcement-meta {
-  display: block;
-
-  width: 100%;
-  margin-top: 18px;
-  padding-top: 14px;
-
-  color:
-    var(--muted, #667c82);
-
-  border-top:
-    1px solid
-    var(--border, #d4e3e5);
-
-  font-size: 0.86rem;
-  line-height: 1.5;
-}
-
-
-/* =========================================================
-   歡迎與狀態訊息
-   ========================================================= */
-
-#member-status {
-  margin: 0;
-
-  line-height: 1.6;
-}
-
-#member-status.success {
-  color:
-    var(--success, #33986e);
-}
-
-#member-status.error {
-  color:
-    var(--danger, #d95c5c);
-}
-
-
-/* =========================================================
-   空資料狀態
-   ========================================================= */
-
-#announcement-list .empty-state {
-  margin: 0;
-  padding: 26px 20px;
-
-  color:
-    var(--muted, #667c82);
-
-  background: #f8fbfb;
-
-  border:
-    1px dashed
-    var(--border, #d4e3e5);
-
-  border-radius: 14px;
-
-  text-align: center;
-}
-
-
-/* =========================================================
-   公告錯誤訊息
-   ========================================================= */
-
-#announcement-list .status-message.error {
-  margin: 0;
-  padding: 16px 18px;
-
-  color:
-    var(--danger, #d95c5c);
-
-  background: #fff4f4;
-
-  border:
-    1px solid
-    rgba(217, 92, 92, 0.28);
-
-  border-radius: 12px;
-}
-
-
-/* =========================================================
-   平板版
-   ========================================================= */
-
-@media screen and (max-width: 900px) {
-  .member-profile-grid {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
-  }
-
-  .announcement-card {
-    padding: 22px;
-  }
-}
-
-
-/* =========================================================
-   手機版
-   ========================================================= */
-
-@media screen and (max-width: 560px) {
-  .member-profile-grid {
-    grid-template-columns: 1fr;
-
-    gap: 12px;
-    margin-top: 22px;
-  }
-
-  .member-profile-item {
-    padding: 18px 16px;
-  }
-
-  .announcement-card {
-    padding: 19px 17px;
-  }
-
-  .announcement-title {
-    font-size: 1.12rem;
-  }
-
-  .announcement-content {
-    font-size: 0.96rem;
-  }
-
-  .announcement-link-wrapper {
-    display: block;
-  }
-
-  .announcement-link {
-    width: 100%;
-  }
-}
-
-
-/* =========================================================
-   小型手機
-   ========================================================= */
-
-@media screen and (max-width: 380px) {
-  .member-profile-item {
-    padding: 16px 14px;
-  }
-
-  .announcement-card {
-    padding: 17px 14px;
-  }
-}
-
-/* =========================================================
    系統入口頁
    ========================================================= */
 
@@ -2281,11 +1428,6 @@ input[type="file"]::file-selector-button {
     clamp(2rem, 7vw, 3.2rem);
 }
 
-.brand-mark {
-  color: var(--primary);
-
-  font-size: 2rem;
-}
 
 .system-entry-actions {
   display: flex;
@@ -2297,154 +1439,7 @@ input[type="file"]::file-selector-button {
 }
 
 
-/* =========================================================
-   社員資訊系統
-   ========================================================= */
-
-.member-dashboard {
-  width: min(1080px, calc(100% - 32px));
-
-  margin: 0 auto;
-  padding: 36px 0 72px;
-}
-
-.member-dashboard > section {
-  margin-bottom: 24px;
-}
-
-.member-welcome-card {
-  padding: 36px;
-
-  background:
-    linear-gradient(
-      135deg,
-      #ffffff,
-      #eef8f7
-    );
-
-  border: 1px solid var(--border);
-  border-radius: 20px;
-
-  box-shadow: var(--shadow-small);
-}
-
-.member-welcome-card h1 {
-  margin: 8px 0 16px;
-
-  color: var(--navy);
-
-  font-size:
-    clamp(2rem, 5vw, 3.2rem);
-}
-
-.member-summary-grid {
-  display: grid;
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
-
-  gap: 18px;
-}
-
-.member-summary-card {
-  padding: 28px;
-
-  background: #ffffff;
-
-  border: 1px solid var(--border);
-  border-radius: 18px;
-
-  box-shadow: var(--shadow-small);
-}
-
-.member-summary-card span {
-  display: block;
-
-  margin-bottom: 12px;
-
-  color: var(--muted);
-
-  font-size: 0.9rem;
-  font-weight: 700;
-}
-
-.member-summary-card strong {
-  display: block;
-
-  color: var(--primary-dark);
-
-  font-size:
-    clamp(1.8rem, 5vw, 2.8rem);
-
-  font-weight: 900;
-}
-
-.member-profile-grid-compact {
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
-}
-
-.member-quick-links {
-  display: grid;
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
-
-  gap: 18px;
-}
-
-.member-quick-link-card {
-  display: block;
-
-  padding: 28px;
-
-  color: var(--navy);
-  text-decoration: none;
-
-  background: #ffffff;
-
-  border: 1px solid var(--border);
-  border-radius: 18px;
-
-  box-shadow: var(--shadow-small);
-
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.member-quick-link-card:hover {
-  transform: translateY(-3px);
-
-  box-shadow:
-    0 16px 34px
-    rgba(34, 72, 78, 0.1);
-}
-
-.member-quick-link-card span {
-  display: block;
-
-  margin-bottom: 8px;
-
-  color: var(--primary-dark);
-
-  font-size: 0.85rem;
-  font-weight: 800;
-}
-
-.member-quick-link-card strong {
-  font-size: 1.25rem;
-}
-
 @media screen and (max-width: 650px) {
-  .member-summary-grid,
-  .member-profile-grid-compact,
-  .member-quick-links {
-    grid-template-columns: 1fr;
-  }
-
-  .member-welcome-card {
-    padding: 28px 22px;
-  }
-
   .system-entry-actions {
     flex-direction: column;
   }
@@ -2561,6 +1556,17 @@ input[type="file"]::file-selector-button {
   font-weight: 700;
 }
 
+.member-summary-card span {
+  display: block;
+
+  margin-bottom: 12px;
+
+  color: var(--muted);
+
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
 .member-summary-card strong {
   display: block;
 
@@ -2598,7 +1604,13 @@ input[type="file"]::file-selector-button {
 
 .member-profile-item {
   min-width: 0;
+  min-height: 110px;
   padding: 22px 18px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
 
   background: #f8fbfb;
 
@@ -2607,6 +1619,26 @@ input[type="file"]::file-selector-button {
     var(--border, #d5e2e4);
 
   border-radius: 14px;
+
+  box-shadow:
+    0 5px 16px
+    rgba(34, 72, 78, 0.04);
+
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.member-profile-item:hover {
+  transform: translateY(-2px);
+
+  border-color:
+    rgba(71, 164, 159, 0.45);
+
+  box-shadow:
+    0 10px 24px
+    rgba(34, 72, 78, 0.08);
 }
 
 .member-profile-item span {
@@ -2619,18 +1651,50 @@ input[type="file"]::file-selector-button {
 
   font-size: 0.86rem;
   font-weight: 700;
+  line-height: 1.4;
 }
 
 .member-profile-item strong {
   display: block;
+  min-width: 0;
 
   color:
     var(--navy, #27474f);
 
   font-size: 1.05rem;
   font-weight: 800;
+  line-height: 1.5;
 
   overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Level 與家系膠囊 */
+#member-level,
+#member-family {
+  display: inline-flex;
+  align-items: center;
+
+  width: fit-content;
+  max-width: 100%;
+
+  padding: 6px 12px;
+
+  color: #315f65;
+  background: #ddf4f1;
+
+  border-radius: 999px;
+}
+
+#member-status {
+  margin: 0;
+
+  line-height: 1.6;
+}
+
+#member-status.error {
+  color:
+    var(--danger, #d95c5c);
 }
 
 
@@ -2647,6 +1711,8 @@ input[type="file"]::file-selector-button {
 }
 
 .announcement-card {
+  position: relative;
+
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -2666,6 +1732,32 @@ input[type="file"]::file-selector-button {
   box-shadow:
     0 8px 22px
     rgba(34, 72, 78, 0.06);
+
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.announcement-card:hover {
+  transform: translateY(-2px);
+
+  border-color:
+    rgba(71, 164, 159, 0.45);
+
+  box-shadow:
+    0 14px 32px
+    rgba(34, 72, 78, 0.10);
+}
+
+.announcement-card p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.announcement-card > p {
+  width: 100%;
+  margin-bottom: 0;
 }
 
 .announcement-title {
@@ -2677,6 +1769,9 @@ input[type="file"]::file-selector-button {
 
   font-size: 1.25rem;
   font-weight: 900;
+  line-height: 1.45;
+
+  overflow-wrap: anywhere;
 }
 
 .announcement-content {
@@ -2686,13 +1781,22 @@ input[type="file"]::file-selector-button {
   color:
     var(--text, #354b50);
 
+  font-size: 1rem;
   line-height: 1.8;
 
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .announcement-link-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+
+  gap: 10px;
+
+  width: 100%;
   margin-top: 18px;
 }
 
@@ -2702,6 +1806,7 @@ input[type="file"]::file-selector-button {
   justify-content: center;
 
   width: fit-content;
+  max-width: 100%;
   min-height: 40px;
 
   margin: 0;
@@ -2711,10 +1816,52 @@ input[type="file"]::file-selector-button {
   background:
     var(--primary, #54aaa5);
 
+  border:
+    1px solid
+    var(--primary, #54aaa5);
+
   border-radius: 999px;
 
+  font-size: 0.92rem;
   font-weight: 800;
+  line-height: 1.3;
+  text-align: center;
   text-decoration: none;
+
+  overflow-wrap: anywhere;
+
+  box-shadow:
+    0 7px 16px
+    rgba(63, 151, 146, 0.18);
+
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.announcement-link:hover {
+  transform: translateY(-1px);
+
+  color: #ffffff;
+  background:
+    var(--primary-dark, #367f7b);
+
+  border-color:
+    var(--primary-dark, #367f7b);
+
+  box-shadow:
+    0 10px 22px
+    rgba(63, 151, 146, 0.24);
+}
+
+.announcement-link:focus-visible {
+  outline:
+    3px solid
+    rgba(84, 170, 165, 0.28);
+
+  outline-offset: 3px;
 }
 
 .announcement-meta {
@@ -2732,30 +1879,59 @@ input[type="file"]::file-selector-button {
     var(--border, #d5e2e4);
 
   font-size: 0.86rem;
+  line-height: 1.5;
 }
 
+.announcement-actions {
+  margin-top: 18px;
 
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
 
-/* =========================================================
-   空資料狀態
-   ========================================================= */
-
-.empty-state {
+#announcement-list .empty-state {
   margin: 0;
-  padding: 24px 20px;
+  padding: 26px 20px;
 
   color:
-    var(--muted, #657a80);
+    var(--muted, #667c82);
 
   background: #f8fbfb;
 
   border:
     1px dashed
-    var(--border, #d5e2e4);
+    var(--border, #d4e3e5);
 
   border-radius: 14px;
 
   text-align: center;
+}
+
+#announcement-list .status-message.error {
+  margin: 0;
+  padding: 16px 18px;
+
+  color:
+    var(--danger, #d95c5c);
+
+  background: #fff4f4;
+
+  border:
+    1px solid
+    rgba(217, 92, 92, 0.28);
+
+  border-radius: 12px;
+}
+
+@media screen and (max-width: 560px) {
+  .announcement-content {
+    font-size: 0.96rem;
+  }
+
+  .announcement-link-wrapper {
+    display: block;
+  }
 }
 
 
@@ -2765,9 +1941,8 @@ input[type="file"]::file-selector-button {
 
 @media screen and (max-width: 760px) {
   .member-summary-grid,
-  .member-profile-grid,
-  .member-profile-grid-compact,
-  .member-quick-links {
+.member-profile-grid,
+.member-profile-grid-compact {
     grid-template-columns: 1fr;
   }
 
@@ -2780,208 +1955,6 @@ input[type="file"]::file-selector-button {
       min(100% - 24px, 1080px);
 
     padding-top: 24px;
-  }
-}
-
-/* =========================================================
-   Leaderboard
-========================================================= */
-
-.leaderboard-page {
-  width: min(1100px, calc(100% - 32px));
-  margin: 0 auto;
-  padding: 48px 0 80px;
-}
-
-.leaderboard-hero {
-  margin-bottom: 28px;
-}
-
-.leaderboard-hero h1 {
-  margin: 6px 0 12px;
-  font-size: clamp(2rem, 5vw, 3.6rem);
-  color: #234c51;
-}
-
-.leaderboard-hero p {
-  margin: 0;
-  color: #617477;
-  line-height: 1.8;
-}
-
-.leaderboard-panel {
-  padding: 28px;
-  border: 1px solid rgba(49, 95, 101, 0.14);
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow:
-    0 18px 50px rgba(35, 76, 81, 0.08);
-}
-
-.leaderboard-tabs {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 30px;
-  padding: 6px;
-  border-radius: 16px;
-  background: #edf4f2;
-}
-
-.leaderboard-tab {
-  flex: 1;
-  padding: 13px 18px;
-  border: 0;
-  border-radius: 12px;
-  background: transparent;
-  color: #52696c;
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-  transition:
-    background 0.2s ease,
-    color 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.leaderboard-tab:hover {
-  color: #234c51;
-}
-
-.leaderboard-tab.active {
-  background: #ffffff;
-  color: #315f65;
-  box-shadow:
-    0 6px 18px rgba(49, 95, 101, 0.1);
-}
-
-.leaderboard-title-row {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 20px;
-  margin-bottom: 20px;
-}
-
-.leaderboard-title-row h2 {
-  margin: 4px 0 0;
-  color: #234c51;
-}
-
-.ranking-list {
-  display: grid;
-  gap: 12px;
-}
-
-.ranking-item {
-  display: grid;
-  grid-template-columns: 64px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 16px;
-  padding: 18px 20px;
-  border: 1px solid rgba(49, 95, 101, 0.12);
-  border-radius: 18px;
-  background: #ffffff;
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.ranking-item:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 10px 28px rgba(35, 76, 81, 0.08);
-}
-
-.ranking-item-top {
-  border-color: rgba(49, 95, 101, 0.22);
-  background:
-    linear-gradient(
-      135deg,
-      rgba(237, 244, 242, 0.95),
-      rgba(255, 255, 255, 0.98)
-    );
-}
-
-.ranking-position {
-  display: grid;
-  place-items: center;
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  background: #edf4f2;
-  color: #315f65;
-  font-size: 1.1rem;
-  font-weight: 800;
-}
-
-.ranking-member-info {
-  display: grid;
-  gap: 5px;
-  min-width: 0;
-}
-
-.ranking-member-info strong {
-  overflow: hidden;
-  color: #234c51;
-  font-size: 1rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.ranking-member-info span {
-  color: #78898b;
-  font-size: 0.88rem;
-}
-
-.ranking-points {
-  display: flex;
-  align-items: baseline;
-  gap: 5px;
-  color: #315f65;
-  white-space: nowrap;
-}
-
-.ranking-points strong {
-  font-size: 1.35rem;
-}
-
-.ranking-points span {
-  color: #78898b;
-  font-size: 0.85rem;
-}
-
-.leaderboard-loading,
-.empty-state {
-  padding: 36px 20px;
-  color: #78898b;
-  text-align: center;
-}
-
-@media (max-width: 640px) {
-  .leaderboard-page {
-    width: min(100% - 20px, 1100px);
-    padding-top: 28px;
-  }
-
-  .leaderboard-panel {
-    padding: 18px;
-    border-radius: 18px;
-  }
-
-  .ranking-item {
-    grid-template-columns: 46px minmax(0, 1fr);
-    gap: 12px;
-    padding: 16px;
-  }
-
-  .ranking-position {
-    width: 40px;
-    height: 40px;
-  }
-
-  .ranking-points {
-    grid-column: 2;
-    justify-self: start;
   }
 }
 
@@ -3019,6 +1992,7 @@ input[type="file"]::file-selector-button {
   background: rgba(255, 255, 255, 0.88);
   box-shadow: 0 8px 28px rgba(35, 76, 81, 0.06);
   backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 .site-header-inner {
@@ -3162,6 +2136,12 @@ input[type="file"]::file-selector-button {
   letter-spacing: -0.04em;
 }
 
+.leaderboard-hero p {
+  margin: 0;
+  color: #617477;
+  line-height: 1.8;
+}
+
 .leaderboard-description {
   max-width: 620px;
   margin: 24px 0 0;
@@ -3247,6 +2227,7 @@ input[type="file"]::file-selector-button {
   align-items: center;
   justify-content: center;
   gap: 9px;
+  flex: 1;
   padding: 15px 18px;
   border: 0;
   border-radius: 15px;
@@ -3289,8 +2270,10 @@ input[type="file"]::file-selector-button {
   justify-content: center;
   gap: 12px;
   min-height: 120px;
+  padding: 36px 20px;
   color: #819497;
   font-size: 0.92rem;
+  text-align: center;
 }
 
 .leaderboard-loading[hidden] {
@@ -3466,6 +2449,7 @@ input[type="file"]::file-selector-button {
   min-width: 90px;
   justify-content: flex-end;
   color: #315f65;
+  white-space: nowrap;
 }
 
 .ranking-points strong {
@@ -3479,6 +2463,7 @@ input[type="file"]::file-selector-button {
 }
 
 .empty-state {
+  margin: 0;
   padding: 52px 20px;
   border: 1px dashed rgba(49, 95, 101, 0.18);
   border-radius: 18px;
@@ -3575,6 +2560,7 @@ input[type="file"]::file-selector-button {
 
   .ranking-points {
     grid-column: 2;
+    justify-self: start;
     justify-content: flex-start;
   }
 }
@@ -3605,10 +2591,6 @@ input[type="file"]::file-selector-button {
   color: #666;
 }
 
-.level-chart-box {
-  height: 220px;
-  max-height: 220px;
-}
 
 .achievement-level {
   font-weight: 700;
