@@ -4015,3 +4015,36 @@ input[type="file"]::file-selector-button {
 .trip-links-input {
   min-height: 90px;
 }
+
+
+/* =========================================================
+   登入頁：忘記密碼
+   ========================================================= */
+
+.forgot-password-row {
+  margin-top: 8px;
+  text-align: right;
+}
+
+.link-button {
+  padding: 0;
+
+  color: var(--primary-dark);
+  background: none;
+
+  border: 0;
+
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.link-button:hover {
+  color: var(--navy);
+}
+
+.link-button:disabled {
+  color: var(--muted);
+  cursor: wait;
+}

@@ -2,6 +2,7 @@
 import {
   browserLocalPersistence,
   onAuthStateChanged,
+  sendPasswordResetEmail,
   setPersistence,
   signInWithEmailAndPassword
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
@@ -33,7 +34,10 @@ const loginButton =
   document.querySelector("#login-button");
 
 const loginMessage =
-  document.querySelector("#login-message");
+  document.querySelector("#message");
+
+const forgotPasswordButton =
+  document.querySelector("#forgot-password-button");
 
 /* =========================================================
    共用函式
@@ -197,6 +201,90 @@ loginForm?.addEventListener(
     }
   }
 );
+
+/* =========================================================
+   忘記密碼：寄送重設密碼信
+   ========================================================= */
+
+forgotPasswordButton?.addEventListener(
+  "click",
+
+  async () => {
+    const email =
+      emailInput.value.trim();
+
+    if (!email) {
+      showStatus(
+        loginMessage,
+        "請先在上面輸入你的 Email，再按「忘記密碼？」。",
+        "error"
+      );
+
+      emailInput.focus();
+
+      return;
+    }
+
+    forgotPasswordButton.disabled = true;
+
+    showStatus(
+      loginMessage,
+      "正在寄送重設密碼信……"
+    );
+
+    try {
+      /*
+       * 讓 Firebase 寄出的信件使用中文
+       */
+      auth.languageCode = "zh-TW";
+
+      await sendPasswordResetEmail(auth, email);
+
+      /*
+       * Firebase 預設不會透露這個 Email 有沒有註冊，
+       * 所以訊息也不說死
+       */
+      showStatus(
+        loginMessage,
+        `如果 ${email} 有註冊過，重設密碼信已經寄出。請到信箱點信中的連結設定新密碼（找不到的話看看垃圾郵件）。`,
+        "success"
+      );
+    } catch (error) {
+      console.error(
+        "寄送重設密碼信失敗：",
+        error
+      );
+
+      showStatus(
+        loginMessage,
+        getResetErrorMessage(error),
+        "error"
+      );
+    } finally {
+      forgotPasswordButton.disabled = false;
+    }
+  }
+);
+
+function getResetErrorMessage(error) {
+  switch (error.code) {
+    case "auth/invalid-email":
+    case "auth/missing-email":
+      return "Email 格式不正確。";
+
+    case "auth/user-not-found":
+      return "找不到這個 Email 的帳號，請確認是否打錯。";
+
+    case "auth/too-many-requests":
+      return "寄送次數太多，請稍後再試。";
+
+    case "auth/network-request-failed":
+      return "網路連線失敗，請檢查網路後再試。";
+
+    default:
+      return `寄送失敗：${error.message}`;
+  }
+}
 
 /* =========================================================
    依照角色導向

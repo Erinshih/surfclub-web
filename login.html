@@ -23,7 +23,7 @@
     <form id="login-form" class="form-card" novalidate>
       <p class="eyebrow">MEMBER SIGN IN</p>
       <h1>社員登入</h1>
-      <p class="form-description">請使用 Firebase Authentication 中建立的 Email 與密碼登入。</p>
+      <p class="form-description">請使用申請社員時填寫的 Email 與密碼登入。</p>
 
       <label for="email">Email</label>
       <input
@@ -42,6 +42,16 @@
         autocomplete="current-password"
         required
       >
+
+      <div class="forgot-password-row">
+        <button
+          id="forgot-password-button"
+          class="link-button"
+          type="button"
+        >
+          忘記密碼？
+        </button>
+      </div>
 
       <button id="login-button" class="button button-block" type="submit">
         登入
