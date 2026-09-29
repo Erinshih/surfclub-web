@@ -56,6 +56,10 @@ import {
   todayString
 } from "./member-card.js";
 
+import {
+  refreshBoardStats
+} from "./board-stats.js";
+
 /* =========================================================
    DOM
    ========================================================= */
@@ -162,6 +166,7 @@ const profileFields = {
 let currentUser = null;
 let currentUserData = null;
 let levelHistory = [];
+let levelHistoryLoaded = false;
 let checkinStats = null;
 let levelChartInstance = null;
 
@@ -254,6 +259,8 @@ onAuthStateChanged(
         loadLatestTrip(),
         loadAnnouncements()
       ]);
+
+      await syncBoardStats();
     } catch (error) {
       console.error(
         "社員資料讀取失敗：",
@@ -885,6 +892,7 @@ checkinForm?.addEventListener(
       );
 
       await loadCheckins();
+      await syncBoardStats();
     } catch (error) {
       console.error(
         "打卡失敗：",
@@ -923,6 +931,7 @@ checkinList?.addEventListener(
       showStatus(checkinStatus, "已刪除這筆打卡。");
 
       await loadCheckins();
+      await syncBoardStats();
     } catch (error) {
       console.error(
         "刪除打卡失敗：",
@@ -945,6 +954,26 @@ if (checkinDate) {
   checkinDate.max = todayString();
 }
 
+/*
+ * 更新排行榜用的統計（沒變化就不寫入）。
+ * 失敗不影響頁面，只是排行榜晚一點更新。
+ */
+async function syncBoardStats() {
+  try {
+    await refreshBoardStats(
+      db,
+      currentUser.uid,
+      currentUserData,
+      levelHistoryLoaded ? levelHistory : null
+    );
+  } catch (error) {
+    console.error(
+      "排行榜統計更新失敗：",
+      error
+    );
+  }
+}
+
 /* =========================================================
    升級紀錄
    ========================================================= */
@@ -953,6 +982,8 @@ async function loadHistory() {
   try {
     levelHistory =
       await loadLevelHistory(db, currentUser.uid);
+
+    levelHistoryLoaded = true;
 
     levelPath.innerHTML =
       renderLevelPath(levelHistory);

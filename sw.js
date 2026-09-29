@@ -92,7 +92,7 @@
    Surf Club PWA Service Worker
    ========================================================= */
 
-const CACHE_NAME = "surfclub-cache-v15";
+const CACHE_NAME = "surfclub-cache-v16";
 
 /*
  * 這些檔案會在 Service Worker 安裝時預先快取。
@@ -124,6 +124,7 @@ const APP_FILES = [
   "./js/levels.js",
   "./js/member-card.js",
   "./js/boards.js",
+  "./js/board-stats.js",
   "./js/trips.js",
 
   "./icons/icon-192-v2.png",

@@ -33,6 +33,10 @@ import {
   db
 } from "./firebase-config.js";
 
+import {
+  refreshBoardStats
+} from "./board-stats.js";
+
 const adminStatus =
   document.querySelector("#admin-status");
 
@@ -737,6 +741,8 @@ function createMemberEditor(member) {
         );
 
         achievementInput.value = "";
+
+        await updateMemberBoardStats(member);
       } catch (error) {
         console.error(
           "新增 Level / 成就紀錄失敗：",
@@ -825,6 +831,8 @@ function createMemberEditor(member) {
         member.points = points;
         member.paymentStatus = paymentSelect.value;
         member.titles = titles;
+
+        await updateMemberBoardStats(member);
         titlesInput.value = titles.join("、");
 
         showStatus(
@@ -974,6 +982,21 @@ function createMemberEditor(member) {
   );
 
   return row;
+}
+
+/*
+ * 升級紀錄或等級變動後，更新排行榜用的統計。
+ * 失敗不影響儲存結果，排行榜頁也可以重新計算。
+ */
+async function updateMemberBoardStats(member) {
+  try {
+    await refreshBoardStats(db, member.uid, member);
+  } catch (error) {
+    console.error(
+      "排行榜統計更新失敗：",
+      error
+    );
+  }
 }
 
 /*

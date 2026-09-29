@@ -914,13 +914,14 @@ onAuthStateChanged(
       }
 
       /*
-       * 本學期榜單要讀每位社員的打卡紀錄，
-       * 自己顯示載入狀態，不佔用積分榜的逾時判斷
+       * 本學期榜單自己顯示載入狀態，不佔用積分榜的逾時判斷。
+       * 管理員會順便補算缺少統計的社員。
        */
       renderBoards(
         db,
         document.querySelector("#boardGrid"),
-        user.uid
+        user.uid,
+        { isAdmin }
       );
 
       await loadLeaderboard();

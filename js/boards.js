@@ -20,11 +20,14 @@ import {
   getAcademicYearStart,
   getInitial,
   getJoinDate,
-  getProfile,
-  getSemesterStart,
-  loadLevelHistory,
-  toDateString
+  getProfile
 } from "./member-card.js";
+
+import {
+  getBoardStats,
+  hasCurrentBoardStats,
+  refreshBoardStats
+} from "./board-stats.js";
 
 const TOP_COUNT = 5;
 
@@ -33,18 +36,9 @@ const TOP_COUNT = 5;
    ========================================================= */
 
 /*
- * 每位社員讀取：本學期的打卡紀錄、全部升級紀錄
+ * 只讀社員名單，統計直接用 users/{uid}.boardStats
  */
-async function loadMemberStats(db) {
-  const semesterStart =
-    getSemesterStart();
-
-  const semesterStartText =
-    toDateString(semesterStart);
-
-  const academicYearStart =
-    getAcademicYearStart();
-
+async function loadMembers(db) {
   const snapshot =
     await getDocs(
       query(
@@ -53,68 +47,59 @@ async function loadMemberStats(db) {
       )
     );
 
-  return Promise.all(
-    snapshot.docs.map(async (documentSnapshot) => {
-      const data =
-        documentSnapshot.data();
+  return snapshot.docs.map((documentSnapshot) => ({
+    uid: documentSnapshot.id,
+    data: documentSnapshot.data()
+  }));
+}
 
-      const [checkinSnapshot, history] =
-        await Promise.all([
-          getDocs(
-            query(
-              collection(db, "users", documentSnapshot.id, "checkins"),
-              where("date", ">=", semesterStartText)
-            )
-          ),
-          loadLevelHistory(db, documentSnapshot.id)
-        ]);
+function toRankingMember({ uid, data }) {
+  const stats =
+    getBoardStats(data);
 
-      const checkins =
-        checkinSnapshot.docs.map((checkin) => checkin.data());
+  const joinDate =
+    getJoinDate(data);
 
-      const level =
-        getLevel(data.level);
+  return {
+    uid,
+    data,
+    level: getLevel(data.level),
+    isFreshman: Boolean(joinDate && joinDate >= getAcademicYearStart()),
+    sessions: stats.sessions,
+    dawnSessions: stats.dawn,
+    duskSessions: stats.dusk,
+    allDaySessions: stats.allDay,
+    levelUps: stats.levelUps,
 
-      const joinDate =
-        getJoinDate(data);
+    /*
+     * 達到目前等級的時間，同等級時先到的排前面
+     */
+    reachedLevelAt: stats.reachedLevelAt ?? Infinity
+  };
+}
 
-      return {
-        uid: documentSnapshot.id,
-        data,
-        level,
-        isFreshman: Boolean(joinDate && joinDate >= academicYearStart),
+/*
+ * 管理員：幫統計缺少或過期的社員重新計算
+ * （all = true 時全部重算）
+ */
+async function refreshMembers(db, members, all, onProgress) {
+  const targets =
+    all
+      ? members
+      : members.filter((member) => !hasCurrentBoardStats(member.data));
 
-        sessions: checkins.length,
+  let done = 0;
 
-        dawnSessions: checkins.filter((checkin) => checkin.dawn === true).length,
+  await Promise.all(
+    targets.map(async (member) => {
+      await refreshBoardStats(db, member.uid, member.data);
 
-        duskSessions: checkins.filter((checkin) => checkin.dusk === true).length,
-
-        /*
-         * 同一天開燈又關燈
-         */
-        allDaySessions: checkins.filter((checkin) =>
-          checkin.dawn === true &&
-          checkin.dusk === true
-        ).length,
-
-        levelUps: history.filter((item) =>
-          Number(item.levelValue) > 0 &&
-          item.unlockedAt?.toDate?.() >= semesterStart
-        ).length,
-
-        /*
-         * 達到目前等級的時間，同等級時先到的排前面
-         */
-        reachedLevelAt:
-          history
-            .find((item) => Number(item.levelValue) === level?.value)
-            ?.unlockedAt
-            ?.toDate?.()
-            ?.getTime() ?? Infinity
-      };
+      done += 1;
+      onProgress?.(done, targets.length);
     })
   );
+
+  return targets.length;
 }
 
 /* =========================================================
@@ -229,7 +214,7 @@ function rankMembers(board, members) {
    畫面
    ========================================================= */
 
-export async function renderBoards(db, container, currentUid) {
+export async function renderBoards(db, container, currentUid, options = {}) {
   if (!container) {
     return;
   }
@@ -242,17 +227,49 @@ export async function renderBoards(db, container, currentUid) {
 
   try {
     const members =
-      await loadMemberStats(db);
+      await loadMembers(db);
+
+    if (options.isAdmin) {
+      await refreshMembers(
+        db,
+        members,
+        Boolean(options.refreshAll),
+        (done, total) => {
+          container.innerHTML = `
+            <p class="empty-state">
+              正在更新社員統計……（${done} / ${total}）
+            </p>
+          `;
+        }
+      );
+    }
+
+    const rankingMembers =
+      members.map(toRankingMember);
 
     const me =
-      members.find((member) => member.uid === currentUid);
+      rankingMembers.find((member) => member.uid === currentUid);
 
     container.innerHTML =
       BOARDS
         .map((board) =>
-          renderBoard(board, rankMembers(board, members), me)
+          renderBoard(board, rankMembers(board, rankingMembers), me)
         )
-        .join("");
+        .join("") +
+      (options.isAdmin
+        ? `<p class="board-admin-note">
+            管理員：統計會在社員打卡時自動更新。新增升級紀錄後，
+            <button class="link-button" type="button" data-refresh-boards>重新計算所有人</button>
+            就會反映到進步王和 Surf Level。
+          </p>`
+        : "");
+
+    container
+      .querySelector("[data-refresh-boards]")
+      ?.addEventListener(
+        "click",
+        () => renderBoards(db, container, currentUid, { ...options, refreshAll: true })
+      );
   } catch (error) {
     console.error(
       "榜單載入失敗：",
