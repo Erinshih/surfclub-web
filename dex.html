@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon-v2.png">
+
+  <link
+    rel="manifest"
+    href="./manifest.webmanifest"
+  >
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta
+    name="theme-color"
+    content="#315f65"
+  >
+
+  <title>社員圖鑑｜Surf Club</title>
+
+  <link
+    rel="stylesheet"
+    href="./css/style.css"
+  >
+</head>
+
+<body class="leaderboard-body">
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a
+        class="site-brand"
+        href="./member.html"
+      >
+        <span class="site-brand-mark">
+          SC
+        </span>
+
+        <span class="site-brand-text">
+          <strong>Surf Club</strong>
+          <small>社員資訊系統</small>
+        </span>
+      </a>
+
+      <nav class="site-nav">
+        <a href="./member.html">
+          社員首頁
+        </a>
+
+        <a
+          class="active"
+          href="./dex.html"
+        >
+          社員圖鑑
+        </a>
+
+        <a href="./courses.html">
+          社課資訊
+        </a>
+
+        <a href="./leaderboard.html">
+          積分榜
+        </a>
+
+        <button
+          id="logoutButton"
+          class="site-nav-logout"
+          type="button"
+        >
+          登出
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="leaderboard-page">
+    <section class="dex-hero">
+      <p class="leaderboard-eyebrow">
+        SURF CLUB DEX
+      </p>
+
+      <h1>
+        社員圖鑑
+      </h1>
+
+      <p class="leaderboard-description">
+        從漂流木到漁光電線桿，每一隻都是本社的珍稀物種。
+      </p>
+    </section>
+
+    <p
+      id="dexStatus"
+      class="status-message"
+    >
+      正在載入圖鑑……
+    </p>
+
+    <section
+      id="dexLevels"
+      class="dex-levels"
+      aria-label="等級"
+    ></section>
+
+    <section
+      id="dexDetail"
+      class="leaderboard-panel dex-detail"
+      hidden
+    ></section>
+  </main>
+
+  <!-- =====================================================
+       社員角色卡
+       ===================================================== -->
+
+  <dialog
+    id="memberDialog"
+    class="profile-dialog dex-dialog"
+  >
+    <button
+      id="closeMemberDialog"
+      class="icon-button dialog-close"
+      type="button"
+      aria-label="關閉"
+    >
+      ×
+    </button>
+
+    <div id="memberDialogContent"></div>
+  </dialog>
+
+  <script
+    type="module"
+    src="./js/dex.js"
+  ></script>
+</body>
+</html>

@@ -1,5 +1,6 @@
 /* =========================================================
    檔案：js/member.js
+   社員首頁：我的角色卡
    ========================================================= */
 
 import {
@@ -9,11 +10,15 @@ import {
 
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
   orderBy,
-  query
+  query,
+  serverTimestamp,
+  setDoc,
+  updateDoc
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
 
 import {
@@ -21,26 +26,74 @@ import {
   db
 } from "./firebase-config.js";
 
+import {
+  formatLevel,
+  getLevel,
+  getNextLevel
+} from "./levels.js";
+
+import {
+  escapeHtml,
+  getBasicInfoItems,
+  getProfile,
+  getSurfProfileItems,
+  loadCheckinStats,
+  loadLevelHistory,
+  renderCardHero,
+  renderInfoList,
+  renderLevelPath,
+  sortMemories,
+  todayString
+} from "./member-card.js";
+
+/* =========================================================
+   DOM
+   ========================================================= */
+
 const memberStatus =
   document.querySelector("#member-status");
 
 const logoutButton =
   document.querySelector("#logout-button");
 
-const memberName =
-  document.querySelector("#member-name");
+const characterHero =
+  document.querySelector("#character-hero");
 
-const memberEmail =
-  document.querySelector("#member-email");
+const basicInfo =
+  document.querySelector("#basic-info");
 
-const memberLevel =
-  document.querySelector("#member-level");
+const surfProfile =
+  document.querySelector("#surf-profile");
 
-const memberFamily =
-  document.querySelector("#member-family");
+const levelProgress =
+  document.querySelector("#level-progress");
 
-const announcementList =
-  document.querySelector("#announcement-list");
+const goalList =
+  document.querySelector("#goal-list");
+
+const goalForm =
+  document.querySelector("#goal-form");
+
+const goalInput =
+  document.querySelector("#goal-input");
+
+const checkinForm =
+  document.querySelector("#checkin-form");
+
+const checkinDate =
+  document.querySelector("#checkin-date");
+
+const checkinSpot =
+  document.querySelector("#checkin-spot");
+
+const checkinStatus =
+  document.querySelector("#checkin-status");
+
+const checkinList =
+  document.querySelector("#checkin-list");
+
+const levelPath =
+  document.querySelector("#level-path");
 
 const levelChartCanvas =
   document.querySelector("#level-history-chart");
@@ -48,9 +101,54 @@ const levelChartCanvas =
 const achievementTimeline =
   document.querySelector("#achievement-timeline");
 
+const memoryList =
+  document.querySelector("#memory-list");
+
+const memoryForm =
+  document.querySelector("#memory-form");
+
+const memoryDate =
+  document.querySelector("#memory-date");
+
+const memoryText =
+  document.querySelector("#memory-text");
+
+const announcementList =
+  document.querySelector("#announcement-list");
+
+const editProfileButton =
+  document.querySelector("#edit-profile-button");
+
+const profileDialog =
+  document.querySelector("#profile-dialog");
+
+const profileForm =
+  document.querySelector("#profile-form");
+
+const profileStatus =
+  document.querySelector("#profile-status");
+
+const profileSaveButton =
+  document.querySelector("#profile-save-button");
+
+const profileFields = {
+  nickname: document.querySelector("#profile-nickname"),
+  motto: document.querySelector("#profile-motto"),
+  stance: document.querySelector("#profile-stance"),
+  surfSince: document.querySelector("#profile-surf-since"),
+  spots: document.querySelector("#profile-spots"),
+  board: document.querySelector("#profile-board")
+};
+
 let currentUser = null;
 let currentUserData = null;
+let levelHistory = [];
+let checkinStats = null;
 let levelChartInstance = null;
+
+/* =========================================================
+   登入驗證
+   ========================================================= */
 
 onAuthStateChanged(
   auth,
@@ -69,15 +167,10 @@ onAuthStateChanged(
     );
 
     try {
-      const userReference =
-        doc(db, "users", user.uid);
-
       const userSnapshot =
-        await getDoc(userReference);
+        await getDoc(doc(db, "users", user.uid));
 
       if (!userSnapshot.exists()) {
-        clearMemberProfile();
-
         showStatus(
           memberStatus,
           "找不到社員資料，請聯絡社團管理員。",
@@ -114,8 +207,6 @@ onAuthStateChanged(
         role !== "member" ||
         status !== "approved"
       ) {
-        clearMemberProfile();
-
         showStatus(
           memberStatus,
           "目前帳號沒有社員資訊系統的存取權限。",
@@ -125,52 +216,29 @@ onAuthStateChanged(
         return;
       }
 
-      renderMemberProfile(
-        user,
-        currentUserData
-      );
-
-      const displayName =
-        currentUserData.name ||
-        user.displayName ||
-        user.email ||
-        "社員";
-
-      const summaryParts = [];
-
-      if (currentUserData.level) {
-        summaryParts.push(
-          currentUserData.level
-        );
-      }
-
-      if (currentUserData.family) {
-        summaryParts.push(
-          currentUserData.family
-        );
-      }
-
-      const summaryText =
-        summaryParts.length > 0
-          ? `｜${summaryParts.join("｜")}`
-          : "";
+      const profile =
+        getProfile(currentUserData);
 
       showStatus(
         memberStatus,
-        `歡迎回來，${displayName}${summaryText}`,
+        `歡迎回來，${profile.nickname || currentUserData.name || "社員"} 🤙`,
         "success"
       );
 
-      await loadAnnouncements();
+      editProfileButton.disabled = false;
 
-      await loadLevelHistory(user.uid);
+      renderCharacter();
+
+      await Promise.all([
+        loadHistory(),
+        loadCheckins(),
+        loadAnnouncements()
+      ]);
     } catch (error) {
       console.error(
         "社員資料讀取失敗：",
         error
       );
-
-      clearMemberProfile();
 
       showStatus(
         memberStatus,
@@ -186,8 +254,6 @@ onAuthStateChanged(
       error
     );
 
-    clearMemberProfile();
-
     showStatus(
       memberStatus,
       `登入狀態讀取失敗：${getErrorMessage(error)}`,
@@ -196,139 +262,681 @@ onAuthStateChanged(
   }
 );
 
-function renderMemberProfile(
-  user,
-  userData
-) {
-  if (memberName) {
-    memberName.textContent =
-      userData.name ||
-      user.displayName ||
-      "未提供姓名";
+/* =========================================================
+   角色卡
+   ========================================================= */
+
+function renderCharacter() {
+  if (!currentUserData) {
+    return;
   }
 
-  if (memberEmail) {
-    memberEmail.textContent =
-      userData.email ||
-      user.email ||
-      "未提供 Email";
-  }
+  characterHero.innerHTML =
+    renderCardHero(
+      currentUserData,
+      {
+        total: checkinStats?.total,
+        thisYear: checkinStats?.thisYear,
+        levelUps: levelHistory.length
+      }
+    );
 
-  if (memberLevel) {
-    memberLevel.textContent =
-      userData.level ||
-      "尚未設定";
-  }
+  basicInfo.innerHTML =
+    renderInfoList(getBasicInfoItems(currentUserData));
 
-  if (memberFamily) {
-    memberFamily.textContent =
-      userData.family ||
-      "尚未分配";
-  }
+  surfProfile.innerHTML =
+    renderInfoList(getSurfProfileItems(currentUserData));
+
+  renderLevelProgress();
+  renderGoals();
+  renderMemories();
 }
 
-function clearMemberProfile() {
-  if (memberName) {
-    memberName.textContent =
-      "無法載入";
-  }
+/*
+ * 社員的資料都存在 users/{uid}.profile，
+ * 每次儲存都整包更新 profile。
+ */
+async function saveProfile(changes) {
+  const nextProfile = {
+    ...getProfile(currentUserData),
+    ...changes
+  };
 
-  if (memberEmail) {
-    memberEmail.textContent =
-      "無法載入";
-  }
-
-  if (memberLevel) {
-    memberLevel.textContent =
-      "尚未設定";
-  }
-
-  if (memberFamily) {
-    memberFamily.textContent =
-      "尚未分配";
-  }
-}
-
-async function loadLevelHistory(uid) {
-  console.log(
-    "準備讀取 levelHistory",
-    uid
+  await updateDoc(
+    doc(db, "users", currentUser.uid),
+    {
+      profile: nextProfile,
+      updatedAt: serverTimestamp()
+    }
   );
 
-  if (
-    !levelChartCanvas ||
-    !achievementTimeline
-  ) {
-    console.warn(
-      "找不到 level chart 或 achievement timeline DOM。"
+  currentUserData.profile =
+    nextProfile;
+
+  renderCharacter();
+}
+
+async function saveProfileWithFeedback(changes) {
+  try {
+    await saveProfile(changes);
+    return true;
+  } catch (error) {
+    console.error(
+      "角色卡儲存失敗：",
+      error
     );
+
+    showStatus(
+      memberStatus,
+      `儲存失敗：${getWriteErrorMessage(error)}`,
+      "error"
+    );
+
+    renderCharacter();
+
+    return false;
+  }
+}
+
+/* =========================================================
+   下一級進度
+   ========================================================= */
+
+function renderLevelProgress() {
+  const level =
+    getLevel(currentUserData.level);
+
+  const nextLevel =
+    getNextLevel(level);
+
+  const skills =
+    getProfile(currentUserData).skills;
+
+  const currentHtml = level
+    ? `
+      <div class="level-progress-current">
+        <span class="level-progress-emoji">${level.emoji}</span>
+
+        <div>
+          <p class="eyebrow">目前等級</p>
+          <h2>${escapeHtml(level.name)} Lv.${level.value}</h2>
+          <p class="level-tagline">「${escapeHtml(level.tagline)}」</p>
+        </div>
+      </div>
+    `
+    : `
+      <div class="level-progress-current">
+        <span class="level-progress-emoji">🌊</span>
+
+        <div>
+          <p class="eyebrow">目前等級</p>
+          <h2>尚未分級</h2>
+          <p class="level-tagline">等管理員幫你設定第一個等級。</p>
+        </div>
+      </div>
+    `;
+
+  if (!nextLevel) {
+    levelProgress.innerHTML = `
+      ${currentHtml}
+      <p class="level-progress-summary">
+        已經是最高等級了，換你帶新生下水 ⚡
+      </p>
+    `;
 
     return;
   }
 
-  try {
-    const historySnapshot =
-      await getDocs(
-        query(
-          collection(
-            db,
-            "users",
-            uid,
-            "levelHistory"
-          ),
-          orderBy(
-            "unlockedAt",
-            "asc"
-          )
+  const remaining =
+    nextLevel.requirements.filter(
+      (requirement) => !skills.includes(requirement.id)
+    ).length;
+
+  levelProgress.innerHTML = `
+    ${currentHtml}
+
+    <h3 class="level-progress-next">
+      下一級：<a href="./dex.html#lv${nextLevel.value}">${escapeHtml(formatLevel(nextLevel))}</a>
+    </h3>
+
+    <ul class="check-list">
+      ${nextLevel.requirements.map((requirement) => `
+        <li>
+          <label class="check-item">
+            <input
+              type="checkbox"
+              data-skill-id="${escapeHtml(requirement.id)}"
+              ${skills.includes(requirement.id) ? "checked" : ""}
+            >
+            <span>${escapeHtml(requirement.text)}</span>
+          </label>
+        </li>
+      `).join("")}
+    </ul>
+
+    <p class="level-progress-summary">
+      ${remaining === 0
+        ? `條件都達成了！找幹部幫你確認升上 Lv.${nextLevel.value} 🎉`
+        : `距離 Lv.${nextLevel.value}：還差 <strong>${remaining}</strong> 個條件`}
+    </p>
+
+    <p class="panel-hint">
+      勾選是自我評估，正式升級由幹部確認。
+    </p>
+  `;
+}
+
+levelProgress?.addEventListener(
+  "change",
+
+  async (event) => {
+    const checkbox =
+      event.target.closest("[data-skill-id]");
+
+    if (!checkbox) {
+      return;
+    }
+
+    const skillId =
+      checkbox.dataset.skillId;
+
+    const skills =
+      getProfile(currentUserData).skills.filter(
+        (id) => id !== skillId
+      );
+
+    if (checkbox.checked) {
+      skills.push(skillId);
+    }
+
+    checkbox.disabled = true;
+
+    await saveProfileWithFeedback({ skills });
+  }
+);
+
+/* =========================================================
+   今年目標
+   ========================================================= */
+
+function renderGoals() {
+  const goals =
+    getProfile(currentUserData).goals;
+
+  if (goals.length === 0) {
+    goalList.innerHTML = `
+      <li class="empty-state">
+        還沒有目標，寫一個吧，例如「升 Lv.3」。
+      </li>
+    `;
+
+    return;
+  }
+
+  goalList.innerHTML =
+    goals.map((goal, index) => `
+      <li>
+        <label class="check-item">
+          <input
+            type="checkbox"
+            data-goal-index="${index}"
+            ${goal.done ? "checked" : ""}
+          >
+          <span>${escapeHtml(goal.text)}</span>
+        </label>
+
+        <button
+          class="icon-button"
+          type="button"
+          data-remove-goal="${index}"
+          aria-label="刪除目標"
+        >
+          ×
+        </button>
+      </li>
+    `).join("");
+}
+
+goalList?.addEventListener(
+  "change",
+
+  async (event) => {
+    const checkbox =
+      event.target.closest("[data-goal-index]");
+
+    if (!checkbox) {
+      return;
+    }
+
+    const goals =
+      getProfile(currentUserData).goals.map(
+        (goal, index) =>
+          index === Number(checkbox.dataset.goalIndex)
+            ? { ...goal, done: checkbox.checked }
+            : goal
+      );
+
+    checkbox.disabled = true;
+
+    await saveProfileWithFeedback({ goals });
+  }
+);
+
+goalList?.addEventListener(
+  "click",
+
+  async (event) => {
+    const button =
+      event.target.closest("[data-remove-goal]");
+
+    if (!button) {
+      return;
+    }
+
+    const goals =
+      getProfile(currentUserData).goals.filter(
+        (_, index) => index !== Number(button.dataset.removeGoal)
+      );
+
+    button.disabled = true;
+
+    await saveProfileWithFeedback({ goals });
+  }
+);
+
+goalForm?.addEventListener(
+  "submit",
+
+  async (event) => {
+    event.preventDefault();
+
+    const text =
+      goalInput.value.trim();
+
+    if (!text || !currentUserData) {
+      return;
+    }
+
+    const goals = [
+      ...getProfile(currentUserData).goals,
+      { text, done: false }
+    ];
+
+    if (await saveProfileWithFeedback({ goals })) {
+      goalInput.value = "";
+    }
+  }
+);
+
+/* =========================================================
+   回憶／事件
+   ========================================================= */
+
+function renderMemories() {
+  const memories =
+    sortMemories(getProfile(currentUserData).memories);
+
+  if (memories.length === 0) {
+    memoryList.innerHTML = `
+      <li class="empty-state">
+        還沒有回憶，從第一次下水開始記吧。
+      </li>
+    `;
+
+    return;
+  }
+
+  memoryList.innerHTML =
+    memories.map((memory) => `
+      <li>
+        <time>${escapeHtml(memory.date)}</time>
+        <span>${escapeHtml(memory.text)}</span>
+
+        <button
+          class="icon-button"
+          type="button"
+          data-remove-memory="${escapeHtml(memory.date)}|${escapeHtml(memory.text)}"
+          aria-label="刪除回憶"
+        >
+          ×
+        </button>
+      </li>
+    `).join("");
+}
+
+memoryList?.addEventListener(
+  "click",
+
+  async (event) => {
+    const button =
+      event.target.closest("[data-remove-memory]");
+
+    if (!button) {
+      return;
+    }
+
+    const key =
+      button.dataset.removeMemory;
+
+    const memories =
+      getProfile(currentUserData).memories.filter(
+        (memory) => `${memory.date}|${memory.text}` !== key
+      );
+
+    button.disabled = true;
+
+    await saveProfileWithFeedback({ memories });
+  }
+);
+
+memoryForm?.addEventListener(
+  "submit",
+
+  async (event) => {
+    event.preventDefault();
+
+    const text =
+      memoryText.value.trim();
+
+    if (!text || !memoryDate.value || !currentUserData) {
+      return;
+    }
+
+    const memories = [
+      ...getProfile(currentUserData).memories,
+      { date: memoryDate.value, text }
+    ];
+
+    if (await saveProfileWithFeedback({ memories })) {
+      memoryText.value = "";
+    }
+  }
+);
+
+if (memoryDate) {
+  memoryDate.value = todayString();
+}
+
+/* =========================================================
+   編輯角色卡
+   ========================================================= */
+
+editProfileButton?.addEventListener(
+  "click",
+
+  () => {
+    if (!currentUserData) {
+      return;
+    }
+
+    const profile =
+      getProfile(currentUserData);
+
+    Object.entries(profileFields).forEach(
+      ([key, input]) => {
+        input.value = profile[key] || "";
+      }
+    );
+
+    showStatus(profileStatus, "");
+
+    profileDialog.showModal();
+  }
+);
+
+profileForm?.addEventListener(
+  "submit",
+
+  async (event) => {
+    if (event.submitter?.value !== "save") {
+      return;
+    }
+
+    event.preventDefault();
+
+    const changes =
+      Object.fromEntries(
+        Object.entries(profileFields).map(
+          ([key, input]) => [key, input.value.trim()]
         )
       );
 
-    const history =
-      historySnapshot.docs.map(
-        (docSnapshot) => ({
-          id: docSnapshot.id,
-          ...docSnapshot.data()
-        })
+    profileSaveButton.disabled = true;
+    profileSaveButton.textContent = "儲存中……";
+
+    try {
+      await saveProfile(changes);
+
+      profileDialog.close();
+
+      showStatus(
+        memberStatus,
+        "角色卡已更新 ✨",
+        "success"
+      );
+    } catch (error) {
+      console.error(
+        "角色卡儲存失敗：",
+        error
       );
 
-    console.log(
-      "levelHistory 筆數",
-      history.length,
-      history
+      showStatus(
+        profileStatus,
+        `儲存失敗：${getWriteErrorMessage(error)}`,
+        "error"
+      );
+    } finally {
+      profileSaveButton.disabled = false;
+      profileSaveButton.textContent = "儲存";
+    }
+  }
+);
+
+/* =========================================================
+   下水打卡
+   ========================================================= */
+
+async function loadCheckins() {
+  try {
+    checkinStats =
+      await loadCheckinStats(db, currentUser.uid, 5);
+  } catch (error) {
+    console.error(
+      "下水紀錄載入失敗：",
+      error
     );
 
-    renderAchievementTimeline(history);
-    renderLevelChart(history);
+    checkinStats = null;
+
+    showStatus(
+      checkinStatus,
+      `下水紀錄載入失敗：${getErrorMessage(error)}`,
+      "error"
+    );
+  }
+
+  renderCheckins();
+  renderCharacter();
+}
+
+function renderCheckins() {
+  const recent =
+    checkinStats?.recent || [];
+
+  if (recent.length === 0) {
+    checkinList.innerHTML = `
+      <li class="empty-state">
+        還沒有打卡紀錄。
+      </li>
+    `;
+
+    return;
+  }
+
+  checkinList.innerHTML =
+    recent.map((checkin) => `
+      <li>
+        <time>${escapeHtml(checkin.date)}</time>
+        <span>${escapeHtml(checkin.spot || "—")}</span>
+
+        <button
+          class="icon-button"
+          type="button"
+          data-remove-checkin="${escapeHtml(checkin.id)}"
+          aria-label="刪除這筆打卡"
+        >
+          ×
+        </button>
+      </li>
+    `).join("");
+}
+
+checkinForm?.addEventListener(
+  "submit",
+
+  async (event) => {
+    event.preventDefault();
+
+    if (!currentUser) {
+      return;
+    }
+
+    const date =
+      checkinDate.value;
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      showStatus(checkinStatus, "請選擇日期。", "error");
+      return;
+    }
+
+    if (date > todayString()) {
+      showStatus(checkinStatus, "不能幫未來的自己打卡 😂", "error");
+      return;
+    }
+
+    const checkinReference =
+      doc(db, "users", currentUser.uid, "checkins", date);
+
+    const submitButton =
+      event.submitter;
+
+    submitButton.disabled = true;
+
+    try {
+      const existing =
+        await getDoc(checkinReference);
+
+      if (existing.exists()) {
+        showStatus(checkinStatus, `${date} 已經打過卡了。`, "error");
+        return;
+      }
+
+      await setDoc(
+        checkinReference,
+        {
+          date,
+          spot: checkinSpot.value.trim(),
+          createdAt: serverTimestamp()
+        }
+      );
+
+      showStatus(checkinStatus, `打卡成功！${date} 🌊`, "success");
+
+      await loadCheckins();
+    } catch (error) {
+      console.error(
+        "打卡失敗：",
+        error
+      );
+
+      showStatus(
+        checkinStatus,
+        `打卡失敗：${getWriteErrorMessage(error)}`,
+        "error"
+      );
+    } finally {
+      submitButton.disabled = false;
+    }
+  }
+);
+
+checkinList?.addEventListener(
+  "click",
+
+  async (event) => {
+    const button =
+      event.target.closest("[data-remove-checkin]");
+
+    if (!button) {
+      return;
+    }
+
+    button.disabled = true;
+
+    try {
+      await deleteDoc(
+        doc(db, "users", currentUser.uid, "checkins", button.dataset.removeCheckin)
+      );
+
+      showStatus(checkinStatus, "已刪除這筆打卡。");
+
+      await loadCheckins();
+    } catch (error) {
+      console.error(
+        "刪除打卡失敗：",
+        error
+      );
+
+      button.disabled = false;
+
+      showStatus(
+        checkinStatus,
+        `刪除失敗：${getWriteErrorMessage(error)}`,
+        "error"
+      );
+    }
+  }
+);
+
+if (checkinDate) {
+  checkinDate.value = todayString();
+  checkinDate.max = todayString();
+}
+
+/* =========================================================
+   升級紀錄
+   ========================================================= */
+
+async function loadHistory() {
+  try {
+    levelHistory =
+      await loadLevelHistory(db, currentUser.uid);
+
+    levelPath.innerHTML =
+      renderLevelPath(levelHistory);
+
+    renderAchievementTimeline(levelHistory);
+    renderLevelChart(levelHistory);
   } catch (error) {
     console.error(
       "Level History 載入失敗：",
       error
     );
 
+    levelHistory = [];
+
     achievementTimeline.innerHTML = `
       <p class="status-message error">
-        Level / 成就紀錄載入失敗。
+        升級紀錄載入失敗。
       </p>
     `;
   }
+
+  renderCharacter();
 }
 
 function renderAchievementTimeline(history) {
-  if (!achievementTimeline) {
-    return;
-  }
-
   achievementTimeline.innerHTML = "";
-
-  if (history.length === 0) {
-    achievementTimeline.innerHTML = `
-      <p class="empty-state">
-        尚無成就紀錄
-      </p>
-    `;
-
-    return;
-  }
 
   history.forEach((item) => {
     const card =
@@ -343,25 +951,17 @@ function renderAchievementTimeline(history) {
         ?.toLocaleDateString("zh-TW") ||
       "未知日期";
 
-    const level =
-      item.levelText ||
-      "未設定 Level";
-
-    const achievement =
-      item.achievement ||
-      "";
-
     card.innerHTML = `
       <div class="achievement-date">
         ${escapeHtml(date)}
       </div>
 
       <div class="achievement-level">
-        ${escapeHtml(level)}
+        ${escapeHtml(item.levelText || "未設定 Level")}
       </div>
 
       <div class="achievement-title">
-        ${escapeHtml(achievement)}
+        ${escapeHtml(item.achievement || "")}
       </div>
     `;
 
@@ -374,6 +974,13 @@ function renderLevelChart(history) {
     return;
   }
 
+  const chartBox =
+    levelChartCanvas.parentElement;
+
+  chartBox.hidden =
+    history.length < 2 ||
+    typeof Chart === "undefined";
+
   if (typeof Chart === "undefined") {
     console.error(
       "Chart.js 尚未載入，請確認 member.html 中 Chart.js 在 member.js 前面。"
@@ -382,24 +989,9 @@ function renderLevelChart(history) {
     return;
   }
 
-  if (history.length === 0) {
+  if (history.length < 2) {
     return;
   }
-
-  const labels =
-    history.map(
-      (item) =>
-        item.unlockedAt
-          ?.toDate?.()
-          ?.toLocaleDateString("zh-TW") ||
-        ""
-    );
-
-  const values =
-    history.map(
-      (item) =>
-        Number(item.levelValue) || 0
-    );
 
   if (levelChartInstance) {
     levelChartInstance.destroy();
@@ -412,12 +1004,20 @@ function renderLevelChart(history) {
         type: "line",
 
         data: {
-          labels,
+          labels: history.map(
+            (item) =>
+              item.unlockedAt
+                ?.toDate?.()
+                ?.toLocaleDateString("zh-TW") ||
+              ""
+          ),
 
           datasets: [
             {
               label: "Level 成長",
-              data: values,
+              data: history.map(
+                (item) => Number(item.levelValue) || 0
+              ),
               tension: 0.3,
               fill: false
             }
@@ -430,7 +1030,7 @@ function renderLevelChart(history) {
 
           plugins: {
             legend: {
-              display: true
+              display: false
             }
           },
 
@@ -469,20 +1069,13 @@ async function loadAnnouncements() {
   `;
 
   try {
-    const announcementQuery =
-      query(
-        collection(
-          db,
-          "announcements"
-        ),
-        orderBy(
-          "createdAt",
-          "desc"
+    const querySnapshot =
+      await getDocs(
+        query(
+          collection(db, "announcements"),
+          orderBy("createdAt", "desc")
         )
       );
-
-    const querySnapshot =
-      await getDocs(announcementQuery);
 
     announcementList.innerHTML = "";
 
@@ -498,13 +1091,11 @@ async function loadAnnouncements() {
 
     querySnapshot.forEach(
       (announcementSnapshot) => {
-        const announcement = {
-          id: announcementSnapshot.id,
-          ...announcementSnapshot.data()
-        };
-
         announcementList.appendChild(
-          createAnnouncementCard(announcement)
+          createAnnouncementCard({
+            id: announcementSnapshot.id,
+            ...announcementSnapshot.data()
+          })
         );
       }
     );
@@ -632,62 +1223,28 @@ function isSafeHttpUrl(value) {
 }
 
 function formatTimestamp(timestamp) {
-  if (!timestamp) {
-    return "";
-  }
+  const date =
+    typeof timestamp?.toDate === "function"
+      ? timestamp.toDate()
+      : new Date(timestamp);
 
   if (
-    typeof timestamp.toDate ===
-    "function"
+    !timestamp ||
+    Number.isNaN(date.getTime())
   ) {
-    try {
-      return timestamp
-        .toDate()
-        .toLocaleString(
-          "zh-TW",
-          {
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-            hour: "2-digit",
-            minute: "2-digit"
-          }
-        );
-    } catch (error) {
-      console.warn(
-        "公告時間格式化失敗：",
-        error
-      );
-
-      return "";
-    }
-  }
-
-  try {
-    const date =
-      new Date(timestamp);
-
-    if (
-      Number.isNaN(
-        date.getTime()
-      )
-    ) {
-      return "";
-    }
-
-    return date.toLocaleString(
-      "zh-TW",
-      {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit"
-      }
-    );
-  } catch {
     return "";
   }
+
+  return date.toLocaleString(
+    "zh-TW",
+    {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit"
+    }
+  );
 }
 
 /* =========================================================
@@ -730,6 +1287,10 @@ logoutButton?.addEventListener(
     }
   }
 );
+
+/* =========================================================
+   共用工具
+   ========================================================= */
 
 function showStatus(
   element,
@@ -783,11 +1344,13 @@ function getErrorMessage(error) {
   );
 }
 
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+function getWriteErrorMessage(error) {
+  if (
+    error?.code === "permission-denied" ||
+    error?.code === "firestore/permission-denied"
+  ) {
+    return "沒有寫入權限，請管理員確認 Firestore 規則已開放社員編輯自己的角色卡。";
+  }
+
+  return getErrorMessage(error);
 }

@@ -481,6 +481,15 @@ function createMemberEditor(member) {
   const paymentSelect =
     createPaymentSelect(member.paymentStatus || "unpaid");
 
+  const titlesWrapper =
+    document.createElement("label");
+
+  const titlesLabel =
+    document.createElement("span");
+
+  const titlesInput =
+    document.createElement("input");
+
   const achievementWrapper =
     document.createElement("label");
 
@@ -516,6 +525,7 @@ function createMemberEditor(member) {
   familyWrapper.className = "member-row-field member-row-family";
   pointsWrapper.className = "member-row-field member-row-points";
   paymentWrapper.className = "member-row-field";
+  titlesWrapper.className = "member-row-field member-row-titles";
   achievementWrapper.className = "member-row-field member-row-achievement";
   actions.className = "member-row-actions";
 
@@ -618,6 +628,21 @@ function createMemberEditor(member) {
   paymentWrapper.append(
     paymentLabel,
     paymentSelect
+  );
+
+  titlesLabel.textContent = "年度稱號（用、分隔）";
+
+  titlesInput.type = "text";
+  titlesInput.maxLength = 120;
+  titlesInput.placeholder = "例如：晨衝王、最會撿板的人";
+  titlesInput.value =
+    Array.isArray(member.titles)
+      ? member.titles.join("、")
+      : "";
+
+  titlesWrapper.append(
+    titlesLabel,
+    titlesInput
   );
 
   achievementLabel.textContent = "解鎖成就";
@@ -780,6 +805,9 @@ function createMemberEditor(member) {
         const family =
           familyInput.value.trim();
 
+        const titles =
+          parseTitles(titlesInput.value);
+
         await updateDoc(
           doc(db, "users", member.uid),
           {
@@ -787,6 +815,7 @@ function createMemberEditor(member) {
             family,
             points,
             paymentStatus: paymentSelect.value,
+            titles,
             updatedAt: serverTimestamp()
           }
         );
@@ -795,6 +824,8 @@ function createMemberEditor(member) {
         member.family = family;
         member.points = points;
         member.paymentStatus = paymentSelect.value;
+        member.titles = titles;
+        titlesInput.value = titles.join("、");
 
         showStatus(
           memberMessage,
@@ -937,11 +968,26 @@ function createMemberEditor(member) {
     familyWrapper,
     pointsWrapper,
     paymentWrapper,
+    titlesWrapper,
     achievementWrapper,
     actions
   );
 
   return row;
+}
+
+/*
+ * 「晨衝王、最會撿板的人」→ ["晨衝王", "最會撿板的人"]
+ */
+function parseTitles(value) {
+  return [
+    ...new Set(
+      String(value || "")
+        .split(/[、,，\n]/)
+        .map((title) => title.trim())
+        .filter(Boolean)
+    )
+  ];
 }
 
 async function showMemberLevelHistory(member) {

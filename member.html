@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -25,7 +24,7 @@
     content="Surf Club 社員資訊系統"
   >
 
-  <title>Surf Club｜社員資訊系統</title>
+  <title>Surf Club｜我的角色卡</title>
 
   <!-- 這行不能刪除 -->
   <link
@@ -60,6 +59,10 @@
           社員首頁
         </a>
 
+        <a href="./dex.html">
+          社員圖鑑
+        </a>
+
         <a href="./courses.html">
           社課資訊
         </a>
@@ -79,125 +82,263 @@
     </nav>
   </header>
 
-  <!-- =====================================================
-       社員資訊系統
-       ===================================================== -->
-
   <main class="member-dashboard">
-    <!-- 歡迎區 -->
-    <section class="member-welcome-card">
-      <div>
-        <p class="eyebrow">
-          MEMBER DASHBOARD
+    <p
+      id="member-status"
+      class="status-message"
+    >
+      正在驗證社員資料……
+    </p>
+
+    <!-- ===================================================
+         角色卡
+         =================================================== -->
+
+    <section class="character-card">
+      <div id="character-hero">
+        <p class="empty-state">
+          角色卡載入中……
         </p>
+      </div>
 
-        <h1>
-          Surf Club 社員資訊系統
-        </h1>
-
-        <p
-          id="member-status"
-          class="status-message"
+      <div class="character-actions">
+        <a
+          class="button button-small"
+          href="#checkin-panel"
         >
-          正在驗證社員資料……
-        </p>
+          🌊 今天有下水
+        </a>
+
+        <button
+          id="edit-profile-button"
+          class="button button-small button-secondary"
+          type="button"
+          disabled
+        >
+          ✏️ 編輯角色卡
+        </button>
       </div>
     </section>
 
     <!-- ===================================================
-         Level 與家系
+         基本資料／Surf Profile
          =================================================== -->
 
-    <section class="member-summary-grid">
-      <article class="member-summary-card">
-        <span class="member-summary-label">
-          我的 Level
-        </span>
-
-        <strong id="member-level">
-          載入中……
-        </strong>
-      </article>
-
-      <article class="member-summary-card">
-        <span class="member-summary-label">
-          我的家系
-        </span>
-
-        <strong id="member-family">
-          載入中……
-        </strong>
-      </article>
-    </section>
-
-    <!-- ===================================================
-         社員個人資料
-         =================================================== -->
-
-    <section class="content-card">
-      <div class="section-heading left">
+    <div class="character-panel-grid">
+      <section class="character-panel">
         <p class="eyebrow">
-          MEMBER PROFILE
+          PROFILE
         </p>
 
         <h2>
-          我的社員資料
+          基本資料
         </h2>
 
-        <p class="section-description">
-          Level 與家系由管理員設定。
-          若社員資料有誤，請聯絡社團管理員。
+        <div id="basic-info"></div>
+      </section>
+
+      <section class="character-panel">
+        <p class="eyebrow">
+          SURF PROFILE
         </p>
-      </div>
 
-      <div class="member-profile-grid member-profile-grid-compact">
-        <article class="member-profile-item">
-          <span>
-            姓名
-          </span>
+        <h2>
+          衝浪檔案
+        </h2>
 
-          <strong id="member-name">
-            載入中……
-          </strong>
-        </article>
+        <div id="surf-profile"></div>
+      </section>
+    </div>
 
-        <article class="member-profile-item">
-          <span>
-            Email
-          </span>
+    <!-- ===================================================
+         下一級進度
+         =================================================== -->
 
-          <strong id="member-email">
-            載入中……
-          </strong>
-        </article>
-      </div>
+    <section
+      id="level-progress"
+      class="character-panel level-progress"
+    >
+      <p class="empty-state">
+        升級進度載入中……
+      </p>
     </section>
 
-    <section class="member-achievement-section">
-  <h2>Level 成長紀錄</h2>
+    <!-- ===================================================
+         今年目標／下水打卡
+         =================================================== -->
 
-  <div class="level-chart-box">
-  <canvas id="level-history-chart"></canvas>
-</div>
-</section>
+    <div class="character-panel-grid">
+      <section class="character-panel">
+        <p class="eyebrow">
+          GOALS
+        </p>
 
-<section class="member-achievement-section">
-  <h2>成就解鎖紀錄</h2>
+        <h2>
+          今年目標
+        </h2>
 
-  <div
-    id="achievement-timeline"
-    class="achievement-timeline"
-  >
-    <p class="empty-state">
-      尚無成就紀錄
-    </p>
-  </div>
-</section>
+        <ul
+          id="goal-list"
+          class="check-list"
+        ></ul>
+
+        <form
+          id="goal-form"
+          class="inline-form"
+        >
+          <input
+            id="goal-input"
+            type="text"
+            maxlength="60"
+            placeholder="例如：自己追到浪"
+            aria-label="新增今年目標"
+            required
+          >
+
+          <button
+            class="button button-small"
+            type="submit"
+          >
+            新增
+          </button>
+        </form>
+      </section>
+
+      <section
+        id="checkin-panel"
+        class="character-panel"
+      >
+        <p class="eyebrow">
+          CHECK-IN
+        </p>
+
+        <h2>
+          下水打卡
+        </h2>
+
+        <p class="panel-hint">
+          不用很精準，有下水就記一筆，一天一次。
+        </p>
+
+        <form
+          id="checkin-form"
+          class="inline-form"
+        >
+          <input
+            id="checkin-date"
+            type="date"
+            aria-label="下水日期"
+            required
+          >
+
+          <input
+            id="checkin-spot"
+            type="text"
+            maxlength="30"
+            placeholder="浪點，例如：漁光島"
+            aria-label="浪點"
+          >
+
+          <button
+            class="button button-small"
+            type="submit"
+          >
+            打卡
+          </button>
+        </form>
+
+        <p
+          id="checkin-status"
+          class="status-message"
+        ></p>
+
+        <ul
+          id="checkin-list"
+          class="checkin-list"
+        ></ul>
+      </section>
+    </div>
+
+    <!-- ===================================================
+         升級紀錄
+         =================================================== -->
+
+    <section class="character-panel">
+      <p class="eyebrow">
+        LEVEL UP
+      </p>
+
+      <h2>
+        升級紀錄
+      </h2>
+
+      <div id="level-path"></div>
+
+      <div class="level-chart-box">
+        <canvas id="level-history-chart"></canvas>
+      </div>
+
+      <div
+        id="achievement-timeline"
+        class="achievement-timeline"
+      ></div>
+    </section>
+
+    <!-- ===================================================
+         回憶／事件
+         =================================================== -->
+
+    <section class="character-panel">
+      <p class="eyebrow">
+        MEMORIES
+      </p>
+
+      <h2>
+        回憶／事件
+      </h2>
+
+      <p class="panel-hint">
+        第一次站起來、第一次自己追浪、第一次摔斷 fin……都記下來，畢業後回來看。
+      </p>
+
+      <ol
+        id="memory-list"
+        class="memory-list"
+      ></ol>
+
+      <form
+        id="memory-form"
+        class="inline-form"
+      >
+        <input
+          id="memory-date"
+          type="date"
+          aria-label="日期"
+          required
+        >
+
+        <input
+          id="memory-text"
+          type="text"
+          maxlength="80"
+          placeholder="例如：第一次衝外海"
+          aria-label="發生了什麼事"
+          required
+        >
+
+        <button
+          class="button button-small"
+          type="submit"
+        >
+          記錄
+        </button>
+      </form>
+    </section>
 
     <!-- ===================================================
          最新公告
          =================================================== -->
-</main>
+
     <section class="content-card">
       <div class="section-heading left">
         <p class="eyebrow">
@@ -215,23 +356,140 @@
         </p>
       </div>
     </section>
+  </main>
 
+  <!-- =====================================================
+       編輯角色卡
+       ===================================================== -->
+
+  <dialog
+    id="profile-dialog"
+    class="profile-dialog"
+  >
+    <form
+      id="profile-form"
+      method="dialog"
+    >
+      <h2>
+        編輯角色卡
+      </h2>
+
+      <p class="panel-hint">
+        名字、系級、家系、Level 與稱號由管理員設定。
+      </p>
+
+      <label for="profile-nickname">
+        綽號
+      </label>
+
+      <input
+        id="profile-nickname"
+        type="text"
+        maxlength="20"
+      >
+
+      <label for="profile-motto">
+        一句話
+      </label>
+
+      <input
+        id="profile-motto"
+        type="text"
+        maxlength="60"
+        placeholder="例如：其實我是來衝浪社吃宵夜的"
+      >
+
+      <div class="form-grid">
+        <div class="field-stack">
+          <label for="profile-stance">
+            站姿
+          </label>
+
+          <select id="profile-stance">
+            <option value="">
+              還不知道
+            </option>
+
+            <option value="regular">
+              Regular（左腳在前）
+            </option>
+
+            <option value="goofy">
+              Goofy（右腳在前）
+            </option>
+          </select>
+        </div>
+
+        <div class="field-stack">
+          <label for="profile-surf-since">
+            開始衝浪
+          </label>
+
+          <input
+            id="profile-surf-since"
+            type="month"
+          >
+        </div>
+      </div>
+
+      <label for="profile-spots">
+        常去浪點
+      </label>
+
+      <input
+        id="profile-spots"
+        type="text"
+        maxlength="40"
+        placeholder="例如：漁光島、金樽"
+      >
+
+      <label for="profile-board">
+        我的板子
+      </label>
+
+      <input
+        id="profile-board"
+        type="text"
+        maxlength="40"
+        placeholder="例如：8'0 軟板"
+      >
+
+      <p
+        id="profile-status"
+        class="status-message"
+      ></p>
+
+      <div class="dialog-actions">
+        <button
+          class="button button-small button-secondary"
+          type="submit"
+          value="cancel"
+          formnovalidate
+        >
+          取消
+        </button>
+
+        <button
+          id="profile-save-button"
+          class="button button-small"
+          type="submit"
+          value="save"
+        >
+          儲存
+        </button>
+      </div>
+    </form>
+  </dialog>
 
   <!-- =====================================================
        JavaScript
        ===================================================== -->
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<script
-  type="module"
-  src="./js/member.js"
-></script>
-
-<!-- 有做 PWA 時才保留 -->
-<script
-  type="module"
-  src="./js/register.js"
-></script>
+  <script
+    type="module"
+    src="./js/member.js"
+  ></script>
 </body>
 </html>
