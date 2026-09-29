@@ -92,7 +92,7 @@
    Surf Club PWA Service Worker
    ========================================================= */
 
-const CACHE_NAME = "surfclub-cache-v13";
+const CACHE_NAME = "surfclub-cache-v14";
 
 /*
  * 這些檔案會在 Service Worker 安裝時預先快取。
@@ -276,7 +276,27 @@ self.addEventListener("fetch", (event) => {
 
 async function handleNavigationRequest(request) {
   try {
-    const networkResponse = await fetch(request);
+    /*
+     * cache: "no-cache"：每次都向伺服器確認有沒有新版，
+     * 避免 GitHub Pages 的 10 分鐘 HTTP 快取讓手機看到舊頁面。
+     *
+     * 導覽請求不能直接加上設定，所以改用網址重新發送。
+     */
+    const networkResponse = await fetch(
+      request.url,
+      {
+        cache: "no-cache",
+        credentials: "same-origin"
+      }
+    );
+
+    /*
+     * 例如 /surfclub-web 會被轉到 /surfclub-web/，
+     * 瀏覽器不接受直接回傳轉址後的內容，要改成回傳轉址
+     */
+    if (networkResponse.redirected) {
+      return Response.redirect(networkResponse.url, 302);
+    }
 
     if (isCacheable(networkResponse)) {
       const cache = await caches.open(CACHE_NAME);
@@ -356,13 +376,17 @@ async function networkFirst(request) {
       requestURL.pathname.endsWith("manifest.webmanifest") ||
       requestURL.pathname.includes("/icons/");
 
+    /*
+     * 其他 CSS、JavaScript 也用 no-cache，
+     * 檔案沒變時伺服器只會回 304，不會重新下載。
+     */
     const networkResponse = await fetch(
       request,
-      shouldBypassHttpCache
-        ? {
-            cache: "no-store"
-          }
-        : undefined
+      {
+        cache: shouldBypassHttpCache
+          ? "no-store"
+          : "no-cache"
+      }
     );
 
     if (isCacheable(networkResponse)) {
