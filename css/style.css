@@ -78,6 +78,7 @@ select {
   width: min(1180px, calc(100% - 36px));
   min-height: 76px;
   margin: 0 auto;
+  padding: 10px 0;
 
   display: flex;
   align-items: center;
@@ -87,6 +88,8 @@ select {
 
 .brand {
   color: var(--navy);
+
+  white-space: nowrap;
 
   font-size: 1.35rem;
   font-weight: 900;
@@ -105,8 +108,15 @@ select {
 
 .nav-links {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 22px;
+  justify-content: flex-end;
+  gap: 10px 22px;
+}
+
+.nav-links a,
+.nav-links .button {
+  white-space: nowrap;
 }
 
 .nav-links a {
@@ -823,6 +833,7 @@ textarea {
     width: 100%;
 
     flex-wrap: wrap;
+    justify-content: flex-start;
     gap: 12px 18px;
   }
 
@@ -1092,15 +1103,17 @@ textarea {
   gap: 10px;
 }
 
+/*
+ * 兩排：
+ * 上排：姓名｜Level｜家系｜積分｜社費
+ * 下排：年度稱號（2 格）｜解鎖成就（2 格）｜儲存／刪除
+ */
 .member-row {
   display: grid;
 
   grid-template-columns:
-    minmax(210px, 1.6fr)
-    minmax(110px, 0.65fr)
-    minmax(150px, 1fr)
-    minmax(130px, 0.8fr)
-    auto;
+    minmax(170px, 1.4fr)
+    repeat(4, minmax(0, 1fr));
 
   gap: 14px;
   align-items: end;
@@ -1158,6 +1171,8 @@ textarea {
    ========================================================= */
 
 .member-row-field {
+  margin: 0;
+
   display: flex;
   flex-direction: column;
   gap: 5px;
@@ -1202,13 +1217,42 @@ textarea {
   align-self: end;
 }
 
+.member-row-titles {
+  grid-column: 1 / span 2;
+}
+
+/* 解鎖成就：輸入框和兩個按鈕排成一行 */
+.member-row-achievement {
+  grid-column: 3 / span 2;
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: end;
+  gap: 5px 8px;
+}
+
+.member-row-achievement > span {
+  grid-column: 1 / -1;
+}
+
+.member-row-achievement .button {
+  height: 38px;
+  margin: 0;
+  padding: 7px 12px;
+
+  white-space: nowrap;
+}
+
 /* =========================================================
    正式社員操作按鈕
    ========================================================= */
 
 .member-row-actions {
+  grid-column: 5;
+
   display: flex;
   align-items: flex-end;
+  justify-content: flex-end;
   gap: 8px;
 
   align-self: end;
@@ -1243,17 +1287,24 @@ textarea {
    ========================================================= */
 
 @media (max-width: 980px) {
+  /*
+   * 姓名獨立一排，下面四欄
+   */
   .member-row {
-    grid-template-columns:
-      minmax(200px, 1.4fr)
-      minmax(100px, 0.7fr)
-      minmax(140px, 1fr)
-      minmax(120px, 0.8fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
-  .member-row-save,
+  .member-row-identity,
   .member-row-actions {
-    grid-column: 4;
+    grid-column: 1 / -1;
+  }
+
+  .member-row-titles {
+    grid-column: 1 / span 2;
+  }
+
+  .member-row-achievement {
+    grid-column: 3 / span 2;
   }
 }
 
@@ -1263,28 +1314,16 @@ textarea {
 
 @media (max-width: 700px) {
   .member-row {
-    grid-template-columns:
-      1fr
-      1fr;
-
+    grid-template-columns: 1fr 1fr;
     gap: 12px;
   }
 
-  .member-row-identity {
-    grid-column:
-      1 / -1;
+  .member-row-titles,
+  .member-row-achievement {
+    grid-column: 1 / -1;
   }
 
-  .member-row-family {
-    grid-column:
-      1 / -1;
-  }
-
-  .member-row-save,
   .member-row-actions {
-    grid-column:
-      1 / -1;
-
     width: 100%;
   }
 
@@ -1299,16 +1338,15 @@ textarea {
 
 @media (max-width: 460px) {
   .member-row {
-    grid-template-columns:
-      1fr;
+    grid-template-columns: 1fr;
   }
 
-  .member-row-identity,
-  .member-row-family,
-  .member-row-save,
-  .member-row-actions {
-    grid-column:
-      auto;
+  .member-row-achievement {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .member-row-achievement input {
+    grid-column: 1 / -1;
   }
 
   .member-row-actions {
@@ -4056,4 +4094,53 @@ input[type="file"]::file-selector-button {
   color: #6b8285;
 
   font-size: 0.85rem;
+}
+
+
+/* =========================================================
+   後台：正式社員依家系分組
+   ========================================================= */
+
+.family-group {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+
+  background: var(--surface-soft);
+}
+
+.family-group summary {
+  padding: 14px 18px;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  color: var(--navy);
+
+  font-size: 1.05rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.family-group-count {
+  padding: 2px 10px;
+
+  color: #2f7a73;
+  background: var(--primary-light);
+
+  border-radius: 999px;
+
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.family-group[data-family="尚未分配"] summary {
+  color: var(--muted);
+}
+
+.family-group-list {
+  padding: 0 12px 12px;
+
+  display: grid;
+  gap: 10px;
 }

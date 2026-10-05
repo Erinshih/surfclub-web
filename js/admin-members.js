@@ -430,10 +430,111 @@ function renderApprovedMembers() {
   }
 
   approvedMembers.forEach((member) => {
-    memberList.appendChild(
-      createMemberEditor(member)
+    placeMemberRow(
+      createMemberEditor(member),
+      member
     );
   });
+}
+
+/* =========================================================
+   依家系分組
+   ========================================================= */
+
+const UNASSIGNED_FAMILY = "尚未分配";
+
+function getFamilyName(member) {
+  return (
+    String(member.family || "").trim() ||
+    UNASSIGNED_FAMILY
+  );
+}
+
+/*
+ * 找到（或建立）家系分組；家系依名稱排序，「尚未分配」放最後
+ */
+function getFamilyGroup(familyName) {
+  const groups =
+    [...memberList.querySelectorAll(".family-group")];
+
+  const existing =
+    groups.find((group) => group.dataset.family === familyName);
+
+  if (existing) {
+    return existing;
+  }
+
+  const group =
+    document.createElement("details");
+
+  group.className = "family-group";
+  group.dataset.family = familyName;
+  group.open = true;
+
+  group.innerHTML = `
+    <summary>
+      <span class="family-group-name"></span>
+      <span class="family-group-count"></span>
+    </summary>
+
+    <div class="family-group-list"></div>
+  `;
+
+  group.querySelector(".family-group-name").textContent =
+    familyName;
+
+  const next =
+    groups.find((other) =>
+      familyName !== UNASSIGNED_FAMILY &&
+      (
+        other.dataset.family === UNASSIGNED_FAMILY ||
+        other.dataset.family.localeCompare(familyName, "zh-Hant") > 0
+      )
+    );
+
+  memberList.insertBefore(group, next || null);
+
+  return group;
+}
+
+/*
+ * 放進對應的家系分組，組內依姓名排序。
+ * 儲存後家系有變，也用這個把那一列移過去。
+ */
+function placeMemberRow(row, member) {
+  row.dataset.name =
+    member.name || "";
+
+  const list =
+    getFamilyGroup(getFamilyName(member))
+      .querySelector(".family-group-list");
+
+  const next =
+    [...list.children].find((other) =>
+      other !== row &&
+      other.dataset.name.localeCompare(row.dataset.name, "zh-Hant") > 0
+    );
+
+  list.insertBefore(row, next || null);
+
+  updateFamilyGroups();
+}
+
+function updateFamilyGroups() {
+  memberList
+    .querySelectorAll(".family-group")
+    .forEach((group) => {
+      const count =
+        group.querySelector(".family-group-list").children.length;
+
+      if (count === 0) {
+        group.remove();
+        return;
+      }
+
+      group.querySelector(".family-group-count").textContent =
+        `${count} 人`;
+    });
 }
 
 function createMemberEditor(member) {
@@ -826,6 +927,9 @@ function createMemberEditor(member) {
           }
         );
 
+        const familyChanged =
+          getFamilyName(member) !== getFamilyName({ family });
+
         member.level = levelSelect.value;
         member.family = family;
         member.points = points;
@@ -834,6 +938,10 @@ function createMemberEditor(member) {
 
         await updateMemberBoardStats(member);
         titlesInput.value = titles.join("、");
+
+        if (familyChanged) {
+          placeMemberRow(row, member);
+        }
 
         showStatus(
           memberMessage,
