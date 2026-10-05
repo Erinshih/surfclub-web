@@ -4122,6 +4122,34 @@ input[type="file"]::file-selector-button {
   cursor: pointer;
 }
 
+.family-group summary {
+  list-style: none;
+  border-radius: 16px;
+}
+
+.family-group summary::-webkit-details-marker {
+  display: none;
+}
+
+/* 展開／收起的箭頭 */
+.family-group summary::before {
+  content: "▸";
+
+  display: inline-block;
+
+  color: var(--muted);
+
+  transition: transform 0.2s ease;
+}
+
+.family-group[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.family-group summary:hover {
+  background: #edf5f5;
+}
+
 .family-group-count {
   padding: 2px 10px;
 

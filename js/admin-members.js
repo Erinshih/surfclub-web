@@ -467,9 +467,12 @@ function getFamilyGroup(familyName) {
   const group =
     document.createElement("details");
 
+  /*
+   * 預設收起來，點家系名稱才展開
+   */
   group.className = "family-group";
   group.dataset.family = familyName;
-  group.open = true;
+  group.open = false;
 
   group.innerHTML = `
     <summary>
@@ -939,8 +942,13 @@ function createMemberEditor(member) {
         await updateMemberBoardStats(member);
         titlesInput.value = titles.join("、");
 
+        /*
+         * 移到新的家系後展開那一組，免得看起來像消失了
+         */
         if (familyChanged) {
           placeMemberRow(row, member);
+
+          row.closest(".family-group").open = true;
         }
 
         showStatus(
