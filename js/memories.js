@@ -19,6 +19,10 @@ import {
 } from "./firebase-config.js";
 
 import {
+  applyAdminNav
+} from "./admin-nav.js";
+
+import {
   escapeHtml
 } from "./member-card.js";
 
@@ -96,6 +100,10 @@ onAuthStateChanged(
       if (!isAdmin && !isApprovedMember) {
         window.location.replace("./pending.html");
         return;
+      }
+
+      if (isAdmin) {
+        applyAdminNav();
       }
 
       currentUid = user.uid;

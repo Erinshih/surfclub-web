@@ -23,22 +23,38 @@
 </head>
 
 <body>
-  <!-- <header class="site-header">
+  <header class="site-header">
     <nav class="navbar">
       <a
         class="brand"
-        href="./index.html"
+        href="./admin.html"
       >
         SURF CLUB ADMIN
       </a>
 
       <div class="nav-links">
-        <a href="./index.html">
-          公開首頁
+        <a href="./admin.html">
+          管理首頁
         </a>
 
-        <a href="./courses.html">
-          社課頁面
+        <a href="./admin-announcements.html">
+          公告管理
+        </a>
+
+        <a href="./admin-courses.html">
+          社課管理
+        </a>
+
+        <a href="./admin-members.html">
+          社員管理
+        </a>
+
+        <a href="./admin-trips.html">
+          出團紀錄
+        </a>
+
+        <a href="./leaderboard.html">
+          排行榜
         </a>
 
         <button
@@ -50,63 +66,10 @@
         </button>
       </div>
     </nav>
-  </header> -->
-
-
-<header class="site-header">
-  <nav class="navbar">
-    <a
-      class="brand"
-      href="./admin.html"
-    >
-      SURF CLUB ADMIN
-    </a>
-
-    <div class="nav-links">
-      <a href="./admin.html">
-        管理首頁
-      </a>
-
-      <a href="./admin-announcements.html">
-        公告管理
-      </a>
-
-      <a href="./admin-courses.html">
-        社課管理
-      </a>
-
-      <a href="./admin-members.html">
-        社員管理
-      </a>
-
-      <a href="./admin-trips.html">
-        出團紀錄
-      </a>
-
-      <a href="./leaderboard.html">
-        排行榜
-      </a>
-
-      <!-- <a href="./index.html">
-        公開網站
-      </a> -->
-
-      <button
-        id="logout-button"
-        class="button button-small button-secondary"
-        type="button"
-      >
-        登出
-      </button>
-    </div>
-  </nav>
-</header>
-
-
+  </header>
 
   <main class="dashboard">
-    <!-- 管理員資訊 -->
-    <section class="dashboard-header card">
+    <section class="dashboard-header">
       <div>
         <p class="eyebrow">
           ADMIN DASHBOARD
@@ -115,379 +78,99 @@
         <h1>
           管理員後台
         </h1>
-
-        <p
-          id="admin-status"
-          class="status-message"
-        >
-          正在驗證管理員身分……
-        </p>
       </div>
+
+      <p
+        id="admin-status"
+        class="status-message"
+      >
+        正在驗證管理員身分……
+      </p>
     </section>
 
-    <!-- 未驗證前隱藏 -->
     <div
       id="admin-content"
       class="hidden"
     >
       <!-- ===============================================
-           公告管理
+           目前狀況
            =============================================== -->
-      <section class="card">
-        <div class="section-heading left">
-          <p class="eyebrow">
-            ANNOUNCEMENT MANAGEMENT
-          </p>
 
-          <h2>
-            新增公告
-          </h2>
-        </div>
-
-        <form id="announcement-form">
-          <label for="announcement-title">
-            公告標題
-          </label>
-
-          <input
-            id="announcement-title"
-            name="title"
-            type="text"
-            maxlength="100"
-            required
-            placeholder="請輸入公告標題"
-          >
-
-          <label for="announcement-content">
-            公告內容
-          </label>
-
-          <textarea
-            id="announcement-content"
-            name="content"
-            maxlength="2000"
-            required
-            placeholder="請輸入公告內容"
-          ></textarea>
-
-          <button
-            id="publish-button"
-            class="button"
-            type="submit"
-          >
-            發布公告
-          </button>
-
-          <p
-            id="announcement-form-message"
-            class="status-message"
-            aria-live="polite"
-          ></p>
-        </form>
+      <section
+        id="dashboard-stats"
+        class="dashboard-stats"
+        aria-label="目前狀況"
+      >
+        <p class="empty-state">
+          正在統計……
+        </p>
       </section>
 
-      <section class="card">
-        <div class="section-heading left">
-          <p class="eyebrow">
-            ANNOUNCEMENT LIST
-          </p>
-
-          <h2>
-            公告管理
-          </h2>
-        </div>
-
-        <div id="announcement-list">
-          <p class="empty-state">
-            正在讀取公告……
-          </p>
-        </div>
-      </section>
-
-  
-<!-- =====================================================
-     批次匯入社課
-     ===================================================== -->
-<section class="card">
-  <div class="section-heading left">
-    <p class="eyebrow">
-      COURSE IMPORT
-    </p>
-
-    <h2>
-      批次匯入社課
-    </h2>
-
-    <p class="section-description">
-      將多筆社課 JSON 貼到下方，
-      即可一次建立多筆社課資料。
-    </p>
-  </div>
-
-  <label for="course-import-data">
-    社課 JSON 資料
-  </label>
-
-  <textarea
-    id="course-import-data"
-    rows="16"
-    placeholder='[
-  {
-    "order": 1,
-    "date": "9 月 19 日（六）",
-    "title": "衝浪影片檢討",
-    "description": "透過影片分析社員動作。",
-    "tags": ["影片分析", "動作檢討"],
-    "status": "published"
-  }
-]'
-  ></textarea>
-
-  <div class="announcement-actions">
-    <button
-      id="import-courses-button"
-      class="button"
-      type="button"
-    >
-      批次匯入社課
-    </button>
-
-    <button
-      id="fill-course-example-button"
-      class="button button-secondary"
-      type="button"
-    >
-      載入範例資料
-    </button>
-  </div>
-
-  <p
-    id="course-import-message"
-    class="status-message"
-    aria-live="polite"
-  ></p>
-</section>
-
-
-      
       <!-- ===============================================
-           社課管理
+           最近一次出團
            =============================================== -->
-      <section class="card">
-        <div class="section-heading left">
-          <p class="eyebrow">
-            COURSE MANAGEMENT
-          </p>
 
-          <h2>
-            新增或編輯社課
-          </h2>
+      <section
+        id="dashboard-trip"
+        class="content-card"
+      ></section>
 
-          <p class="section-description">
-            管理員可以設定日期、名稱、內容、標籤、排序與公開狀態。
-          </p>
-        </div>
+      <!-- ===============================================
+           快捷入口
+           =============================================== -->
 
-        <form id="course-form">
-          <input
-            type="hidden"
-            id="course-id"
-          >
+      <section class="dashboard-shortcuts">
+        <a
+          class="dashboard-shortcut"
+          href="./admin-members.html"
+        >
+          <span class="dashboard-shortcut-emoji">👥</span>
+          <strong>社員管理</strong>
+          <small>審核申請、調整 Level、家系、積分與稱號</small>
+        </a>
 
-          <label for="course-order">
-            顯示順序
-          </label>
+        <a
+          class="dashboard-shortcut"
+          href="./admin-trips.html"
+        >
+          <span class="dashboard-shortcut-emoji">🌊</span>
+          <strong>出團紀錄</strong>
+          <small>記錄每一團的參加社員、鳥事、名言和照片</small>
+        </a>
 
-          <input
-            type="number"
-            id="course-order"
-            min="1"
-            step="1"
-            required
-            placeholder="例如：1"
-          >
+        <a
+          class="dashboard-shortcut"
+          href="./admin-announcements.html"
+        >
+          <span class="dashboard-shortcut-emoji">📢</span>
+          <strong>公告管理</strong>
+          <small>發布和刪除社員首頁的公告</small>
+        </a>
 
-          <label for="course-date">
-            日期
-          </label>
+        <a
+          class="dashboard-shortcut"
+          href="./admin-courses.html"
+        >
+          <span class="dashboard-shortcut-emoji">📅</span>
+          <strong>社課管理</strong>
+          <small>新增、編輯和批次匯入社課</small>
+        </a>
 
-          <input
-            type="text"
-            id="course-date"
-            maxlength="50"
-            required
-            placeholder="例如：9 月 19 日（六）"
-          >
-
-          <label for="course-title">
-            社課名稱
-          </label>
-
-          <input
-            type="text"
-            id="course-title"
-            maxlength="100"
-            required
-            placeholder="例如：衝浪影片檢討"
-          >
-
-          <label for="course-description">
-            社課說明
-          </label>
-
-          <textarea
-            id="course-description"
-            maxlength="1000"
-            required
-            placeholder="請輸入社課內容"
-          ></textarea>
-
-          <label for="course-tags">
-            標籤
-          </label>
-
-          <input
-            type="text"
-            id="course-tags"
-            maxlength="200"
-            placeholder="請使用逗號分隔，例如：影片分析, 動作檢討, 室內社課"
-          >
-
-          <label for="course-status">
-            顯示狀態
-          </label>
-
-          <select id="course-status">
-            <option value="published">
-              公開
-            </option>
-
-            <option value="draft">
-              草稿
-            </option>
-          </select>
-
-          <div class="announcement-actions">
-            <button
-              id="course-submit-button"
-              class="button"
-              type="submit"
-            >
-              新增社課
-            </button>
-
-            <button
-              id="course-cancel-button"
-              class="button button-secondary hidden"
-              type="button"
-            >
-              取消編輯
-            </button>
-          </div>
-
-          <p
-            id="course-form-message"
-            class="status-message"
-            aria-live="polite"
-          ></p>
-        </form>
+        <a
+          class="dashboard-shortcut"
+          href="./leaderboard.html"
+        >
+          <span class="dashboard-shortcut-emoji">🏆</span>
+          <strong>排行榜</strong>
+          <small>查看本學期榜單、重新計算統計</small>
+        </a>
       </section>
-
-      <section class="card">
-        <div class="section-heading left">
-          <p class="eyebrow">
-            COURSE LIST
-          </p>
-
-          <h2>
-            目前社課
-          </h2>
-        </div>
-
-        <div id="admin-course-list">
-          <p class="empty-state">
-            正在載入社課……
-          </p>
-        </div>
-      </section>
-
-      <!-- =====================================================
-     社員資料匯出
-     ===================================================== -->
-<section class="card">
-  <div class="section-heading left">
-    <p class="eyebrow">
-      MEMBER EXPORT
-    </p>
-
-    <h2>
-      匯出社員資料
-    </h2>
-
-    <p class="section-description">
-      將 Firestore 中的社員資料匯出成 CSV，
-      可使用 Excel、Numbers 或 Google 試算表開啟。
-    </p>
-  </div>
-
-  <button
-    id="export-members-button"
-    class="button"
-    type="button"
-  >
-    匯出社員 CSV
-  </button>
-
-  <p
-    id="export-members-message"
-    class="status-message"
-    aria-live="polite"
-  ></p>
-</section>
-
-<!-- =====================================================
-     社員 Level 與家系管理
-     ===================================================== -->
-<section class="card">
-  <div class="section-heading left">
-    <p class="eyebrow">
-      MEMBER MANAGEMENT
-    </p>
-
-    <h2>
-      社員 Level 與家系管理
-    </h2>
-
-    <p class="section-description">
-      管理員可以調整社員的 Level 與家系。
-      社員只能在自己的頁面查看結果。
-    </p>
-  </div>
-
-  <div id="member-management-list">
-    <p class="empty-state">
-      正在載入社員資料……
-    </p>
-  </div>
-
-  <p
-    id="member-management-message"
-    class="status-message"
-  ></p>
-</section>
     </div>
   </main>
 
-  
-
   <script
     type="module"
-    src="./js/admin.js"
+    src="./js/admin-dashboard.js"
   ></script>
-
-
-
-
-
 </body>
 </html>
