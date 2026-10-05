@@ -4144,3 +4144,113 @@ input[type="file"]::file-selector-button {
   display: grid;
   gap: 10px;
 }
+
+
+/* =========================================================
+   社員首頁：升級與進步紀錄
+   ========================================================= */
+
+.growth-chart-box {
+  height: 220px;
+  max-height: 220px;
+}
+
+.progress-form {
+  margin-top: 8px;
+}
+
+.progress-form input[type="text"] {
+  flex: 3 1 220px;
+}
+
+#progress-status:empty {
+  display: none;
+}
+
+.growth-details {
+  margin-top: 8px;
+
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.growth-details summary {
+  padding: 12px 16px;
+
+  color: var(--navy);
+
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.growth-timeline {
+  margin: 0;
+  padding: 0 16px 8px;
+
+  list-style: none;
+}
+
+.growth-item {
+  padding: 10px 0;
+
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+
+  border-top: 1px solid #edf2f3;
+}
+
+.growth-item time {
+  color: var(--primary-dark);
+
+  font-size: 0.85rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.growth-badge {
+  padding: 2px 9px;
+
+  border-radius: 999px;
+
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.is-level .growth-badge {
+  color: #ffffff;
+  background: #315f65;
+}
+
+.is-progress .growth-badge {
+  color: #7a5a0c;
+  background: #fff4d6;
+}
+
+.growth-text {
+  min-width: 0;
+  flex: 1 1 200px;
+
+  display: grid;
+
+  overflow-wrap: anywhere;
+}
+
+.growth-text small {
+  color: var(--muted);
+}
+
+.growth-actions {
+  margin-left: auto;
+
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.growth-timeline li.empty-state {
+  display: block;
+  margin: 8px 0;
+  padding: 18px;
+}

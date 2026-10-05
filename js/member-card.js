@@ -185,6 +185,37 @@ export async function loadLevelHistory(db, uid) {
 }
 
 /*
+ * 社員自己記錄的進步：users/{uid}/progress
+ * { date: "YYYY-MM-DD", text }
+ */
+export async function loadProgress(db, uid) {
+  const snapshot =
+    await getDocs(
+      query(
+        collection(db, "users", uid, "progress"),
+        orderBy("date", "asc")
+      )
+    );
+
+  return snapshot.docs.map((documentSnapshot) => ({
+    id: documentSnapshot.id,
+    ...documentSnapshot.data()
+  }));
+}
+
+/*
+ * "2026-09-20" → 當天中午的 Date（避免時區造成日期跑掉）
+ */
+export function parseDateString(text) {
+  const match =
+    String(text || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+  return match
+    ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 12)
+    : null;
+}
+
+/*
  * 下水打卡存在 users/{uid}/checkins/{YYYY-MM-DD}，
  * 一天最多一筆。
  */

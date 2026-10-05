@@ -9,6 +9,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
 
 import {
+  addDoc,
   collection,
   deleteDoc,
   doc,
@@ -29,6 +30,7 @@ import {
 import {
   formatLevel,
   getLevel,
+  getLevelByValue,
   getNextLevel
 } from "./levels.js";
 
@@ -49,6 +51,8 @@ import {
   getSurfProfileItems,
   loadCheckinStats,
   loadLevelHistory,
+  loadProgress,
+  parseDateString,
   renderCardHero,
   renderInfoList,
   renderLevelPath,
@@ -118,8 +122,29 @@ const levelPath =
 const levelChartCanvas =
   document.querySelector("#level-history-chart");
 
-const achievementTimeline =
-  document.querySelector("#achievement-timeline");
+const progressForm =
+  document.querySelector("#progress-form");
+
+const progressDate =
+  document.querySelector("#progress-date");
+
+const progressText =
+  document.querySelector("#progress-text");
+
+const progressSubmit =
+  document.querySelector("#progress-submit");
+
+const progressCancel =
+  document.querySelector("#progress-cancel");
+
+const progressStatus =
+  document.querySelector("#progress-status");
+
+const growthSummary =
+  document.querySelector("#growth-summary");
+
+const growthTimeline =
+  document.querySelector("#growth-timeline");
 
 const memoryList =
   document.querySelector("#memory-list");
@@ -167,6 +192,8 @@ let currentUser = null;
 let currentUserData = null;
 let levelHistory = [];
 let levelHistoryLoaded = false;
+let progressEntries = [];
+let editingProgressId = null;
 let checkinStats = null;
 let levelChartInstance = null;
 
@@ -984,12 +1011,6 @@ async function loadHistory() {
       await loadLevelHistory(db, currentUser.uid);
 
     levelHistoryLoaded = true;
-
-    levelPath.innerHTML =
-      renderLevelPath(levelHistory);
-
-    renderAchievementTimeline(levelHistory);
-    renderLevelChart(levelHistory);
   } catch (error) {
     console.error(
       "Level History 載入失敗：",
@@ -998,51 +1019,158 @@ async function loadHistory() {
 
     levelHistory = [];
 
-    achievementTimeline.innerHTML = `
-      <p class="status-message error">
-        升級紀錄載入失敗。
-      </p>
-    `;
+    showStatus(
+      progressStatus,
+      "升級紀錄載入失敗。",
+      "error"
+    );
   }
+
+  await loadProgressEntries();
 
   renderCharacter();
 }
 
-function renderAchievementTimeline(history) {
-  achievementTimeline.innerHTML = "";
+async function loadProgressEntries() {
+  try {
+    progressEntries =
+      await loadProgress(db, currentUser.uid);
+  } catch (error) {
+    console.error(
+      "進步紀錄載入失敗：",
+      error
+    );
 
-  history.forEach((item) => {
-    const card =
-      document.createElement("div");
+    showStatus(
+      progressStatus,
+      `進步紀錄載入失敗：${getErrorMessage(error)}`,
+      "error"
+    );
+  }
 
-    card.className =
-      "achievement-item";
-
-    const date =
-      item.unlockedAt
-        ?.toDate?.()
-        ?.toLocaleDateString("zh-TW") ||
-      "未知日期";
-
-    card.innerHTML = `
-      <div class="achievement-date">
-        ${escapeHtml(date)}
-      </div>
-
-      <div class="achievement-level">
-        ${escapeHtml(item.levelText || "未設定 Level")}
-      </div>
-
-      <div class="achievement-title">
-        ${escapeHtml(item.achievement || "")}
-      </div>
-    `;
-
-    achievementTimeline.appendChild(card);
-  });
+  renderGrowth();
 }
 
-function renderLevelChart(history) {
+/* =========================================================
+   升級與進步紀錄
+   ========================================================= */
+
+/*
+ * 把管理員的升級紀錄和社員自己的進步紀錄合併，依時間排序
+ */
+function buildGrowthEvents() {
+  const levelEvents =
+    levelHistory
+      .map((item) => ({
+        type: "level",
+        id: item.id,
+        date: item.unlockedAt?.toDate?.() || null,
+        levelValue: Number(item.levelValue) || 0,
+        levelText: item.levelText || "",
+        text: item.achievement || ""
+      }))
+      .filter((event) => event.date);
+
+  const progressEvents =
+    progressEntries
+      .map((item) => ({
+        type: "progress",
+        id: item.id,
+        date: parseDateString(item.date),
+        dateText: item.date,
+        text: item.text || ""
+      }))
+      .filter((event) => event.date);
+
+  return [...levelEvents, ...progressEvents]
+    .sort((first, second) =>
+      first.date - second.date ||
+      (first.type === "level" ? -1 : 1)
+    );
+}
+
+function renderGrowth() {
+  levelPath.innerHTML =
+    renderLevelPath(levelHistory);
+
+  const events =
+    buildGrowthEvents();
+
+  growthSummary.textContent =
+    `全部紀錄（${events.length} 筆）`;
+
+  renderGrowthTimeline(events);
+  renderGrowthChart(events);
+}
+
+function renderGrowthTimeline(events) {
+  if (events.length === 0) {
+    growthTimeline.innerHTML = `
+      <li class="empty-state">
+        還沒有紀錄，記下你的第一個進步吧 ✨
+      </li>
+    `;
+
+    return;
+  }
+
+  /*
+   * 新的在上面
+   */
+  growthTimeline.innerHTML =
+    [...events]
+      .reverse()
+      .map((event) => {
+        const date =
+          event.date.toLocaleDateString("zh-TW");
+
+        if (event.type === "level") {
+          return `
+            <li class="growth-item is-level">
+              <time>${escapeHtml(date)}</time>
+              <span class="growth-badge">⬆️ 升級</span>
+              <span class="growth-text">
+                <strong>${escapeHtml(event.levelText || `Lv.${event.levelValue}`)}</strong>
+                ${event.text ? `<small>${escapeHtml(event.text)}</small>` : ""}
+              </span>
+            </li>
+          `;
+        }
+
+        return `
+          <li class="growth-item is-progress">
+            <time>${escapeHtml(date)}</time>
+            <span class="growth-badge">✨ 進步</span>
+            <span class="growth-text">${escapeHtml(event.text)}</span>
+
+            <span class="growth-actions">
+              <button
+                class="link-button"
+                type="button"
+                data-edit-progress="${escapeHtml(event.id)}"
+              >
+                編輯
+              </button>
+
+              <button
+                class="icon-button"
+                type="button"
+                data-remove-progress="${escapeHtml(event.id)}"
+                aria-label="刪除這筆進步"
+              >
+                ×
+              </button>
+            </span>
+          </li>
+        `;
+      })
+      .join("");
+}
+
+/*
+ * Level 用階梯線，進步用 ✨ 標在當時的 Level 上
+ */
+function renderGrowthChart(events) {
   if (!levelChartCanvas) {
     return;
   }
@@ -1051,20 +1179,23 @@ function renderLevelChart(history) {
     levelChartCanvas.parentElement;
 
   chartBox.hidden =
-    history.length < 2 ||
+    events.length === 0 ||
     typeof Chart === "undefined";
 
-  if (typeof Chart === "undefined") {
-    console.error(
-      "Chart.js 尚未載入，請確認 member.html 中 Chart.js 在 member.js 前面。"
-    );
-
+  if (chartBox.hidden) {
     return;
   }
 
-  if (history.length < 2) {
-    return;
-  }
+  let currentLevel = 0;
+
+  const points =
+    events.map((event) => {
+      if (event.type === "level") {
+        currentLevel = event.levelValue;
+      }
+
+      return { ...event, level: currentLevel };
+    });
 
   if (levelChartInstance) {
     levelChartInstance.destroy();
@@ -1077,22 +1208,31 @@ function renderLevelChart(history) {
         type: "line",
 
         data: {
-          labels: history.map(
-            (item) =>
-              item.unlockedAt
-                ?.toDate?.()
-                ?.toLocaleDateString("zh-TW") ||
-              ""
+          labels: points.map(
+            (point) => point.date.toLocaleDateString("zh-TW")
           ),
 
           datasets: [
             {
-              label: "Level 成長",
-              data: history.map(
-                (item) => Number(item.levelValue) || 0
-              ),
-              tension: 0.3,
-              fill: false
+              label: "Level",
+              data: points.map((point) => point.level),
+              stepped: true,
+              fill: false,
+              borderColor: "#315f65",
+              backgroundColor: "#315f65",
+              pointRadius: points.map((point) => (point.type === "level" ? 5 : 0)),
+              pointHoverRadius: points.map((point) => (point.type === "level" ? 7 : 0))
+            },
+            {
+              label: "✨ 進步",
+              data: points.map((point) => (point.type === "progress" ? point.level : null)),
+              showLine: false,
+              pointStyle: "star",
+              pointRadius: 9,
+              pointHoverRadius: 12,
+              borderWidth: 2,
+              borderColor: "#c99a1c",
+              backgroundColor: "#f4d35e"
             }
           ]
         },
@@ -1103,7 +1243,29 @@ function renderLevelChart(history) {
 
           plugins: {
             legend: {
-              display: false
+              display: true
+            },
+
+            tooltip: {
+              callbacks: {
+                label: (context) => {
+                  const point =
+                    points[context.dataIndex];
+
+                  if (context.datasetIndex === 1) {
+                    return `✨ ${point.text}`;
+                  }
+
+                  if (point.type === "level") {
+                    const level =
+                      getLevelByValue(point.level);
+
+                    return `⬆️ ${level ? `Lv.${level.value} ${level.name}` : `Lv.${point.level}`}${point.text ? `：${point.text}` : ""}`;
+                  }
+
+                  return `Lv.${point.level}`;
+                }
+              }
             }
           },
 
@@ -1120,6 +1282,178 @@ function renderLevelChart(history) {
         }
       }
     );
+}
+
+/* =========================================================
+   社員自己記錄進步
+   ========================================================= */
+
+function resetProgressForm() {
+  editingProgressId = null;
+
+  progressText.value = "";
+  progressDate.value = todayString();
+
+  progressSubmit.textContent = "記錄進步";
+  progressCancel.hidden = true;
+}
+
+progressCancel?.addEventListener("click", resetProgressForm);
+
+progressForm?.addEventListener(
+  "submit",
+
+  async (event) => {
+    event.preventDefault();
+
+    if (!currentUser) {
+      return;
+    }
+
+    const date =
+      progressDate.value;
+
+    const text =
+      progressText.value.trim();
+
+    if (!parseDateString(date) || !text) {
+      showStatus(progressStatus, "請填寫日期和進步內容。", "error");
+      return;
+    }
+
+    if (date > todayString()) {
+      showStatus(progressStatus, "還沒發生的進步先別記 😂", "error");
+      return;
+    }
+
+    progressSubmit.disabled = true;
+
+    try {
+      if (editingProgressId) {
+        await updateDoc(
+          doc(db, "users", currentUser.uid, "progress", editingProgressId),
+          {
+            date,
+            text,
+            updatedAt: serverTimestamp()
+          }
+        );
+      } else {
+        await addDoc(
+          collection(db, "users", currentUser.uid, "progress"),
+          {
+            date,
+            text,
+            createdAt: serverTimestamp()
+          }
+        );
+      }
+
+      showStatus(
+        progressStatus,
+        editingProgressId ? "進步紀錄已更新。" : "記下來了 ✨",
+        "success"
+      );
+
+      resetProgressForm();
+
+      await loadProgressEntries();
+    } catch (error) {
+      console.error(
+        "進步紀錄儲存失敗：",
+        error
+      );
+
+      showStatus(
+        progressStatus,
+        `儲存失敗：${getWriteErrorMessage(error)}`,
+        "error"
+      );
+    } finally {
+      progressSubmit.disabled = false;
+    }
+  }
+);
+
+growthTimeline?.addEventListener(
+  "click",
+
+  async (event) => {
+    const editButton =
+      event.target.closest("[data-edit-progress]");
+
+    const removeButton =
+      event.target.closest("[data-remove-progress]");
+
+    if (editButton) {
+      const entry =
+        progressEntries.find((item) => item.id === editButton.dataset.editProgress);
+
+      if (!entry) {
+        return;
+      }
+
+      editingProgressId = entry.id;
+
+      progressDate.value = entry.date;
+      progressText.value = entry.text;
+
+      progressSubmit.textContent = "更新";
+      progressCancel.hidden = false;
+
+      progressText.focus();
+
+      return;
+    }
+
+    if (!removeButton) {
+      return;
+    }
+
+    const entry =
+      progressEntries.find((item) => item.id === removeButton.dataset.removeProgress);
+
+    if (
+      !entry ||
+      !window.confirm(`要刪除「${entry.text}」這筆進步紀錄嗎？`)
+    ) {
+      return;
+    }
+
+    removeButton.disabled = true;
+
+    try {
+      await deleteDoc(
+        doc(db, "users", currentUser.uid, "progress", entry.id)
+      );
+
+      if (editingProgressId === entry.id) {
+        resetProgressForm();
+      }
+
+      showStatus(progressStatus, "已刪除這筆進步紀錄。");
+
+      await loadProgressEntries();
+    } catch (error) {
+      console.error(
+        "刪除進步紀錄失敗：",
+        error
+      );
+
+      removeButton.disabled = false;
+
+      showStatus(
+        progressStatus,
+        `刪除失敗：${getWriteErrorMessage(error)}`,
+        "error"
+      );
+    }
+  }
+);
+
+if (progressDate) {
+  progressDate.value = todayString();
+  progressDate.max = todayString();
 }
 
 /* =========================================================

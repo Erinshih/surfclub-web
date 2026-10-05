@@ -299,19 +299,75 @@
       </p>
 
       <h2>
-        升級紀錄
+        升級與進步紀錄
       </h2>
 
       <div id="level-path"></div>
 
-      <div class="level-chart-box">
+      <div class="level-chart-box growth-chart-box">
         <canvas id="level-history-chart"></canvas>
       </div>
 
-      <div
-        id="achievement-timeline"
-        class="achievement-timeline"
-      ></div>
+      <form
+        id="progress-form"
+        class="inline-form progress-form"
+      >
+        <input
+          id="progress-date"
+          type="date"
+          aria-label="日期"
+          required
+        >
+
+        <input
+          id="progress-text"
+          type="text"
+          maxlength="100"
+          placeholder="今天進步了什麼？"
+          aria-label="進步內容"
+          required
+        >
+
+        <button
+          id="progress-submit"
+          class="button button-small"
+          type="submit"
+        >
+          記錄進步
+        </button>
+
+        <button
+          id="progress-cancel"
+          class="button button-small button-secondary"
+          type="button"
+          hidden
+        >
+          取消編輯
+        </button>
+      </form>
+
+      <p class="panel-hint">
+        Level 由幹部調整；你自己記錄的進步會用 ✨ 標在圖表上，日期可以自己選。
+      </p>
+
+      <p
+        id="progress-status"
+        class="status-message"
+      ></p>
+
+      <details
+        id="growth-details"
+        class="growth-details"
+      >
+        <summary id="growth-summary">
+          全部紀錄
+        </summary>
+
+        <ol
+          id="growth-timeline"
+          class="growth-timeline"
+        ></ol>
+      </details>
     </section>
 
     <!-- ===================================================
