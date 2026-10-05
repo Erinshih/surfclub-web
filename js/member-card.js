@@ -133,11 +133,11 @@ export function toDateString(date) {
 
 /*
  * 學期起點：2 月 1 日、8 月 1 日
+ * （不傳日期就是今天所在的學期）
  */
-export function getSemesterStart() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1;
+export function getSemesterStart(date = new Date()) {
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
 
   if (month >= 8) {
     return new Date(year, 7, 1);
@@ -151,15 +151,49 @@ export function getSemesterStart() {
 }
 
 /*
+ * 上一個學期的起點
+ */
+export function getPreviousSemesterStart(date = new Date()) {
+  const start =
+    getSemesterStart(date);
+
+  return getSemesterStart(
+    new Date(start.getFullYear(), start.getMonth(), 0)
+  );
+}
+
+/*
+ * 下一個學期的起點（也就是這學期的結束）
+ */
+export function getNextSemesterStart(semesterStart) {
+  return semesterStart.getMonth() === 7
+    ? new Date(semesterStart.getFullYear() + 1, 1, 1)
+    : new Date(semesterStart.getFullYear(), 7, 1);
+}
+
+/*
+ * 2026-08-01 → 「115 學年度上學期」；2027-02-01 → 「115 學年度下學期」
+ */
+export function getSemesterLabel(semesterStart) {
+  const isFirstHalf =
+    semesterStart.getMonth() === 7;
+
+  const academicYear =
+    (isFirstHalf
+      ? semesterStart.getFullYear()
+      : semesterStart.getFullYear() - 1) - 1911;
+
+  return `${academicYear} 學年度${isFirstHalf ? "上" : "下"}學期`;
+}
+
+/*
  * 學年起點：8 月 1 日，這天之後入社的算新生
  */
-export function getAcademicYearStart() {
-  const now = new Date();
-
+export function getAcademicYearStart(date = new Date()) {
   return new Date(
-    now.getMonth() + 1 >= 8
-      ? now.getFullYear()
-      : now.getFullYear() - 1,
+    date.getMonth() + 1 >= 8
+      ? date.getFullYear()
+      : date.getFullYear() - 1,
     7,
     1
   );

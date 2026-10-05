@@ -116,22 +116,54 @@
       <div class="leaderboard-section-header">
         <div>
           <p class="leaderboard-section-eyebrow">
-            THIS SEMESTER
+            THIS PERIOD
           </p>
 
           <h2>
-            本學期榜單
+            本期榜單
           </h2>
         </div>
 
-        <span class="leaderboard-section-note">
-          每學期 2/1、8/1 重新計算
+        <span
+          id="boardPeriodNote"
+          class="leaderboard-section-note"
+        >
+          由幹部結算後重新計算
         </span>
       </div>
 
       <div
         id="boardGrid"
         class="board-grid"
+      ></div>
+    </section>
+
+    <section
+      id="archiveSection"
+      class="boards-section"
+      hidden
+    >
+      <div class="leaderboard-section-header">
+        <div>
+          <p class="leaderboard-section-eyebrow">
+            PAST SEMESTERS
+          </p>
+
+          <h2>
+            歷屆榜單
+          </h2>
+        </div>
+
+        <select
+          class="archive-select"
+          data-archive-select
+          aria-label="選擇學期"
+        ></select>
+      </div>
+
+      <div
+        class="board-grid"
+        data-archive-grid
       ></div>
     </section>
 

@@ -1,18 +1,25 @@
 /* =========================================================
    檔案：js/boards.js
-   本學期榜單：下水王、新生下水王、進步王、開燈王、關燈王、全天王、Surf Level
+   本期榜單：下水王、新生下水王、進步王、開燈王、關燈王、全天王、Surf Level
+   歷屆榜單：管理員結算時，把這一期的榜單和積分排名封存在 boardArchives
    ========================================================= */
 
 import {
   collection,
+  deleteDoc,
+  doc,
   getDocs,
   query,
-  where
+  serverTimestamp,
+  setDoc,
+  where,
+  writeBatch
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
 
 import {
   formatLevel,
-  getLevel
+  getLevel,
+  getLevelByValue
 } from "./levels.js";
 
 import {
@@ -20,12 +27,17 @@ import {
   getAcademicYearStart,
   getInitial,
   getJoinDate,
-  getProfile
+  getProfile,
+  loadLevelHistory,
+  parseDateString,
+  toDateString
 } from "./member-card.js";
 
 import {
   getBoardStats,
+  getPeriod,
   hasCurrentBoardStats,
+  loadPeriod,
   refreshBoardStats
 } from "./board-stats.js";
 
@@ -64,7 +76,7 @@ function toRankingMember({ uid, data }) {
     uid,
     data,
     level: getLevel(data.level),
-    isFreshman: Boolean(joinDate && joinDate >= getAcademicYearStart()),
+    isFreshman: Boolean(joinDate && joinDate >= getAcademicYearStart(parseDateString(getPeriod().start))),
     sessions: stats.sessions,
     dawnSessions: stats.dawn,
     duskSessions: stats.dusk,
@@ -113,8 +125,9 @@ const BOARDS = [
   {
     id: "sessions",
     emoji: "🌊",
-    title: "本學期下水王",
-    description: "本學期打卡次數最多",
+    title: "本期下水王",
+    archiveTitle: "下水王",
+    description: "這一期打卡次數最多",
     unit: "次",
     joinHint: "打一次卡就能上榜！",
     value: (member) => member.sessions
@@ -132,8 +145,9 @@ const BOARDS = [
   {
     id: "progress",
     emoji: "📈",
-    title: "本學期進步王",
-    description: "本學期升最多級",
+    title: "本期進步王",
+    archiveTitle: "進步王",
+    description: "這一期升最多級",
     unit: "級",
     joinHint: "升一級就能上榜！",
     value: (member) => member.levelUps
@@ -142,7 +156,7 @@ const BOARDS = [
     id: "dawn",
     emoji: "🌅",
     title: "開燈王",
-    description: "本學期開燈次數最多",
+    description: "這一期開燈次數最多",
     unit: "次",
     joinHint: "打卡時勾「開燈」就能上榜！",
     value: (member) => member.dawnSessions
@@ -151,7 +165,7 @@ const BOARDS = [
     id: "dusk",
     emoji: "🌇",
     title: "關燈王",
-    description: "本學期關燈次數最多",
+    description: "這一期關燈次數最多",
     unit: "次",
     joinHint: "打卡時勾「關燈」就能上榜！",
     value: (member) => member.duskSessions
@@ -221,13 +235,21 @@ export async function renderBoards(db, container, currentUid, options = {}) {
 
   container.innerHTML = `
     <p class="empty-state">
-      正在統計本學期榜單……
+      正在統計本期榜單……
     </p>
   `;
 
   try {
-    const members =
-      await loadMembers(db);
+    const [members, period] =
+      await Promise.all([
+        loadMembers(db),
+        loadPeriod(db)
+      ]);
+
+    if (options.periodNote) {
+      options.periodNote.textContent =
+        `${period.label ? `${period.label}｜` : ""}從 ${period.start.replaceAll("-", "/")} 開始計算`;
+    }
 
     if (options.isAdmin) {
       await refreshMembers(
@@ -260,7 +282,8 @@ export async function renderBoards(db, container, currentUid, options = {}) {
         ? `<p class="board-admin-note">
             管理員：統計會在社員打卡時自動更新。新增升級紀錄後，
             <button class="link-button" type="button" data-refresh-boards>重新計算所有人</button>
-            就會反映到進步王和 Surf Level。
+            就會反映到進步王和 Surf Level。要換下一期，請到
+            <a href="./admin-settle.html">排行榜結算</a>。
           </p>`
         : "");
 
@@ -395,5 +418,567 @@ function renderMyRank(board, ranked, me) {
         ? `，再 ${target.value - mine.value} ${board.unit}就能追上第 ${target.rank} 名`
         : ""}
     </p>
+  `;
+}
+
+/* =========================================================
+   結算與歷屆榜單
+   ========================================================= */
+
+const ARCHIVE_COLLECTION = "boardArchives";
+
+const POINTS_TOP_COUNT = 10;
+
+/*
+ * 從原始的打卡和升級紀錄，算出 [start, end) 這段期間的統計
+ */
+async function computePeriodMembers(db, members, start, end) {
+  const startText =
+    toDateString(start);
+
+  const endText =
+    toDateString(end);
+
+  const academicYearStart =
+    getAcademicYearStart(start);
+
+  return Promise.all(
+    members.map(async ({ uid, data }) => {
+      const [checkinSnapshot, history] =
+        await Promise.all([
+          getDocs(
+            query(
+              collection(db, "users", uid, "checkins"),
+              where("date", ">=", startText),
+              where("date", "<", endText)
+            )
+          ),
+          loadLevelHistory(db, uid)
+        ]);
+
+      const checkins =
+        checkinSnapshot.docs.map((checkin) => checkin.data());
+
+      const unlockedAt = (item) =>
+        item.unlockedAt?.toDate?.() || null;
+
+      /*
+       * 期末的等級：結束前最後一筆升級紀錄
+       */
+      const beforeEnd =
+        history.filter((item) => unlockedAt(item) && unlockedAt(item) < end);
+
+      const lastEntry =
+        beforeEnd[beforeEnd.length - 1];
+
+      /*
+       * 完全沒有升級紀錄的社員（等級是直接在後台設定的），
+       * 就用目前的等級
+       */
+      const level =
+        lastEntry
+          ? getLevelByValue(Number(lastEntry.levelValue))
+          : history.length === 0
+            ? getLevel(data.level)
+            : null;
+
+      const reachedLevelAt =
+        level
+          ? beforeEnd
+            .find((item) => Number(item.levelValue) === level.value)
+            ?.unlockedAt
+            ?.toDate?.()
+            ?.getTime()
+          : null;
+
+      const joinDate =
+        getJoinDate(data);
+
+      return {
+        uid,
+        data,
+        level,
+        isFreshman: Boolean(
+          joinDate &&
+          joinDate >= academicYearStart &&
+          joinDate < end
+        ),
+        sessions: checkins.length,
+        dawnSessions: checkins.filter((checkin) => checkin.dawn === true).length,
+        duskSessions: checkins.filter((checkin) => checkin.dusk === true).length,
+        allDaySessions: checkins.filter((checkin) => checkin.dawn === true && checkin.dusk === true).length,
+        levelUps: history.filter((item) =>
+          Number(item.levelValue) > 0 &&
+          unlockedAt(item) >= start &&
+          unlockedAt(item) < end
+        ).length,
+        reachedLevelAt: reachedLevelAt ?? Infinity
+      };
+    })
+  );
+}
+
+function normalizePoints(value) {
+  const points =
+    Number(value);
+
+  return Number.isFinite(points) && points > 0
+    ? Math.floor(points)
+    : 0;
+}
+
+function toArchiveEntry(member, value, rank, text = "") {
+  return {
+    uid: member.uid,
+    name: member.data.name || "未命名社員",
+    nickname: getProfile(member.data).nickname,
+    levelValue: getLevel(member.data.level)?.value || 0,
+    value,
+    rank,
+    text
+  };
+}
+
+/*
+ * 同分同名次
+ */
+function withSharedRank(items) {
+  items.forEach((item, index) => {
+    const previous =
+      items[index - 1];
+
+    item.rank =
+      previous && previous.value === item.value
+        ? previous.rank
+        : index + 1;
+  });
+
+  return items;
+}
+
+function buildPointsRanking(members) {
+  return withSharedRank(
+    members
+      .map((member) => ({ member, value: normalizePoints(member.data.points) }))
+      .filter((item) => item.value > 0)
+      .sort((first, second) =>
+        second.value - first.value ||
+        String(first.member.data.name || "").localeCompare(String(second.member.data.name || ""), "zh-Hant")
+      )
+  )
+    .slice(0, POINTS_TOP_COUNT)
+    .map((item) => toArchiveEntry(item.member, item.value, item.rank));
+}
+
+function buildFamilyRanking(members) {
+  const families = new Map();
+
+  members.forEach((member) => {
+    const family =
+      String(member.data.family || "").trim();
+
+    if (!family) {
+      return;
+    }
+
+    const current =
+      families.get(family) || { name: family, value: 0, memberCount: 0 };
+
+    current.value += normalizePoints(member.data.points);
+    current.memberCount += 1;
+
+    families.set(family, current);
+  });
+
+  return withSharedRank(
+    [...families.values()].sort((first, second) =>
+      second.value - first.value ||
+      first.name.localeCompare(second.name, "zh-Hant")
+    )
+  );
+}
+
+/*
+ * 結算：封存 [這一期的起始日, endDate] 的榜單和積分排名，
+ * 下一期從 endDate 的隔天開始。不會改動任何人的積分。
+ */
+export async function settlePeriod(db, { label, endDate, nextLabel }) {
+  const period =
+    await loadPeriod(db, { force: true });
+
+  const start =
+    parseDateString(period.start);
+
+  start.setHours(0, 0, 0, 0);
+
+  /*
+   * endDate 當天也算進這一期
+   */
+  const end =
+    parseDateString(endDate);
+
+  end.setHours(0, 0, 0, 0);
+  end.setDate(end.getDate() + 1);
+
+  if (end <= start) {
+    throw new Error(`結算日不能早於這一期的起始日（${period.start}）。`);
+  }
+
+  const members =
+    await loadMembers(db);
+
+  const rankingMembers =
+    await computePeriodMembers(db, members, start, end);
+
+  const nextStart =
+    toDateString(end);
+
+  const archive = {
+    semester: period.start,
+    end: endDate,
+    label: label || period.label || `${period.start} ~ ${endDate}`,
+    createdAt: serverTimestamp(),
+
+    boards: BOARDS.map((board) => ({
+      id: board.id,
+      emoji: board.emoji,
+      title: board.archiveTitle || board.title.replace("本期", ""),
+      unit: board.unit || "",
+      entries:
+        rankMembers(board, rankingMembers)
+          .slice(0, TOP_COUNT)
+          .map((entry) =>
+            toArchiveEntry(
+              entry.member,
+              entry.value,
+              entry.rank,
+              board.formatValue ? board.formatValue(entry.member) : ""
+            )
+          )
+    })),
+
+    points: buildPointsRanking(members),
+
+    families: buildFamilyRanking(members),
+
+    /*
+     * 還原用：下一期的起始日、結算當時每個人的積分
+     */
+    nextStart,
+
+    pointsSnapshot: Object.fromEntries(
+      members.map((member) => [member.uid, normalizePoints(member.data.points)])
+    )
+  };
+
+  await setDoc(
+    doc(db, ARCHIVE_COLLECTION, `${period.start}_${endDate}`),
+    archive
+  );
+
+  await setDoc(
+    doc(db, "settings", "leaderboard"),
+    {
+      periodStart: nextStart,
+      periodLabel: nextLabel || "",
+      updatedAt: serverTimestamp()
+    }
+  );
+
+  await loadPeriod(db, { force: true });
+
+  return { archive, members, nextStart };
+}
+
+/*
+ * 批次更新積分：[[uid, points], ...]（一次最多寫 400 筆）
+ */
+async function writePoints(db, entries) {
+  for (let index = 0; index < entries.length; index += 400) {
+    const batch =
+      writeBatch(db);
+
+    entries.slice(index, index + 400).forEach(([uid, points]) => {
+      batch.update(
+        doc(db, "users", uid),
+        {
+          points,
+          updatedAt: serverTimestamp()
+        }
+      );
+    });
+
+    await batch.commit();
+  }
+}
+
+/*
+ * 把勾選的社員積分歸零
+ */
+export async function resetPoints(db, uids) {
+  await writePoints(db, uids.map((uid) => [uid, 0]));
+}
+
+/*
+ * 找出最近一次結算：結算後的下一期起始日 = 目前這一期的起始日
+ */
+export async function findLatestSettlement(db) {
+  const period =
+    await loadPeriod(db, { force: true });
+
+  const snapshot =
+    await getDocs(collection(db, ARCHIVE_COLLECTION));
+
+  const archives =
+    snapshot.docs.map((documentSnapshot) => ({
+      id: documentSnapshot.id,
+      ...documentSnapshot.data()
+    }));
+
+  return archives.find((archive) => {
+    if (archive.nextStart) {
+      return archive.nextStart === period.start;
+    }
+
+    /*
+     * 舊的封存沒有 nextStart，用結算日的隔天推算
+     */
+    const end =
+      parseDateString(archive.end);
+
+    if (!end) {
+      return false;
+    }
+
+    end.setDate(end.getDate() + 1);
+
+    return toDateString(end) === period.start;
+  }) || null;
+}
+
+/*
+ * 還原最近一次結算：
+ * 1. 這一期改回結算前的名稱和起始日
+ * 2. （選擇）積分改回結算當時的分數
+ * 3. 刪除那一次的封存
+ */
+export async function undoSettlement(db, archive, { restorePoints = false, members = [] } = {}) {
+  let restoredCount = 0;
+
+  if (restorePoints && archive.pointsSnapshot) {
+    const changes =
+      members
+        .filter((member) => member.uid in archive.pointsSnapshot)
+        .map((member) => [member.uid, archive.pointsSnapshot[member.uid]])
+        .filter(([uid, points]) =>
+          normalizePoints(members.find((member) => member.uid === uid).data.points) !== points
+        );
+
+    await writePoints(db, changes);
+
+    restoredCount = changes.length;
+  }
+
+  await setDoc(
+    doc(db, "settings", "leaderboard"),
+    {
+      periodStart: archive.semester,
+      periodLabel: archive.label || "",
+      updatedAt: serverTimestamp()
+    }
+  );
+
+  await deleteDoc(doc(db, ARCHIVE_COLLECTION, archive.id));
+
+  await loadPeriod(db, { force: true });
+
+  return { restoredCount };
+}
+
+/*
+ * 跟結算當時相比，積分不一樣的社員
+ */
+export function getChangedPoints(archive, members) {
+  if (!archive?.pointsSnapshot) {
+    return [];
+  }
+
+  return members.filter((member) =>
+    member.uid in archive.pointsSnapshot &&
+    normalizePoints(member.data.points) !== archive.pointsSnapshot[member.uid]
+  );
+}
+
+export { loadMembers };
+
+/* =========================================================
+   歷屆榜單畫面
+   ========================================================= */
+
+export async function renderArchiveSection(db, section, currentUid, options = {}) {
+  if (!section) {
+    return;
+  }
+
+  const select =
+    section.querySelector("[data-archive-select]");
+
+  const grid =
+    section.querySelector("[data-archive-grid]");
+
+  try {
+    const snapshot =
+      await getDocs(collection(db, ARCHIVE_COLLECTION));
+
+    const archives =
+      snapshot.docs
+        .map((documentSnapshot) => documentSnapshot.data())
+        .filter((archive) =>
+          (Array.isArray(archive.boards) && archive.boards.some((board) => board.entries?.length > 0)) ||
+          archive.points?.length > 0 ||
+          archive.families?.length > 0
+        )
+        .sort((first, second) =>
+          String(second.end || second.semester).localeCompare(String(first.end || first.semester))
+        );
+
+    if (archives.length === 0) {
+      section.hidden = !options.isAdmin;
+      grid.innerHTML = `<p class="board-empty">還沒有歷屆榜單，管理員結算第一期之後就會出現。</p>`;
+      select.hidden = true;
+      return;
+    }
+
+    section.hidden = false;
+    select.hidden = false;
+
+    select.innerHTML =
+      archives
+        .map((archive, index) => `
+          <option value="${index}">${escapeHtml(archive.label || archive.semester)}</option>
+        `)
+        .join("");
+
+    const show = () => {
+      const archive =
+        archives[Number(select.value)];
+
+      grid.innerHTML =
+        (archive.boards || [])
+          .map((board) => renderArchiveBoard(board, currentUid))
+          .join("") +
+        (archive.points
+          ? renderArchiveBoard(
+            { emoji: "⭐", title: "個人積分", unit: "分", entries: archive.points },
+            currentUid
+          )
+          : "") +
+        (archive.families
+          ? renderFamilyArchive(archive.families)
+          : "");
+    };
+
+    select.onchange = show;
+    show();
+  } catch (error) {
+    console.error(
+      "歷屆榜單載入失敗：",
+      error
+    );
+
+    section.hidden = !options.isAdmin;
+
+    grid.innerHTML = `
+      <p class="status-message error">
+        歷屆榜單載入失敗：${escapeHtml(error?.message || "未知錯誤")}
+      </p>
+    `;
+  }
+}
+
+function renderArchiveBoard(board, currentUid) {
+  const entries =
+    board.entries || [];
+
+  return `
+    <article class="board-card">
+      <header class="board-card-header">
+        <span class="board-card-emoji">${escapeHtml(board.emoji)}</span>
+
+        <div>
+          <h3>${escapeHtml(board.title)}</h3>
+        </div>
+      </header>
+
+      ${entries.length > 0
+        ? `<ol class="board-list">
+            ${entries.map((entry) => {
+              const level =
+                getLevelByValue(Number(entry.levelValue));
+
+              const medal =
+                ["🥇", "🥈", "🥉"][entry.rank - 1] || entry.rank;
+
+              return `
+                <li class="board-row ${entry.uid === currentUid ? "is-me" : ""}">
+                  <span class="board-rank">${medal}</span>
+
+                  <span
+                    class="character-avatar"
+                    style="--level-color: ${level?.color || "#8a9ea1"}"
+                    aria-hidden="true"
+                  >
+                    ${escapeHtml(Array.from(entry.nickname || entry.name || "?")[0])}
+                  </span>
+
+                  <span class="board-name">
+                    <strong>${escapeHtml(entry.name)}</strong>
+                    ${entry.nickname ? `<small>${escapeHtml(entry.nickname)}</small>` : ""}
+                  </span>
+
+                  <span class="board-value">
+                    ${entry.text
+                      ? escapeHtml(entry.text)
+                      : `<strong>${Number(entry.value)}</strong> ${escapeHtml(board.unit)}`}
+                  </span>
+                </li>
+              `;
+            }).join("")}
+          </ol>`
+        : `<p class="board-empty">這一期沒有人上榜。</p>`}
+    </article>
+  `;
+}
+
+function renderFamilyArchive(families) {
+  return `
+    <article class="board-card">
+      <header class="board-card-header">
+        <span class="board-card-emoji">🏠</span>
+
+        <div>
+          <h3>家系積分</h3>
+        </div>
+      </header>
+
+      ${families.length > 0
+        ? `<ol class="board-list">
+            ${families.map((family) => `
+              <li class="board-row">
+                <span class="board-rank">${["🥇", "🥈", "🥉"][family.rank - 1] || family.rank}</span>
+
+                <span class="board-name">
+                  <strong>${escapeHtml(family.name)}</strong>
+                  <small>${Number(family.memberCount)} 位社員</small>
+                </span>
+
+                <span class="board-value">
+                  <strong>${Number(family.value)}</strong> 分
+                </span>
+              </li>
+            `).join("")}
+          </ol>`
+        : `<p class="board-empty">這一期沒有家系資料。</p>`}
+    </article>
   `;
 }

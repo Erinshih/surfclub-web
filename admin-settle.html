@@ -1,0 +1,310 @@
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon-v2.png">
+  <link
+    rel="manifest"
+    href="./manifest.webmanifest"
+  >
+
+  <title>Surf Club Admin｜排行榜結算</title>
+
+  <link
+    rel="stylesheet"
+    href="./css/style.css"
+  >
+</head>
+
+<body>
+  <header class="site-header">
+    <nav class="navbar">
+      <a
+        class="brand"
+        href="./admin.html"
+      >
+        SURF CLUB ADMIN
+      </a>
+
+      <div class="nav-links">
+        <a href="./admin.html">
+          管理首頁
+        </a>
+
+        <a href="./admin-announcements.html">
+          公告管理
+        </a>
+
+        <a href="./admin-courses.html">
+          社課管理
+        </a>
+
+        <a href="./admin-members.html">
+          社員管理
+        </a>
+
+        <a href="./admin-trips.html">
+          出團紀錄
+        </a>
+
+        <a href="./leaderboard.html">
+          排行榜
+        </a>
+
+        <!-- <a href="./index.html">
+          公開網站
+        </a> -->
+
+        <button
+          id="logout-button"
+          class="button button-small button-secondary"
+          type="button"
+        >
+          登出
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="dashboard">
+    <section class="dashboard-header">
+      <div>
+        <p class="eyebrow">
+          LEADERBOARD SETTLEMENT
+        </p>
+
+        <h1>
+          排行榜結算
+        </h1>
+      </div>
+
+      <p
+        id="admin-status"
+        class="status-message"
+      >
+        正在驗證管理員身分……
+      </p>
+    </section>
+
+    <div
+      id="admin-content"
+      class="hidden"
+    >
+      <!-- ===============================================
+           步驟 1：結算這一期
+           =============================================== -->
+
+      <section class="content-card">
+        <p class="eyebrow">
+          STEP 1
+        </p>
+
+        <h2>
+          結算這一期
+        </h2>
+
+        <p
+          id="current-period"
+          class="settle-current"
+        >
+          正在讀取目前這一期……
+        </p>
+
+        <ul class="settle-notes">
+          <li>會把這一期的 7 張榜單、個人積分前 10 名和家系積分排名<strong>封存成歷屆榜單</strong>。</li>
+          <li>下一期從結算日的<strong>隔天</strong>開始，打卡類的榜單會從 0 重新累積。</li>
+          <li>結算<strong>不會改動任何人的積分</strong>，要不要歸零在步驟 2 由你決定。</li>
+          <li>打卡、升級紀錄等原始資料都會保留。</li>
+        </ul>
+
+        <form id="settle-form">
+          <div class="form-grid">
+            <div class="field-stack">
+              <label for="settle-label">
+                這一期的名稱
+              </label>
+
+              <input
+                id="settle-label"
+                type="text"
+                maxlength="30"
+                required
+              >
+            </div>
+
+            <div class="field-stack">
+              <label for="settle-end">
+                結算到哪一天（含當天）
+              </label>
+
+              <input
+                id="settle-end"
+                type="date"
+                required
+              >
+            </div>
+          </div>
+
+          <label for="settle-next-label">
+            下一期的名稱
+          </label>
+
+          <input
+            id="settle-next-label"
+            type="text"
+            maxlength="30"
+            required
+          >
+
+          <p
+            id="settle-message"
+            class="status-message"
+          ></p>
+
+          <div class="dialog-actions">
+            <button
+              id="settle-button"
+              class="button"
+              type="submit"
+            >
+              結算並封存
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- ===============================================
+           還原上一次結算
+           =============================================== -->
+
+      <section
+        id="undo-section"
+        class="content-card undo-card"
+        hidden
+      >
+        <p class="eyebrow">
+          UNDO
+        </p>
+
+        <h2>
+          還原上一次結算
+        </h2>
+
+        <p
+          id="undo-summary"
+          class="settle-current"
+        ></p>
+
+        <ul class="settle-notes">
+          <li>「這一期」會改回結算前的名稱和起始日，打卡類的榜單會重新算回去。</li>
+          <li>那一次結算的<strong>歷屆榜單會被刪除</strong>，之後可以重新結算。</li>
+          <li>只能還原最近一次；要再往前，還原後再按一次。</li>
+        </ul>
+
+        <label
+          id="undo-points-option"
+          class="check-item undo-points-option"
+        >
+          <input
+            id="undo-restore-points"
+            type="checkbox"
+          >
+          <span id="undo-points-text"></span>
+        </label>
+
+        <p
+          id="undo-message"
+          class="status-message"
+        ></p>
+
+        <div class="dialog-actions">
+          <button
+            id="undo-button"
+            class="button button-secondary"
+            type="button"
+          >
+            還原上一次結算
+          </button>
+        </div>
+      </section>
+
+      <!-- ===============================================
+           步驟 2：選擇要歸零積分的社員
+           =============================================== -->
+
+      <section
+        id="reset-section"
+        class="content-card"
+      >
+        <p class="eyebrow">
+          STEP 2
+        </p>
+
+        <h2>
+          選擇要歸零積分的社員
+        </h2>
+
+        <p class="panel-hint">
+          預設都不勾。只有勾選的社員積分會變成 0，其他人維持原本的積分。
+          不一定要先結算，也可以單獨使用。
+        </p>
+
+        <div class="participant-tools">
+          <button
+            id="select-scored-button"
+            class="button button-small button-secondary"
+            type="button"
+          >
+            勾選所有有積分的人
+          </button>
+
+          <button
+            id="clear-selection-button"
+            class="button button-small button-secondary"
+            type="button"
+          >
+            全部取消
+          </button>
+        </div>
+
+        <div
+          id="reset-list"
+          class="reset-list"
+        >
+          <p class="empty-state">
+            正在載入社員……
+          </p>
+        </div>
+
+        <p
+          id="reset-message"
+          class="status-message"
+        ></p>
+
+        <div class="dialog-actions">
+          <button
+            id="reset-button"
+            class="button delete-button"
+            type="button"
+            disabled
+          >
+            將勾選的社員積分歸零
+          </button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script
+    type="module"
+    src="./js/admin-settle.js"
+  ></script>
+</body>
+</html>

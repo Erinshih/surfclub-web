@@ -33,6 +33,7 @@ import {
 } from "./admin-nav.js";
 
 import {
+  renderArchiveSection,
   renderBoards
 } from "./boards.js";
 
@@ -928,6 +929,16 @@ onAuthStateChanged(
       renderBoards(
         db,
         document.querySelector("#boardGrid"),
+        user.uid,
+        {
+          isAdmin,
+          periodNote: document.querySelector("#boardPeriodNote")
+        }
+      );
+
+      renderArchiveSection(
+        db,
+        document.querySelector("#archiveSection"),
         user.uid,
         { isAdmin }
       );

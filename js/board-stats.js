@@ -1,9 +1,12 @@
 /* =========================================================
    檔案：js/board-stats.js
-   本學期榜單用的統計，存在 users/{uid}.boardStats
+   本期榜單用的統計，存在 users/{uid}.boardStats
 
    排行榜只要讀社員名單，不必讀每個人的打卡紀錄，
    讀取次數不會隨打卡變多而增加。
+
+   「這一期」從哪天開始，由管理員結算時決定，
+   存在 settings/leaderboard；還沒結算過就用這學期的起始日。
 
    什麼時候更新：
    - 社員打開社員首頁、打卡、刪除打卡時，更新自己的
@@ -13,6 +16,7 @@
 import {
   collection,
   doc,
+  getDoc,
   getDocs,
   query,
   serverTimestamp,
@@ -25,8 +29,10 @@ import {
 } from "./levels.js";
 
 import {
+  getSemesterLabel,
   getSemesterStart,
   loadLevelHistory,
+  parseDateString,
   toDateString
 } from "./member-card.js";
 
@@ -39,46 +45,105 @@ const EMPTY_STATS = {
   reachedLevelAt: null
 };
 
-/*
- * 學期的代號，例如 "2026-08-01"
- */
-export function getSemesterKey() {
-  return toDateString(getSemesterStart());
+/* =========================================================
+   這一期的設定
+   ========================================================= */
+
+let periodPromise = null;
+let currentPeriod = null;
+
+function getDefaultPeriod() {
+  const start =
+    getSemesterStart();
+
+  return {
+    start: toDateString(start),
+    label: getSemesterLabel(start)
+  };
 }
 
 /*
- * 讀取社員資料上的統計；不是本學期的就當作 0
+ * 讀取 settings/leaderboard：{ periodStart: "2026-08-01", periodLabel: "115 學年度上學期" }
+ * 讀不到就用這學期，排行榜照常運作。
+ */
+export function loadPeriod(db, { force = false } = {}) {
+  if (!periodPromise || force) {
+    periodPromise =
+      getDoc(doc(db, "settings", "leaderboard"))
+        .then((snapshot) => {
+          const data =
+            snapshot.exists() ? snapshot.data() : null;
+
+          return data?.periodStart
+            ? { start: data.periodStart, label: data.periodLabel || "" }
+            : getDefaultPeriod();
+        })
+        .catch((error) => {
+          console.error(
+            "排行榜期別讀取失敗，改用本學期：",
+            error
+          );
+
+          return getDefaultPeriod();
+        })
+        .then((period) => {
+          currentPeriod = period;
+          return period;
+        });
+  }
+
+  return periodPromise;
+}
+
+/*
+ * 呼叫前要先 await loadPeriod()
+ */
+export function getPeriod() {
+  return currentPeriod || getDefaultPeriod();
+}
+
+/* =========================================================
+   統計
+   ========================================================= */
+
+/*
+ * 讀取社員資料上的統計；不是這一期的就當作 0
  */
 export function getBoardStats(userData) {
   const stats =
     userData?.boardStats;
 
-  if (!stats || stats.semester !== getSemesterKey()) {
-    return { ...EMPTY_STATS, semester: getSemesterKey() };
+  if (!stats || stats.semester !== getPeriod().start) {
+    return { ...EMPTY_STATS, semester: getPeriod().start };
   }
 
   return { ...EMPTY_STATS, ...stats };
 }
 
 export function hasCurrentBoardStats(userData) {
-  return userData?.boardStats?.semester === getSemesterKey();
+  return userData?.boardStats?.semester === getPeriod().start;
 }
 
-export async function loadSemesterCheckins(db, uid) {
+async function loadPeriodCheckins(db, uid) {
   const snapshot =
     await getDocs(
       query(
         collection(db, "users", uid, "checkins"),
-        where("date", ">=", getSemesterKey())
+        where("date", ">=", getPeriod().start)
       )
     );
 
   return snapshot.docs.map((checkin) => checkin.data());
 }
 
-export function computeBoardStats(checkins, history, levelText) {
-  const semesterStart =
-    getSemesterStart();
+function computeBoardStats(checkins, history, levelText) {
+  const periodStart =
+    parseDateString(getPeriod().start);
+
+  /*
+   * 從當天 0 點開始算
+   */
+  periodStart.setHours(0, 0, 0, 0);
 
   const level =
     getLevel(levelText);
@@ -91,7 +156,10 @@ export function computeBoardStats(checkins, history, levelText) {
       ?.getTime();
 
   return {
-    semester: getSemesterKey(),
+    /*
+     * 欄位名稱沿用 semester，內容是這一期的起始日
+     */
+    semester: getPeriod().start,
 
     sessions: checkins.length,
 
@@ -109,7 +177,7 @@ export function computeBoardStats(checkins, history, levelText) {
 
     levelUps: history.filter((item) =>
       Number(item.levelValue) > 0 &&
-      item.unlockedAt?.toDate?.() >= semesterStart
+      item.unlockedAt?.toDate?.() >= periodStart
     ).length,
 
     reachedLevelAt: Number.isFinite(reachedLevelAt)
@@ -129,9 +197,11 @@ function isSameStats(first, second) {
  * history 可以傳進來，省下一次讀取。
  */
 export async function refreshBoardStats(db, uid, userData, history = null) {
+  await loadPeriod(db);
+
   const [checkins, levelHistory] =
     await Promise.all([
-      loadSemesterCheckins(db, uid),
+      loadPeriodCheckins(db, uid),
       history ?? loadLevelHistory(db, uid)
     ]);
 

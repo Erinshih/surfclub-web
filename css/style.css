@@ -4317,3 +4317,126 @@ input[type="file"]::file-selector-button {
 .dashboard-shortcut small {
   color: var(--muted);
 }
+
+
+/* =========================================================
+   歷屆榜單
+   ========================================================= */
+
+.archive-select {
+  width: auto;
+  min-width: 200px;
+  padding: 9px 12px;
+
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   後台：排行榜結算
+   ========================================================= */
+
+.settle-current {
+  margin: 0 0 12px;
+  padding: 14px 18px;
+
+  color: var(--navy);
+  background: var(--primary-light);
+
+  border-radius: var(--radius-small);
+}
+
+.settle-notes {
+  margin: 0 0 8px;
+  padding-left: 20px;
+
+  color: var(--muted);
+
+  display: grid;
+  gap: 4px;
+}
+
+.settle-notes strong {
+  color: var(--navy);
+}
+
+.reset-list {
+  max-height: 460px;
+  overflow-y: auto;
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-small);
+}
+
+.reset-option {
+  padding: 10px 14px;
+
+  border-bottom: 1px solid #edf2f3;
+}
+
+.reset-option:last-child {
+  border-bottom: 0;
+}
+
+.reset-name {
+  min-width: 0;
+  flex: 1;
+}
+
+.reset-name small {
+  margin-left: 6px;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.reset-points {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+
+.reset-points strong {
+  color: var(--navy);
+  font-size: 1.1rem;
+}
+
+.reset-option input:checked ~ .reset-points strong {
+  color: var(--danger);
+  text-decoration: line-through;
+}
+
+/* 結算頁的勾選不要有劃掉的樣式 */
+.reset-option input:checked + span {
+  color: var(--text);
+  text-decoration: none;
+}
+
+#settle-message:empty,
+#reset-message:empty {
+  display: none;
+}
+
+.undo-card {
+  border-left: 5px solid #e9c46a;
+}
+
+.undo-points-option {
+  margin: 12px 0 0;
+  align-items: flex-start;
+}
+
+.undo-points-option input {
+  margin-top: 3px;
+}
+
+.undo-points-option input:checked + span {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.undo-points-option input:disabled + span {
+  color: var(--muted);
+}
+
+#undo-message:empty {
+  display: none;
+}
