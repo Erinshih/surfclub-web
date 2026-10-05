@@ -25,11 +25,23 @@ import {
 import {
   findLatestSettlement,
   getChangedPoints,
+  getSnapshotPoints,
   loadMembers,
   resetPoints,
   settlePeriod,
   undoSettlement
 } from "./boards.js";
+
+import {
+  getAutoPoints,
+  getBonusPoints,
+  getTotalPoints,
+  refreshMembersPoints
+} from "./points.js";
+
+import {
+  loadTrips
+} from "./trips.js";
 
 import {
   escapeHtml,
@@ -114,6 +126,7 @@ const logoutButton =
 let members = [];
 let selected = new Set();
 let latestArchive = null;
+let periodStart = null;
 
 /* =========================================================
    管理員驗證
@@ -181,6 +194,9 @@ onAuthStateChanged(
 async function renderCurrentPeriod() {
   const period =
     await loadPeriod(db, { force: true });
+
+  periodStart =
+    period.start;
 
   const days =
     Math.max(
@@ -305,17 +321,44 @@ settleForm?.addEventListener(
    ========================================================= */
 
 function getPoints(member) {
-  const points =
-    Number(member.data.points);
+  return getTotalPoints(member.data);
+}
 
-  return Number.isFinite(points) && points > 0
-    ? Math.floor(points)
-    : 0;
+/*
+ * 歸零後從哪天開始重新累積：這一期的起始日和今天，取比較晚的
+ * （剛結算完就是下一期的第一天；一期中間歸零就是今天）
+ */
+function getResetSince() {
+  return periodStart && periodStart > todayString()
+    ? periodStart
+    : todayString();
+}
+
+/*
+ * 重算自動積分（force：全部重算，否則只算太久沒更新的人）
+ */
+async function refreshPoints(targets, force) {
+  const [trips, period] =
+    await Promise.all([
+      loadTrips(db),
+      loadPeriod(db)
+    ]);
+
+  await refreshMembersPoints(
+    db,
+    targets,
+    { trips, defaultSince: period.start, force }
+  );
 }
 
 async function loadResetList() {
+  const loaded =
+    await loadMembers(db);
+
+  await refreshPoints(loaded, false);
+
   members =
-    (await loadMembers(db))
+    loaded
       .sort((first, second) =>
         getPoints(second) - getPoints(first) ||
         String(first.data.name || "").localeCompare(String(second.data.name || ""), "zh-Hant")
@@ -356,6 +399,7 @@ function renderResetList() {
 
           <span class="reset-points">
             <strong>${getPoints(member)}</strong> 分
+            <small>自動 ${getAutoPoints(member.data)}＋加分 ${getBonusPoints(member.data)}</small>
           </span>
         </label>
       `;
@@ -433,7 +477,8 @@ resetButton?.addEventListener(
       window.confirm(
         `確定要把這 ${targets.length} 位社員的積分歸零嗎？\n\n` +
         `${names}${targets.length > 10 ? " 等" : ""}\n\n` +
-        "歸零後無法復原（結算時已封存的歷屆榜單不受影響）。"
+        `・幹部加分改成 0，自動積分從 ${getResetSince()} 開始重新累積\n` +
+        "・如果是結算後才歸零，可以用「還原上一次結算」一起復原"
       );
 
     if (!confirmed) {
@@ -444,7 +489,20 @@ resetButton?.addEventListener(
     resetButton.textContent = "歸零中……";
 
     try {
-      await resetPoints(db, targets.map((member) => member.uid));
+      const since =
+        getResetSince();
+
+      await resetPoints(db, targets.map((member) => member.uid), since);
+
+      /*
+       * 起算日改了，馬上重算這些人的自動積分
+       */
+      targets.forEach((member) => {
+        member.data.points = 0;
+        member.data.pointsSince = since;
+      });
+
+      await refreshPoints(targets, true);
 
       showStatus(
         resetMessage,
@@ -520,7 +578,7 @@ async function renderUndo() {
       changed
         .slice(0, 5)
         .map((member) =>
-          `${member.data.name || "未命名社員"} ${Number(member.data.points) || 0} → ${latestArchive.pointsSnapshot[member.uid]}`
+          `${member.data.name || "未命名社員"} 幹部加分 ${getBonusPoints(member.data)} → ${getSnapshotPoints(latestArchive, member.uid)}`
         )
         .join("、");
 
@@ -562,8 +620,19 @@ undoButton?.addEventListener(
       const label =
         latestArchive.label;
 
-      const { restoredCount } =
+      const { restoredCount, restoredUids } =
         await undoSettlement(db, latestArchive, { restorePoints, members });
+
+      /*
+       * 積分起算日改回去了，重算這些人的自動積分
+       */
+      if (restoredUids.length > 0) {
+        const fresh =
+          (await loadMembers(db))
+            .filter((member) => restoredUids.includes(member.uid));
+
+        await refreshPoints(fresh, true);
+      }
 
       showStatus(
         undoMessage,

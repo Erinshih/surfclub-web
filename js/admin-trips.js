@@ -42,6 +42,14 @@ import {
   loadTrips
 } from "./trips.js";
 
+import {
+  loadPeriod
+} from "./board-stats.js";
+
+import {
+  refreshMembersPoints
+} from "./points.js";
+
 /* =========================================================
    DOM
    ========================================================= */
@@ -418,6 +426,17 @@ tripForm?.addEventListener(
     tripSaveButton.disabled = true;
     tripSaveButton.textContent = "儲存中……";
 
+    /*
+     * 原本有參加、現在有參加的人，積分都可能變動
+     */
+    const affected =
+      new Set([
+        ...trip.participants,
+        ...(editingTripId
+          ? getParticipants(trips.find((item) => item.id === editingTripId) || {})
+          : [])
+      ]);
+
     try {
       if (editingTripId) {
         await updateDoc(doc(db, "trips", editingTripId), trip);
@@ -437,9 +456,12 @@ tripForm?.addEventListener(
 
       resetForm();
 
-      showStatus(tripMessage, message, "success");
+      showStatus(tripMessage, `${message}正在更新參加社員的積分……`, "success");
 
       await refreshTrips();
+      await updateParticipantsPoints(affected);
+
+      showStatus(tripMessage, message, "success");
     } catch (error) {
       console.error(
         "出團紀錄儲存失敗：",
@@ -598,6 +620,7 @@ tripList?.addEventListener(
       }
 
       await refreshTrips();
+      await updateParticipantsPoints(new Set(getParticipants(trip)));
     } catch (error) {
       console.error(
         "刪除出團紀錄失敗：",
@@ -614,6 +637,27 @@ tripList?.addEventListener(
     }
   }
 );
+
+/*
+ * 出團紀錄改了之後，重算相關社員的自動積分
+ */
+async function updateParticipantsPoints(uids) {
+  try {
+    const period =
+      await loadPeriod(db);
+
+    await refreshMembersPoints(
+      db,
+      members.filter((member) => uids.has(member.uid)),
+      { trips, defaultSince: period.start, force: true }
+    );
+  } catch (error) {
+    console.error(
+      "積分更新失敗：",
+      error
+    );
+  }
+}
 
 /* =========================================================
    共用

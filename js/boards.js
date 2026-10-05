@@ -34,6 +34,12 @@ import {
 } from "./member-card.js";
 
 import {
+  buildFamilyTotals,
+  getBonusPoints,
+  getTotalPoints
+} from "./points.js";
+
+import {
   getBoardStats,
   getPeriod,
   hasCurrentBoardStats,
@@ -518,15 +524,6 @@ async function computePeriodMembers(db, members, start, end) {
   );
 }
 
-function normalizePoints(value) {
-  const points =
-    Number(value);
-
-  return Number.isFinite(points) && points > 0
-    ? Math.floor(points)
-    : 0;
-}
-
 function toArchiveEntry(member, value, rank, text = "") {
   return {
     uid: member.uid,
@@ -559,7 +556,7 @@ function withSharedRank(items) {
 function buildPointsRanking(members) {
   return withSharedRank(
     members
-      .map((member) => ({ member, value: normalizePoints(member.data.points) }))
+      .map((member) => ({ member, value: getTotalPoints(member.data) }))
       .filter((item) => item.value > 0)
       .sort((first, second) =>
         second.value - first.value ||
@@ -570,31 +567,16 @@ function buildPointsRanking(members) {
     .map((item) => toArchiveEntry(item.member, item.value, item.rank));
 }
 
+/*
+ * 家系積分：每家積分最高的 N 人加總（規則在 points.js）
+ */
 function buildFamilyRanking(members) {
-  const families = new Map();
-
-  members.forEach((member) => {
-    const family =
-      String(member.data.family || "").trim();
-
-    if (!family) {
-      return;
-    }
-
-    const current =
-      families.get(family) || { name: family, value: 0, memberCount: 0 };
-
-    current.value += normalizePoints(member.data.points);
-    current.memberCount += 1;
-
-    families.set(family, current);
-  });
-
   return withSharedRank(
-    [...families.values()].sort((first, second) =>
-      second.value - first.value ||
-      first.name.localeCompare(second.name, "zh-Hant")
-    )
+    buildFamilyTotals(members).map((family) => ({
+      name: family.name,
+      value: family.value,
+      memberCount: family.memberCount
+    }))
   );
 }
 
@@ -667,7 +649,13 @@ export async function settlePeriod(db, { label, endDate, nextLabel }) {
     nextStart,
 
     pointsSnapshot: Object.fromEntries(
-      members.map((member) => [member.uid, normalizePoints(member.data.points)])
+      members.map((member) => [
+        member.uid,
+        {
+          points: getBonusPoints(member.data),
+          since: member.data.pointsSince || null
+        }
+      ])
     )
   };
 
@@ -691,18 +679,18 @@ export async function settlePeriod(db, { label, endDate, nextLabel }) {
 }
 
 /*
- * 批次更新積分：[[uid, points], ...]（一次最多寫 400 筆）
+ * 批次更新社員資料：[[uid, { 欄位 }], ...]（一次最多寫 400 筆）
  */
-async function writePoints(db, entries) {
+async function writeMemberFields(db, entries) {
   for (let index = 0; index < entries.length; index += 400) {
     const batch =
       writeBatch(db);
 
-    entries.slice(index, index + 400).forEach(([uid, points]) => {
+    entries.slice(index, index + 400).forEach(([uid, fields]) => {
       batch.update(
         doc(db, "users", uid),
         {
-          points,
+          ...fields,
           updatedAt: serverTimestamp()
         }
       );
@@ -713,10 +701,36 @@ async function writePoints(db, entries) {
 }
 
 /*
- * 把勾選的社員積分歸零
+ * 歸零：幹部加分改成 0，自動積分從 since 這天重新累積
  */
-export async function resetPoints(db, uids) {
-  await writePoints(db, uids.map((uid) => [uid, 0]));
+export async function resetPoints(db, uids, since) {
+  await writeMemberFields(
+    db,
+    uids.map((uid) => [uid, { points: 0, pointsSince: since }])
+  );
+}
+
+/*
+ * 結算當時的積分快照；舊版只存了一個數字
+ */
+function getSnapshotEntry(archive, uid) {
+  const value =
+    archive.pointsSnapshot?.[uid];
+
+  if (value === undefined) {
+    return null;
+  }
+
+  return typeof value === "number"
+    ? { points: value, since: undefined }
+    : value;
+}
+
+function isSnapshotDifferent(snapshot, data) {
+  return (
+    snapshot.points !== getBonusPoints(data) ||
+    (snapshot.since !== undefined && (snapshot.since || null) !== (data.pointsSince || null))
+  );
 }
 
 /*
@@ -763,20 +777,29 @@ export async function findLatestSettlement(db) {
  * 3. 刪除那一次的封存
  */
 export async function undoSettlement(db, archive, { restorePoints = false, members = [] } = {}) {
-  let restoredCount = 0;
+  let restoredUids = [];
 
   if (restorePoints && archive.pointsSnapshot) {
     const changes =
-      members
-        .filter((member) => member.uid in archive.pointsSnapshot)
-        .map((member) => [member.uid, archive.pointsSnapshot[member.uid]])
-        .filter(([uid, points]) =>
-          normalizePoints(members.find((member) => member.uid === uid).data.points) !== points
-        );
+      getChangedPoints(archive, members)
+        .map((member) => {
+          const snapshot =
+            getSnapshotEntry(archive, member.uid);
 
-    await writePoints(db, changes);
+          const fields =
+            { points: snapshot.points };
 
-    restoredCount = changes.length;
+          if (snapshot.since !== undefined) {
+            fields.pointsSince = snapshot.since;
+          }
+
+          return [member.uid, fields];
+        });
+
+    await writeMemberFields(db, changes);
+
+    restoredUids =
+      changes.map(([uid]) => uid);
   }
 
   await setDoc(
@@ -792,21 +815,27 @@ export async function undoSettlement(db, archive, { restorePoints = false, membe
 
   await loadPeriod(db, { force: true });
 
-  return { restoredCount };
+  return { restoredCount: restoredUids.length, restoredUids };
 }
 
 /*
- * 跟結算當時相比，積分不一樣的社員
+ * 跟結算當時相比，積分（幹部加分或起算日）不一樣的社員
  */
 export function getChangedPoints(archive, members) {
   if (!archive?.pointsSnapshot) {
     return [];
   }
 
-  return members.filter((member) =>
-    member.uid in archive.pointsSnapshot &&
-    normalizePoints(member.data.points) !== archive.pointsSnapshot[member.uid]
-  );
+  return members.filter((member) => {
+    const snapshot =
+      getSnapshotEntry(archive, member.uid);
+
+    return snapshot && isSnapshotDifferent(snapshot, member.data);
+  });
+}
+
+export function getSnapshotPoints(archive, uid) {
+  return getSnapshotEntry(archive, uid)?.points ?? 0;
 }
 
 export { loadMembers };

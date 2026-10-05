@@ -4,7 +4,7 @@
    1. 管理員權限驗證
    2. 待審核社員管理
    3. 正式社員資料管理
-   4. 家系與個人積分管理
+   4. 家系與幹部加分管理（自動積分見 js/points.js）
    5. Level / 成就紀錄新增與刪除
    6. 社員刪除
    7. CSV 匯出
@@ -34,8 +34,20 @@ import {
 } from "./firebase-config.js";
 
 import {
+  loadPeriod,
   refreshBoardStats
 } from "./board-stats.js";
+
+import {
+  getAutoPoints,
+  getBonusPoints,
+  getTotalPoints,
+  refreshPointStats
+} from "./points.js";
+
+import {
+  loadTrips
+} from "./trips.js";
 
 const adminStatus =
   document.querySelector("#admin-status");
@@ -657,9 +669,23 @@ function createMemberEditor(member) {
   detail.textContent =
     detailParts.join("｜") || "無其他資料";
 
+  const pointsInfo =
+    document.createElement("span");
+
+  pointsInfo.className =
+    "member-row-detail member-row-points-info";
+
+  const renderPointsInfo = () => {
+    pointsInfo.textContent =
+      `總積分 ${getTotalPoints(member)}（自動 ${getAutoPoints(member)}＋幹部加分 ${getBonusPoints(member)}）`;
+  };
+
+  renderPointsInfo();
+
   identity.append(
     name,
-    detail
+    detail,
+    pointsInfo
   );
 
   levelLabel.textContent = "Level";
@@ -699,7 +725,7 @@ function createMemberEditor(member) {
     familyInput
   );
 
-  pointsLabel.textContent = "個人積分";
+  pointsLabel.textContent = "幹部加分";
 
   pointsInput.type = "number";
   pointsInput.min = "0";
@@ -847,6 +873,8 @@ function createMemberEditor(member) {
         achievementInput.value = "";
 
         await updateMemberBoardStats(member);
+        await updateMemberPoints(member);
+        renderPointsInfo();
       } catch (error) {
         console.error(
           "新增 Level / 成就紀錄失敗：",
@@ -898,7 +926,7 @@ function createMemberEditor(member) {
       if (points === null) {
         showStatus(
           memberMessage,
-          `${member.name || "社員"} 的個人積分必須是大於或等於 0 的整數。`,
+          `${member.name || "社員"} 的幹部加分必須是大於或等於 0 的整數。`,
           "error"
         );
 
@@ -940,6 +968,8 @@ function createMemberEditor(member) {
         member.titles = titles;
 
         await updateMemberBoardStats(member);
+        await updateMemberPoints(member);
+        renderPointsInfo();
         titlesInput.value = titles.join("、");
 
         /*
@@ -1116,6 +1146,34 @@ async function updateMemberBoardStats(member) {
 }
 
 /*
+ * 重算一位社員的自動積分（出團紀錄只讀一次）
+ */
+let tripsPromise = null;
+
+async function updateMemberPoints(member) {
+  try {
+    tripsPromise ??= loadTrips(db);
+
+    const [trips, period] =
+      await Promise.all([
+        tripsPromise,
+        loadPeriod(db)
+      ]);
+
+    await refreshPointStats(
+      db,
+      { uid: member.uid, data: member },
+      { trips, defaultSince: period.start }
+    );
+  } catch (error) {
+    console.error(
+      "積分更新失敗：",
+      error
+    );
+  }
+}
+
+/*
  * 「開燈王、最會撿板的人」→ ["開燈王", "最會撿板的人"]
  */
 function parseTitles(value) {
@@ -1263,7 +1321,10 @@ exportMembersButton?.addEventListener(
         "角色",
         "Level",
         "家系",
-        "個人積分",
+        "總積分",
+        "自動積分",
+        "幹部加分",
+        "積分起算日",
         "社費狀態",
         "審核狀態",
         "UID"
@@ -1280,7 +1341,10 @@ exportMembersButton?.addEventListener(
         member.role ?? "",
         member.level ?? "",
         member.family ?? "",
-        normalizePoints(member.points),
+        getTotalPoints(member),
+        getAutoPoints(member),
+        getBonusPoints(member),
+        member.pointsSince ?? "",
         member.paymentStatus ?? "",
         member.status ?? "",
         member.uid

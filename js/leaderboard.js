@@ -37,6 +37,23 @@ import {
   renderBoards
 } from "./boards.js";
 
+import {
+  POINT_RULES,
+  POINT_RULE_ITEMS,
+  getAutoPoints,
+  getBonusPoints,
+  getTotalPoints,
+  refreshMembersPoints
+} from "./points.js";
+
+import {
+  loadPeriod
+} from "./board-stats.js";
+
+import {
+  loadTrips
+} from "./trips.js";
+
 /* =========================================================
    DOM
    ========================================================= */
@@ -91,6 +108,7 @@ const closeMemberDetail =
    ========================================================= */
 
 let allMembers = [];
+let isAdminViewer = false;
 let levelChartInstance = null;
 let loadingTimeoutId = null;
 
@@ -215,19 +233,6 @@ closeMemberDetail?.addEventListener(
    Utils
    ========================================================= */
 
-function normalizePoints(value) {
-  const points = Number(value);
-
-  if (
-    !Number.isFinite(points) ||
-    points < 0
-  ) {
-    return 0;
-  }
-
-  return Math.floor(points);
-}
-
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -325,6 +330,10 @@ function renderPersonalRanking(members) {
               : ""
           }
         </span>
+
+        <small class="ranking-points-breakdown">
+          自動 ${member.autoPoints}${member.bonusPoints > 0 ? `＋幹部加分 ${member.bonusPoints}` : ""}
+        </small>
       </div>
 
       <div class="ranking-points">
@@ -391,12 +400,20 @@ function buildFamilyRanking(members) {
     const familyData =
       familyMap.get(familyName);
 
-    familyData.points +=
-      normalizePoints(member.points);
-
     familyData.memberCount += 1;
 
     familyData.members.push(member);
+  });
+
+  /*
+   * 每家只加總積分最高的 N 人，人多的家不會因為人多就贏
+   */
+  familyMap.forEach((familyData) => {
+    familyData.points =
+      [...familyData.members]
+        .sort((first, second) => second.points - first.points)
+        .slice(0, POINT_RULES.familyTopCount)
+        .reduce((sum, member) => sum + member.points, 0);
   });
 
   return Array
@@ -489,7 +506,11 @@ function renderFamilyRanking(families) {
         </strong>
 
         <span>
-          ${family.memberCount} 位社員
+          ${family.memberCount} 位社員${
+            family.memberCount > POINT_RULES.familyTopCount
+              ? `｜加總前 ${POINT_RULES.familyTopCount} 名`
+              : ""
+          }
         </span>
 
         <ul class="family-member-list">
@@ -762,6 +783,101 @@ function renderSelectedMemberChart(history) {
    載入積分資料
    ========================================================= */
 
+let forceRefreshPoints = false;
+
+async function refreshPointsForAdmin(rawMembers, force) {
+  /*
+   * 重算可能比較久，不要觸發「載入逾時」
+   */
+  stopLoadingTimeout();
+
+  const loadingText =
+    leaderboardLoading?.querySelector("span");
+
+  const [trips, period] =
+    await Promise.all([
+      loadTrips(db),
+      loadPeriod(db)
+    ]);
+
+  await refreshMembersPoints(
+    db,
+    rawMembers,
+    {
+      trips,
+      defaultSince: period.start,
+      force,
+      onProgress: (done, total) => {
+        if (loadingText) {
+          loadingText.textContent =
+            `正在更新積分……（${done} / ${total}）`;
+        }
+      }
+    }
+  );
+
+  if (loadingText) {
+    loadingText.textContent =
+      "正在載入積分資料……";
+  }
+}
+
+/*
+ * 「積分怎麼算？」說明，放在個人積分排名上方
+ */
+function renderPointRules() {
+  if (!personalLeaderboard || personalLeaderboard.querySelector(".point-rules")) {
+    return;
+  }
+
+  const details =
+    document.createElement("details");
+
+  details.className =
+    "point-rules";
+
+  details.innerHTML = `
+    <summary>積分怎麼算？</summary>
+
+    <table>
+      <tbody>
+        ${POINT_RULE_ITEMS.map(([emoji, label, points, note]) => `
+          <tr>
+            <th scope="row">${emoji} ${escapeHtml(label)}</th>
+            <td><strong>${escapeHtml(points)}</strong></td>
+            <td>${escapeHtml(note)}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+
+    <p>
+      家系積分＝每家積分最高的 ${POINT_RULES.familyTopCount} 人加總。
+      自己打卡的分數會在幹部更新積分時一起算進來。
+    </p>
+
+    ${isAdminViewer
+      ? `<p class="board-admin-note">
+          管理員：打開排行榜時會自動更新 6 小時內沒更新過的人。
+          <button class="link-button" type="button" data-force-points>重新計算所有人的積分</button>
+        </p>`
+      : ""}
+  `;
+
+  details
+    .querySelector("[data-force-points]")
+    ?.addEventListener(
+      "click",
+      async () => {
+        forceRefreshPoints = true;
+        await loadLeaderboard();
+        hideLoading();
+      }
+    );
+
+  personalRankingList.before(details);
+}
+
 async function loadLeaderboard() {
   showLoading();
   clearError();
@@ -776,14 +892,25 @@ async function loadLeaderboard() {
     const snapshot =
       await getDocs(approvedUsersQuery);
 
-    allMembers =
-      snapshot.docs
-        .map((documentSnapshot) => {
-          const data =
-            documentSnapshot.data();
+    const rawMembers =
+      snapshot.docs.map((documentSnapshot) => ({
+        uid: documentSnapshot.id,
+        data: documentSnapshot.data()
+      }));
 
+    /*
+     * 管理員：先幫需要的人重算自動積分
+     */
+    if (isAdminViewer) {
+      await refreshPointsForAdmin(rawMembers, forceRefreshPoints);
+      forceRefreshPoints = false;
+    }
+
+    allMembers =
+      rawMembers
+        .map(({ uid, data }) => {
           return {
-            uid: documentSnapshot.id,
+            uid,
 
             name:
               String(
@@ -804,9 +931,13 @@ async function loadLeaderboard() {
               ).trim(),
 
             points:
-              normalizePoints(
-                data.points
-              )
+              getTotalPoints(data),
+
+            autoPoints:
+              getAutoPoints(data),
+
+            bonusPoints:
+              getBonusPoints(data)
           };
         })
         .sort((first, second) => {
@@ -821,6 +952,7 @@ async function loadLeaderboard() {
         });
 
     renderPersonalRanking(allMembers);
+    renderPointRules();
 
     const families =
       buildFamilyRanking(allMembers);
@@ -921,6 +1053,9 @@ onAuthStateChanged(
       if (isAdmin) {
         applyAdminNav();
       }
+
+      isAdminViewer =
+        isAdmin;
 
       /*
        * 本學期榜單自己顯示載入狀態，不佔用積分榜的逾時判斷。
