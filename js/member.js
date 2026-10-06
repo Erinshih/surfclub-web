@@ -66,6 +66,14 @@ import {
 } from "./board-stats.js";
 
 import {
+  PAYMENT_STATUS,
+  formatMoney,
+  isOutstanding,
+  loadMyPayments,
+  reportPayment
+} from "./fees.js";
+
+import {
   formatSignedPoints,
   getAdjustPoints,
   getBonusPoints,
@@ -177,6 +185,9 @@ const latestTrip =
 
 const myPoints =
   document.querySelector("#my-points");
+
+const myFees =
+  document.querySelector("#my-fees");
 
 const editProfileButton =
   document.querySelector("#edit-profile-button");
@@ -299,6 +310,7 @@ onAuthStateChanged(
         loadCheckins(),
         loadLatestTrip(),
         loadMyPoints(),
+        loadMyFees(),
         loadAnnouncements()
       ]);
 
@@ -1480,6 +1492,174 @@ if (progressDate) {
   progressDate.value = todayString();
   progressDate.max = todayString();
 }
+
+/* =========================================================
+   我的待繳
+   ========================================================= */
+
+let myPayments = [];
+
+async function loadMyFees() {
+  try {
+    myPayments =
+      await loadMyPayments(db, currentUser.uid);
+  } catch (error) {
+    /*
+     * 費用只是補充資訊，讀不到就不顯示
+     */
+    console.error(
+      "待繳費用讀取失敗：",
+      error
+    );
+
+    myPayments = [];
+  }
+
+  renderMyFees();
+}
+
+function renderMyFees() {
+  const outstanding =
+    myPayments.filter(isOutstanding);
+
+  myFees.hidden =
+    outstanding.length === 0;
+
+  if (outstanding.length === 0) {
+    return;
+  }
+
+  const unpaidTotal =
+    outstanding
+      .filter((payment) => payment.status === "unpaid")
+      .reduce((total, payment) => total + Number(payment.amount || 0), 0);
+
+  myFees.innerHTML = `
+    <p class="eyebrow">FEES</p>
+
+    <div class="my-points-header">
+      <h2>我的待繳</h2>
+      <strong class="my-fees-total">${formatMoney(unpaidTotal)}</strong>
+    </div>
+
+    <ul class="my-fees-list">
+      ${outstanding.map((payment) => {
+        const isOverdue =
+          payment.dueDate &&
+          payment.dueDate < todayString() &&
+          payment.status === "unpaid";
+
+        return `
+          <li class="${isOverdue ? "is-overdue" : ""}">
+            <div class="my-fee-main">
+              <strong>${escapeHtml(payment.title)}</strong>
+              <span class="my-fee-amount">${formatMoney(payment.amount)}</span>
+            </div>
+
+            <p class="my-fee-meta">
+              <span class="fee-chip is-${PAYMENT_STATUS[payment.status].tone}">
+                ${escapeHtml(PAYMENT_STATUS[payment.status].label)}
+              </span>
+              ${payment.dueDate
+                ? `<span>${isOverdue ? "⚠️ 已過期限" : "期限"} ${escapeHtml(payment.dueDate.replaceAll("-", "/"))}</span>`
+                : ""}
+              ${payment.status === "reported" && payment.reportNote
+                ? `<span>你回報的：${escapeHtml(payment.reportNote)}</span>`
+                : ""}
+            </p>
+
+            ${payment.note ? `<p class="my-fee-note">${escapeHtml(payment.note)}</p>` : ""}
+
+            <form
+              class="inline-form my-fee-report"
+              data-report-payment="${escapeHtml(payment.id)}"
+            >
+              <input
+                type="text"
+                maxlength="30"
+                placeholder="轉帳帳號末五碼或備註"
+                aria-label="轉帳帳號末五碼或備註"
+                value="${escapeHtml(payment.status === "reported" ? payment.reportNote || "" : "")}"
+                required
+              >
+
+              <button
+                class="button button-small"
+                type="submit"
+              >
+                ${payment.status === "reported" ? "更新回報" : "回報已轉帳"}
+              </button>
+            </form>
+          </li>
+        `;
+      }).join("")}
+    </ul>
+
+    <p class="panel-hint">
+      轉帳後按「回報已轉帳」，幹部確認後就會從這裡消失。
+    </p>
+  `;
+}
+
+myFees?.addEventListener(
+  "submit",
+
+  async (event) => {
+    const form =
+      event.target.closest("[data-report-payment]");
+
+    if (!form) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const button =
+      form.querySelector("button");
+
+    const note =
+      form.querySelector("input").value.trim();
+
+    if (!note) {
+      return;
+    }
+
+    button.disabled = true;
+    button.textContent = "回報中……";
+
+    try {
+      await reportPayment(db, form.dataset.reportPayment, note);
+
+      const payment =
+        myPayments.find((item) => item.id === form.dataset.reportPayment);
+
+      payment.status = "reported";
+      payment.reportNote = note;
+
+      renderMyFees();
+
+      showStatus(
+        memberStatus,
+        `已回報「${payment.title}」，等幹部確認 🙏`,
+        "success"
+      );
+    } catch (error) {
+      console.error(
+        "回報轉帳失敗：",
+        error
+      );
+
+      button.disabled = false;
+      button.textContent = "回報已轉帳";
+
+      showStatus(
+        memberStatus,
+        `回報失敗：${getWriteErrorMessage(error)}`,
+        "error"
+      );
+    }
+  }
+);
 
 /* =========================================================
    我的積分

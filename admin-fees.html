@@ -15,7 +15,7 @@
     href="./manifest.webmanifest"
   >
 
-  <title>Surf Club Admin｜出團紀錄</title>
+  <title>Surf Club Admin｜費用管理</title>
 
   <link
     rel="stylesheet"
@@ -85,11 +85,11 @@
     <section class="dashboard-header">
       <div>
         <p class="eyebrow">
-          TRIP RECORDS
+          FEES
         </p>
 
         <h1>
-          出團紀錄
+          費用管理
         </h1>
       </div>
 
@@ -106,80 +106,120 @@
       class="hidden"
     >
       <!-- ===============================================
-           新增／編輯出團紀錄
+           總覽
+           =============================================== -->
+
+      <section
+        id="fee-summary"
+        class="dashboard-stats"
+        aria-label="收款總覽"
+      ></section>
+
+      <!-- ===============================================
+           新增費用
            =============================================== -->
 
       <section class="content-card">
-        <h2 id="trip-form-title">
-          新增出團紀錄
+        <h2>
+          新增費用
         </h2>
 
         <p class="panel-hint">
-          會出現在社員首頁的「最近一次出團」、回憶牆和年度回顧。
+          例如車資、社服、宵夜。建立後，被選到的社員會在社員首頁看到「我的待繳」。
         </p>
 
-        <form id="trip-form">
+        <form id="charge-form">
           <div class="form-grid">
             <div class="field-stack">
-              <label for="trip-date">
-                日期 *
+              <label for="charge-title">
+                名稱 *
               </label>
 
               <input
-                id="trip-date"
-                type="date"
+                id="charge-title"
+                type="text"
+                maxlength="40"
+                placeholder="例如：10/18 漁光島團 車資"
                 required
               >
             </div>
 
             <div class="field-stack">
-              <label for="trip-title">
-                標題 *
+              <label for="charge-amount">
+                每人金額 *
               </label>
 
               <input
-                id="trip-title"
-                type="text"
-                maxlength="40"
-                placeholder="例如：漁光島團"
+                id="charge-amount"
+                type="number"
+                min="1"
+                max="100000"
+                step="1"
+                inputmode="numeric"
+                placeholder="300"
                 required
               >
             </div>
           </div>
 
-          <label for="trip-spot">
-            浪點
+          <div class="form-grid">
+            <div class="field-stack">
+              <label for="charge-due">
+                繳費期限（選填）
+              </label>
+
+              <input
+                id="charge-due"
+                type="date"
+              >
+            </div>
+
+            <div class="field-stack">
+              <label for="charge-trip">
+                套用出團名單（選填）
+              </label>
+
+              <select id="charge-trip">
+                <option value="">
+                  不套用
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <label for="charge-note">
+            轉帳資訊或備註（社員看得到）
           </label>
 
-          <input
-            id="trip-spot"
-            type="text"
-            maxlength="30"
-            placeholder="例如：漁光島"
-          >
+          <textarea
+            id="charge-note"
+            class="charge-note"
+            maxlength="300"
+            placeholder="例如：轉帳到 中華郵政 700 帳號 0001234-5678901，備註姓名"
+          ></textarea>
 
           <label>
-            下水的社員（<span id="participant-count">0</span> 人）
+            要繳費的社員（<span id="charge-count">0</span> 人）
           </label>
 
           <div class="participant-tools">
             <input
-              id="participant-search"
+              id="charge-search"
               type="search"
               placeholder="搜尋名字或綽號"
               aria-label="搜尋社員"
             >
 
             <button
-              id="select-checkins-button"
-              class="button button-small"
+              id="charge-select-all"
+              class="button button-small button-secondary"
               type="button"
             >
-              選取當天有打卡的社員
+              全選正式社員
             </button>
 
             <button
-              id="clear-participants-button"
+              id="charge-clear"
               class="button button-small button-secondary"
               type="button"
             >
@@ -188,101 +228,55 @@
           </div>
 
           <div
-            id="participant-picker"
+            id="charge-members"
             class="participant-picker"
           ></div>
 
-          <label for="trip-highlights">
-            當天發生的事（一行一件）
-          </label>
-
-          <textarea
-            id="trip-highlights"
-            maxlength="1000"
-            placeholder="4 個人第一次自己追到浪&#10;小明摔斷 fin"
-          ></textarea>
-
-          <label for="trip-links">
-            照片／影片連結（一行一個，網址前面可以加名稱）
-          </label>
-
-          <textarea
-            id="trip-links"
-            class="trip-links-input"
-            maxlength="2000"
-            placeholder="照片 https://drive.google.com/...&#10;浪況影片 https://youtu.be/..."
-          ></textarea>
-
-          <p class="panel-hint">
-            先把檔案上傳到 Google 雲端硬碟、Google 相簿或 YouTube，
-            並把分享權限設成「知道連結的人都能查看」，再把連結貼在這裡。
-          </p>
-
-          <div class="form-grid">
-            <div class="field-stack">
-              <label for="trip-quote">
-                今日名言
-              </label>
-
-              <input
-                id="trip-quote"
-                type="text"
-                maxlength="80"
-                placeholder="例如：今天的浪是我見過最平的"
-              >
-            </div>
-
-            <div class="field-stack">
-              <label for="trip-quote-by">
-                誰說的
-              </label>
-
-              <input
-                id="trip-quote-by"
-                type="text"
-                maxlength="20"
-              >
-            </div>
-          </div>
-
           <p
-            id="trip-message"
+            id="charge-message"
             class="status-message"
           ></p>
 
           <div class="dialog-actions">
             <button
-              id="cancel-edit-button"
-              class="button button-small button-secondary"
-              type="button"
-              hidden
-            >
-              取消編輯
-            </button>
-
-            <button
-              id="trip-save-button"
+              id="charge-button"
               class="button"
               type="submit"
             >
-              儲存
+              建立費用
             </button>
           </div>
         </form>
       </section>
 
       <!-- ===============================================
-           出團紀錄列表
+           費用列表
            =============================================== -->
 
       <section class="content-card">
-        <h2>
-          所有出團紀錄
-        </h2>
+        <div class="fee-list-header">
+          <h2>
+            所有費用
+          </h2>
+
+          <label class="check-item fee-filter">
+            <input
+              id="fee-filter-open"
+              type="checkbox"
+              checked
+            >
+            <span>只顯示還有人沒繳清的</span>
+          </label>
+        </div>
+
+        <p
+          id="fee-list-message"
+          class="status-message"
+        ></p>
 
         <div
-          id="trip-list"
-          class="admin-trip-list"
+          id="fee-list"
+          class="fee-list"
         >
           <p class="empty-state">
             正在載入……
@@ -294,7 +288,7 @@
 
   <script
     type="module"
-    src="./js/admin-trips.js"
+    src="./js/admin-fees.js"
   ></script>
 </body>
 </html>

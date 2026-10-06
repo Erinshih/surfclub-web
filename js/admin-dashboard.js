@@ -32,6 +32,11 @@ import {
   renderTripTitle
 } from "./trips.js";
 
+import {
+  formatMoney,
+  loadOutstandingPayments
+} from "./fees.js";
+
 /* =========================================================
    DOM
    ========================================================= */
@@ -108,10 +113,14 @@ onAuthStateChanged(
    ========================================================= */
 
 async function loadDashboard() {
-  const [usersSnapshot, trips] =
+  const [usersSnapshot, trips, outstanding] =
     await Promise.all([
       getDocs(collection(db, "users")),
-      loadTrips(db)
+      loadTrips(db),
+      loadOutstandingPayments(db).catch((error) => {
+        console.error("待繳費用讀取失敗：", error);
+        return [];
+      })
     ]);
 
   const users =
@@ -166,6 +175,20 @@ async function loadDashboard() {
       value: semesterTrips,
       unit: "次",
       href: "./admin-trips.html"
+    },
+    {
+      label: "未繳費用",
+      value: outstanding.length,
+      unit: "筆",
+      href: "./admin-fees.html",
+      alert: outstanding.length > 0,
+      note: outstanding.length > 0
+        ? `共 ${formatMoney(outstanding.reduce((total, payment) => total + Number(payment.amount || 0), 0))}${
+          outstanding.some((payment) => payment.status === "reported")
+            ? `，${outstanding.filter((payment) => payment.status === "reported").length} 筆待確認`
+            : ""
+        }`
+        : "大家都繳清了"
     }
   ];
 

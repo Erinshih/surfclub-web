@@ -4779,3 +4779,248 @@ input[type="file"]::file-selector-button {
 .leaderboard-admin-button {
   margin-top: 18px;
 }
+
+
+/* =========================================================
+   費用與待繳
+   ========================================================= */
+
+.fee-chip {
+  padding: 2px 9px;
+
+  display: inline-block;
+
+  border-radius: 999px;
+
+  font-size: 0.78rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.fee-chip.is-danger {
+  color: #b94545;
+  background: #fff1f1;
+}
+
+.fee-chip.is-warning {
+  color: #7a5a0c;
+  background: #fff4d6;
+}
+
+.fee-chip.is-success {
+  color: #2f7a73;
+  background: var(--primary-light);
+}
+
+.fee-chip.is-muted {
+  color: var(--muted);
+  background: #edf2f3;
+}
+
+/* 後台 */
+
+.charge-note {
+  min-height: 80px;
+}
+
+#charge-message:empty,
+#fee-list-message:empty {
+  display: none;
+}
+
+.fee-list-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.fee-list-header h2 {
+  margin: 0;
+}
+
+.fee-filter {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.fee-filter input:checked + span {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.fee-list {
+  margin-top: 14px;
+
+  display: grid;
+  gap: 12px;
+}
+
+.fee-card {
+  background: var(--surface-soft);
+
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+.fee-card summary {
+  padding: 14px 18px;
+
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+
+  cursor: pointer;
+}
+
+.fee-card-title {
+  display: grid;
+}
+
+.fee-card-title strong {
+  color: var(--navy);
+}
+
+.fee-card-title small,
+.fee-card-counts small {
+  color: var(--muted);
+}
+
+.fee-card-counts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.fee-card-note {
+  margin: 0 18px 10px;
+
+  color: var(--muted);
+
+  font-size: 0.88rem;
+  white-space: pre-wrap;
+}
+
+.fee-payments {
+  margin: 0 18px;
+  padding: 0;
+
+  list-style: none;
+}
+
+.fee-payments li {
+  padding: 10px 0;
+
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+
+  border-top: 1px solid #e2ecec;
+}
+
+.fee-payments small {
+  color: var(--muted);
+}
+
+.fee-payment-actions {
+  margin-left: auto;
+
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.fee-payment-actions .button {
+  margin-top: 0;
+}
+
+.fee-card-actions {
+  padding: 12px 18px 16px;
+
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fee-card-actions .button {
+  margin-top: 0;
+}
+
+/* 社員首頁：我的待繳 */
+
+.my-fees {
+  border-left: 5px solid #d95c5c;
+}
+
+.my-fees-total {
+  color: #b94545;
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.my-fees-list {
+  margin: 0 0 8px;
+  padding: 0;
+
+  list-style: none;
+}
+
+.my-fees-list li {
+  padding: 12px 0;
+
+  border-bottom: 1px solid #edf2f3;
+}
+
+.my-fee-main {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.my-fee-main strong {
+  color: var(--navy);
+}
+
+.my-fee-amount {
+  color: var(--navy);
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.my-fee-meta {
+  margin: 6px 0;
+
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+
+  color: var(--muted);
+
+  font-size: 0.85rem;
+}
+
+.my-fees-list li.is-overdue .my-fee-meta span:not(.fee-chip) {
+  color: #b94545;
+  font-weight: 800;
+}
+
+.my-fee-note {
+  margin: 0 0 8px;
+  padding: 8px 12px;
+
+  color: #4d6a6e;
+  background: #f5f9f9;
+
+  border-radius: 10px;
+
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
