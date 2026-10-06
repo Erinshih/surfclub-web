@@ -4566,3 +4566,216 @@ input[type="file"]::file-selector-button {
 .dex-guide .dex-goals {
   background: #fff8e3;
 }
+
+
+/* =========================================================
+   後台：積分規則
+   ========================================================= */
+
+.rules-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 4px 18px;
+}
+
+.rules-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rules-input input {
+  width: 110px;
+  flex-shrink: 0;
+}
+
+.rules-input span {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.rules-toggle {
+  margin-top: 16px;
+  align-items: flex-start;
+}
+
+.rules-toggle input {
+  margin-top: 3px;
+}
+
+.rules-toggle input:checked + span {
+  color: var(--text);
+  text-decoration: none;
+}
+
+#rules-message:empty {
+  display: none;
+}
+
+
+/* =========================================================
+   自訂加減分與加減分紀錄
+   ========================================================= */
+
+.custom-rules-title {
+  margin: 22px 0 6px;
+  color: var(--navy);
+  font-size: 1rem;
+}
+
+.custom-rules {
+  margin-bottom: 10px;
+
+  display: grid;
+  gap: 8px;
+}
+
+.custom-rule-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.custom-rule-row input[type="text"] {
+  min-width: 0;
+  flex: 1;
+}
+
+.custom-rule-row input[type="number"] {
+  width: 110px;
+  flex-shrink: 0;
+}
+
+.custom-rule-unit {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+#record-message:empty {
+  display: none;
+}
+
+.record-list {
+  margin: 0;
+  padding: 0;
+
+  list-style: none;
+}
+
+.record-list li {
+  padding: 10px 0;
+
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+
+  border-bottom: 1px solid #edf2f3;
+}
+
+.record-list li.empty-state {
+  display: block;
+  padding: 18px;
+}
+
+.record-list time {
+  color: var(--primary-dark);
+
+  font-size: 0.85rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.record-list li > span:not(.record-points) {
+  min-width: 0;
+  flex: 1;
+
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.record-points {
+  margin-left: auto;
+  font-weight: 900;
+}
+
+.record-list .is-minus .record-points,
+.my-points-lines .is-minus,
+.growth-badge.is-minus {
+  color: var(--danger);
+}
+
+.record-list .is-plus .record-points {
+  color: var(--success);
+}
+
+.growth-badge.is-minus {
+  background: #fff1f1;
+}
+
+.growth-badge.is-plus {
+  color: #2f7a73;
+  background: var(--primary-light);
+}
+
+.growth-item.is-old {
+  opacity: 0.55;
+}
+
+/* 社員首頁：我的積分 */
+
+.my-points-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.my-points-total {
+  color: var(--primary-dark);
+  font-size: 2.2rem;
+  line-height: 1;
+}
+
+.my-points-total small {
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+.my-points-lines {
+  margin: 0 0 12px;
+  padding: 0;
+
+  list-style: none;
+}
+
+.my-points-lines li {
+  padding: 8px 0;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  border-bottom: 1px solid #edf2f3;
+}
+
+.my-points-lines li > span:first-child {
+  flex: 1;
+}
+
+.my-points-count {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.my-points-lines strong {
+  min-width: 48px;
+
+  color: var(--navy);
+
+  text-align: right;
+}
+
+.leaderboard-admin-button {
+  margin-top: 18px;
+}

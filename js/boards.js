@@ -36,7 +36,8 @@ import {
 import {
   buildFamilyTotals,
   getBonusPoints,
-  getTotalPoints
+  getTotalPoints,
+  loadPointRules
 } from "./points.js";
 
 import {
@@ -289,7 +290,7 @@ export async function renderBoards(db, container, currentUid, options = {}) {
             管理員：統計會在社員打卡時自動更新。新增升級紀錄後，
             <button class="link-button" type="button" data-refresh-boards>重新計算所有人</button>
             就會反映到進步王和 Surf Level。要換下一期，請到
-            <a href="./admin-settle.html">排行榜結算</a>。
+            <a href="./admin-settle.html">排行榜管理</a>。
           </p>`
         : "");
 
@@ -606,8 +607,11 @@ export async function settlePeriod(db, { label, endDate, nextLabel }) {
     throw new Error(`結算日不能早於這一期的起始日（${period.start}）。`);
   }
 
-  const members =
-    await loadMembers(db);
+  const [members] =
+    await Promise.all([
+      loadMembers(db),
+      loadPointRules(db)
+    ]);
 
   const rankingMembers =
     await computePeriodMembers(db, members, start, end);

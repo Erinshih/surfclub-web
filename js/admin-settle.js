@@ -1,6 +1,6 @@
 /* =========================================================
    檔案：js/admin-settle.js
-   管理員：結算這一期的排行榜，並選擇要歸零積分的社員
+   管理員：排行榜管理（積分規則、結算這一期、還原、選擇要歸零積分的社員）
    ========================================================= */
 
 import {
@@ -33,10 +33,20 @@ import {
 } from "./boards.js";
 
 import {
+  DEFAULT_POINT_RULES,
+  POINT_RULE_FIELDS,
+  addPointRecords,
+  deletePointRecord,
+  formatSignedPoints,
+  getAdjustPoints,
   getAutoPoints,
   getBonusPoints,
+  getPointRules,
   getTotalPoints,
-  refreshMembersPoints
+  loadPointRecords,
+  loadPointRules,
+  refreshMembersPoints,
+  savePointRules
 } from "./points.js";
 
 import {
@@ -120,6 +130,60 @@ const undoMessage =
 const undoButton =
   document.querySelector("#undo-button");
 
+const rulesForm =
+  document.querySelector("#rules-form");
+
+const rulesFields =
+  document.querySelector("#rules-fields");
+
+const ruleCheckinOnTripDay =
+  document.querySelector("#rule-checkin-on-trip-day");
+
+const rulesMessage =
+  document.querySelector("#rules-message");
+
+const rulesSaveButton =
+  document.querySelector("#rules-save-button");
+
+const rulesResetButton =
+  document.querySelector("#rules-reset-button");
+
+const customRulesList =
+  document.querySelector("#custom-rules");
+
+const addCustomRuleButton =
+  document.querySelector("#add-custom-rule");
+
+const recordForm =
+  document.querySelector("#record-form");
+
+const recordRule =
+  document.querySelector("#record-rule");
+
+const recordDate =
+  document.querySelector("#record-date");
+
+const recordNote =
+  document.querySelector("#record-note");
+
+const recordSearch =
+  document.querySelector("#record-search");
+
+const recordMembers =
+  document.querySelector("#record-members");
+
+const recordCount =
+  document.querySelector("#record-count");
+
+const recordMessage =
+  document.querySelector("#record-message");
+
+const recordButton =
+  document.querySelector("#record-button");
+
+const recordList =
+  document.querySelector("#record-list");
+
 const logoutButton =
   document.querySelector("#logout-button");
 
@@ -127,6 +191,10 @@ let members = [];
 let selected = new Set();
 let latestArchive = null;
 let periodStart = null;
+let currentAdminUid = null;
+let customRules = [];
+let recordSelected = new Set();
+let records = [];
 
 /* =========================================================
    管理員驗證
@@ -158,6 +226,9 @@ onAuthStateChanged(
         return;
       }
 
+      currentAdminUid =
+        user.uid;
+
       showStatus(
         adminStatus,
         `管理員：${userData.name || user.email || "未命名"}`,
@@ -167,11 +238,19 @@ onAuthStateChanged(
       adminContent.classList.remove("hidden");
 
       await Promise.all([
+        renderRules(),
         renderCurrentPeriod(),
         loadResetList()
       ]);
 
       await renderUndo();
+
+      renderRecordForm();
+      await loadRecordList();
+
+      if (window.location.hash === "#point-rules") {
+        document.querySelector("#point-rules").scrollIntoView();
+      }
     } catch (error) {
       console.error(
         "結算頁載入失敗：",
@@ -181,6 +260,485 @@ onAuthStateChanged(
       showStatus(
         adminStatus,
         `載入失敗：${error?.message || "未知錯誤"}`,
+        "error"
+      );
+    }
+  }
+);
+
+/* =========================================================
+   積分規則
+   ========================================================= */
+
+function fillRules(rules) {
+  rulesFields.innerHTML =
+    POINT_RULE_FIELDS.map(({ key, label, unit, min, max }) => `
+      <div class="field-stack">
+        <label for="rule-${key}">${escapeHtml(label)}</label>
+
+        <div class="rules-input">
+          <input
+            id="rule-${key}"
+            type="number"
+            inputmode="numeric"
+            min="${min}"
+            max="${max}"
+            step="1"
+            value="${Number(rules[key])}"
+            required
+          >
+          <span>${escapeHtml(unit)}</span>
+        </div>
+      </div>
+    `).join("");
+
+  ruleCheckinOnTripDay.checked =
+    Boolean(rules.checkinOnTripDay);
+
+  customRules =
+    (rules.custom || []).map((rule) => ({ ...rule }));
+
+  renderCustomRules();
+}
+
+/*
+ * 自訂加減分項目：名稱＋分數，可以新增、刪除
+ */
+function renderCustomRules() {
+  if (customRules.length === 0) {
+    customRulesList.innerHTML = `
+      <p class="empty-state">
+        還沒有自訂項目。
+      </p>
+    `;
+
+    return;
+  }
+
+  customRulesList.innerHTML =
+    customRules.map((rule, index) => `
+      <div class="custom-rule-row">
+        <input
+          type="text"
+          maxlength="20"
+          value="${escapeHtml(rule.name)}"
+          placeholder="項目名稱，例如：被叫上岸"
+          aria-label="項目名稱"
+          data-custom-name="${index}"
+          required
+        >
+
+        <input
+          type="number"
+          step="1"
+          min="-1000"
+          max="1000"
+          value="${Number(rule.points) || ""}"
+          placeholder="-20"
+          aria-label="分數"
+          data-custom-points="${index}"
+          required
+        >
+
+        <span class="custom-rule-unit">分</span>
+
+        <button
+          class="icon-button"
+          type="button"
+          data-remove-custom="${index}"
+          aria-label="刪除這個項目"
+        >
+          ×
+        </button>
+      </div>
+    `).join("");
+}
+
+customRulesList?.addEventListener(
+  "input",
+
+  (event) => {
+    const nameIndex =
+      event.target.dataset.customName;
+
+    const pointsIndex =
+      event.target.dataset.customPoints;
+
+    if (nameIndex !== undefined) {
+      customRules[Number(nameIndex)].name = event.target.value;
+    }
+
+    if (pointsIndex !== undefined) {
+      customRules[Number(pointsIndex)].points = event.target.value;
+    }
+  }
+);
+
+customRulesList?.addEventListener(
+  "click",
+
+  (event) => {
+    const button =
+      event.target.closest("[data-remove-custom]");
+
+    if (!button) {
+      return;
+    }
+
+    customRules.splice(Number(button.dataset.removeCustom), 1);
+    renderCustomRules();
+  }
+);
+
+addCustomRuleButton?.addEventListener(
+  "click",
+
+  () => {
+    customRules.push({ id: "", name: "", points: "" });
+    renderCustomRules();
+
+    customRulesList
+      .querySelector(`[data-custom-name="${customRules.length - 1}"]`)
+      ?.focus();
+  }
+);
+
+async function renderRules() {
+  fillRules(await loadPointRules(db, { force: true }));
+}
+
+rulesResetButton?.addEventListener(
+  "click",
+
+  () => {
+    fillRules(DEFAULT_POINT_RULES);
+
+    showStatus(
+      rulesMessage,
+      "已填回預設值，按「儲存並重新計算」才會生效。"
+    );
+  }
+);
+
+rulesForm?.addEventListener(
+  "submit",
+
+  async (event) => {
+    event.preventDefault();
+
+    const rules = {
+      ...Object.fromEntries(
+        POINT_RULE_FIELDS.map(({ key }) => [
+          key,
+          document.querySelector(`#rule-${key}`).value
+        ])
+      ),
+      checkinOnTripDay: ruleCheckinOnTripDay.checked,
+      custom: customRules
+    };
+
+    rulesSaveButton.disabled = true;
+    rulesSaveButton.textContent = "儲存中……";
+
+    try {
+      fillRules(await savePointRules(db, rules));
+      renderRecordForm();
+
+      showStatus(rulesMessage, "規則已儲存，正在重新計算所有人的積分……");
+
+      const [trips, period] =
+        await Promise.all([
+          loadTrips(db),
+          loadPeriod(db)
+        ]);
+
+      await refreshMembersPoints(
+        db,
+        members,
+        {
+          trips,
+          defaultSince: period.start,
+          force: true,
+          onProgress: (done, total) => {
+            showStatus(rulesMessage, `規則已儲存，正在重新計算所有人的積分……（${done} / ${total}）`);
+          }
+        }
+      );
+
+      renderResetList();
+
+      showStatus(
+        rulesMessage,
+        `規則已儲存，${members.length} 位社員的積分都重新計算好了。`,
+        "success"
+      );
+    } catch (error) {
+      console.error(
+        "積分規則儲存失敗：",
+        error
+      );
+
+      showStatus(
+        rulesMessage,
+        `儲存失敗：${error?.message || "未知錯誤"}`,
+        "error"
+      );
+    } finally {
+      rulesSaveButton.disabled = false;
+      rulesSaveButton.textContent = "儲存並重新計算";
+    }
+  }
+);
+
+/* =========================================================
+   加減分紀錄
+   ========================================================= */
+
+function renderRecordForm() {
+  const custom =
+    getPointRules().custom || [];
+
+  recordRule.innerHTML =
+    custom.length > 0
+      ? custom.map((rule) => `
+          <option value="${escapeHtml(rule.id)}">
+            ${escapeHtml(rule.name)}（${formatSignedPoints(rule.points)}）
+          </option>
+        `).join("")
+      : `<option value="">請先在上面新增自訂加減分項目</option>`;
+
+  recordButton.disabled =
+    custom.length === 0;
+
+  if (!recordDate.value) {
+    recordDate.value = todayString();
+    recordDate.max = todayString();
+  }
+
+  renderRecordPicker();
+}
+
+function renderRecordPicker() {
+  const keyword =
+    recordSearch.value.trim().toLowerCase();
+
+  recordMembers.innerHTML =
+    [...members]
+      .sort((first, second) =>
+        String(first.data.name || "").localeCompare(String(second.data.name || ""), "zh-Hant")
+      )
+      .filter((member) =>
+        !keyword ||
+        [member.data.name, getProfile(member.data).nickname].some((text) =>
+          String(text || "").toLowerCase().includes(keyword)
+        )
+      )
+      .map((member) => {
+        const nickname =
+          getProfile(member.data).nickname;
+
+        return `
+          <label class="check-item participant-option">
+            <input
+              type="checkbox"
+              value="${escapeHtml(member.uid)}"
+              ${recordSelected.has(member.uid) ? "checked" : ""}
+            >
+            <span>
+              ${escapeHtml(member.data.name || "未命名社員")}
+              ${nickname ? `<small>（${escapeHtml(nickname)}）</small>` : ""}
+            </span>
+          </label>
+        `;
+      })
+      .join("") ||
+    `<p class="empty-state">找不到符合的社員。</p>`;
+
+  recordCount.textContent =
+    String(recordSelected.size);
+}
+
+recordSearch?.addEventListener("input", renderRecordPicker);
+
+recordMembers?.addEventListener(
+  "change",
+
+  (event) => {
+    if (event.target.checked) {
+      recordSelected.add(event.target.value);
+    } else {
+      recordSelected.delete(event.target.value);
+    }
+
+    recordCount.textContent =
+      String(recordSelected.size);
+  }
+);
+
+async function loadRecordList() {
+  try {
+    records =
+      await loadPointRecords(db);
+  } catch (error) {
+    console.error(
+      "加減分紀錄讀取失敗：",
+      error
+    );
+
+    recordList.innerHTML = `
+      <li class="status-message error">
+        加減分紀錄讀取失敗：${escapeHtml(error?.message || "未知錯誤")}
+      </li>
+    `;
+
+    return;
+  }
+
+  if (records.length === 0) {
+    recordList.innerHTML = `
+      <li class="empty-state">
+        還沒有加減分紀錄。
+      </li>
+    `;
+
+    return;
+  }
+
+  const nameOf = (uid) =>
+    members.find((member) => member.uid === uid)?.data.name || "（已不是正式社員）";
+
+  recordList.innerHTML =
+    records.slice(0, 50).map((record) => `
+      <li class="${record.points < 0 ? "is-minus" : "is-plus"}">
+        <time>${escapeHtml(record.date)}</time>
+        <strong>${escapeHtml(nameOf(record.uid))}</strong>
+        <span>${escapeHtml(record.name)}${record.note ? `：${escapeHtml(record.note)}` : ""}</span>
+        <span class="record-points">${formatSignedPoints(Number(record.points))}</span>
+
+        <button
+          class="icon-button"
+          type="button"
+          data-remove-record="${escapeHtml(record.id)}"
+          aria-label="刪除這筆紀錄"
+        >
+          ×
+        </button>
+      </li>
+    `).join("");
+}
+
+/*
+ * 加減分紀錄變動後，重算這些社員的積分
+ */
+async function refreshRecordMembers(uids) {
+  await refreshPoints(
+    members.filter((member) => uids.includes(member.uid)),
+    true
+  );
+
+  renderResetList();
+}
+
+recordForm?.addEventListener(
+  "submit",
+
+  async (event) => {
+    event.preventDefault();
+
+    const rule =
+      (getPointRules().custom || []).find((item) => item.id === recordRule.value);
+
+    const uids =
+      [...recordSelected];
+
+    if (!rule || uids.length === 0 || !recordDate.value) {
+      showStatus(recordMessage, "請選擇項目、日期和至少一位社員。", "error");
+      return;
+    }
+
+    recordButton.disabled = true;
+    recordButton.textContent = "記錄中……";
+
+    try {
+      await addPointRecords(db, {
+        uids,
+        rule,
+        date: recordDate.value,
+        note: recordNote.value,
+        createdBy: currentAdminUid
+      });
+
+      await refreshRecordMembers(uids);
+
+      showStatus(
+        recordMessage,
+        `已幫 ${uids.length} 位社員記錄「${rule.name}」（${formatSignedPoints(rule.points)}）。`,
+        "success"
+      );
+
+      recordSelected.clear();
+      recordNote.value = "";
+      renderRecordPicker();
+
+      await loadRecordList();
+    } catch (error) {
+      console.error(
+        "加減分紀錄儲存失敗：",
+        error
+      );
+
+      showStatus(
+        recordMessage,
+        `記錄失敗：${error?.message || "未知錯誤"}`,
+        "error"
+      );
+    } finally {
+      recordButton.disabled = false;
+      recordButton.textContent = "記錄";
+    }
+  }
+);
+
+recordList?.addEventListener(
+  "click",
+
+  async (event) => {
+    const button =
+      event.target.closest("[data-remove-record]");
+
+    if (!button) {
+      return;
+    }
+
+    const record =
+      records.find((item) => item.id === button.dataset.removeRecord);
+
+    if (
+      !record ||
+      !window.confirm(`確定要刪除這筆紀錄嗎？\n\n${record.date} ${record.name}（${formatSignedPoints(Number(record.points))}）`)
+    ) {
+      return;
+    }
+
+    button.disabled = true;
+
+    try {
+      await deletePointRecord(db, record.id);
+      await refreshRecordMembers([record.uid]);
+      await loadRecordList();
+
+      showStatus(recordMessage, "已刪除這筆紀錄。");
+    } catch (error) {
+      console.error(
+        "刪除加減分紀錄失敗：",
+        error
+      );
+
+      button.disabled = false;
+
+      showStatus(
+        recordMessage,
+        `刪除失敗：${error?.message || "未知錯誤"}`,
         "error"
       );
     }
@@ -324,6 +882,17 @@ function getPoints(member) {
   return getTotalPoints(member.data);
 }
 
+function describePoints(data) {
+  const adjust =
+    getAdjustPoints(data);
+
+  return [
+    `自動 ${getAutoPoints(data)}`,
+    adjust !== 0 ? `加減分 ${formatSignedPoints(adjust)}` : "",
+    `幹部加分 ${getBonusPoints(data)}`
+  ].filter(Boolean).join("＋");
+}
+
 /*
  * 歸零後從哪天開始重新累積：這一期的起始日和今天，取比較晚的
  * （剛結算完就是下一期的第一天；一期中間歸零就是今天）
@@ -399,7 +968,7 @@ function renderResetList() {
 
           <span class="reset-points">
             <strong>${getPoints(member)}</strong> 分
-            <small>自動 ${getAutoPoints(member.data)}＋加分 ${getBonusPoints(member.data)}</small>
+            <small>${escapeHtml(describePoints(member.data))}</small>
           </span>
         </label>
       `;

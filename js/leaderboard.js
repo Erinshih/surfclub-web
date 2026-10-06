@@ -38,11 +38,14 @@ import {
 } from "./boards.js";
 
 import {
-  POINT_RULES,
-  POINT_RULE_ITEMS,
+  formatSignedPoints,
+  getAdjustPoints,
   getAutoPoints,
   getBonusPoints,
+  getPointRuleItems,
+  getPointRules,
   getTotalPoints,
+  loadPointRules,
   refreshMembersPoints
 } from "./points.js";
 
@@ -332,7 +335,7 @@ function renderPersonalRanking(members) {
         </span>
 
         <small class="ranking-points-breakdown">
-          自動 ${member.autoPoints}${member.bonusPoints > 0 ? `＋幹部加分 ${member.bonusPoints}` : ""}
+          自動 ${member.autoPoints}${member.adjustPoints !== 0 ? `＋加減分 ${formatSignedPoints(member.adjustPoints)}` : ""}${member.bonusPoints > 0 ? `＋幹部加分 ${member.bonusPoints}` : ""}
         </small>
       </div>
 
@@ -412,7 +415,7 @@ function buildFamilyRanking(members) {
     familyData.points =
       [...familyData.members]
         .sort((first, second) => second.points - first.points)
-        .slice(0, POINT_RULES.familyTopCount)
+        .slice(0, getPointRules().familyTopCount)
         .reduce((sum, member) => sum + member.points, 0);
   });
 
@@ -507,8 +510,8 @@ function renderFamilyRanking(families) {
 
         <span>
           ${family.memberCount} 位社員${
-            family.memberCount > POINT_RULES.familyTopCount
-              ? `｜加總前 ${POINT_RULES.familyTopCount} 名`
+            family.memberCount > getPointRules().familyTopCount
+              ? `｜加總前 ${getPointRules().familyTopCount} 名`
               : ""
           }
         </span>
@@ -841,7 +844,7 @@ function renderPointRules() {
 
     <table>
       <tbody>
-        ${POINT_RULE_ITEMS.map(([emoji, label, points, note]) => `
+        ${getPointRuleItems().map(([emoji, label, points, note]) => `
           <tr>
             <th scope="row">${emoji} ${escapeHtml(label)}</th>
             <td><strong>${escapeHtml(points)}</strong></td>
@@ -852,14 +855,15 @@ function renderPointRules() {
     </table>
 
     <p>
-      家系積分＝每家積分最高的 ${POINT_RULES.familyTopCount} 人加總。
+      家系積分＝每家積分最高的 ${getPointRules().familyTopCount} 人加總。
       自己打卡的分數會在幹部更新積分時一起算進來。
     </p>
 
     ${isAdminViewer
       ? `<p class="board-admin-note">
           管理員：打開排行榜時會自動更新 6 小時內沒更新過的人。
-          <button class="link-button" type="button" data-force-points>重新計算所有人的積分</button>
+          <button class="link-button" type="button" data-force-points>重新計算所有人的積分</button>｜
+          <a href="./admin-settle.html#point-rules">調整積分規則</a>
         </p>`
       : ""}
   `;
@@ -889,8 +893,11 @@ async function loadLeaderboard() {
         where("status", "==", "approved")
       );
 
-    const snapshot =
-      await getDocs(approvedUsersQuery);
+    const [snapshot] =
+      await Promise.all([
+        getDocs(approvedUsersQuery),
+        loadPointRules(db)
+      ]);
 
     const rawMembers =
       snapshot.docs.map((documentSnapshot) => ({
@@ -935,6 +942,9 @@ async function loadLeaderboard() {
 
             autoPoints:
               getAutoPoints(data),
+
+            adjustPoints:
+              getAdjustPoints(data),
 
             bonusPoints:
               getBonusPoints(data)
@@ -1052,6 +1062,13 @@ onAuthStateChanged(
 
       if (isAdmin) {
         applyAdminNav();
+
+        const adminManageLink =
+          document.querySelector("#adminManageLink");
+
+        if (adminManageLink) {
+          adminManageLink.hidden = false;
+        }
       }
 
       isAdminViewer =

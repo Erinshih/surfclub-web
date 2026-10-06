@@ -10,7 +10,8 @@ const ADMIN_LINKS = [
   ["./admin-courses.html", "社課管理"],
   ["./admin-members.html", "社員管理"],
   ["./admin-trips.html", "出團紀錄"],
-  ["./leaderboard.html", "排行榜"]
+  ["./leaderboard.html", "排行榜"],
+  ["./admin-settle.html", "排行榜管理"]
 ];
 
 export function applyAdminNav() {

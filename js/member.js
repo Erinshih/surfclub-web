@@ -65,6 +65,16 @@ import {
   refreshBoardStats
 } from "./board-stats.js";
 
+import {
+  formatSignedPoints,
+  getAdjustPoints,
+  getBonusPoints,
+  getPointRules,
+  getTotalPoints,
+  loadPointRecords,
+  loadPointRules
+} from "./points.js";
+
 /* =========================================================
    DOM
    ========================================================= */
@@ -164,6 +174,9 @@ const announcementList =
 
 const latestTrip =
   document.querySelector("#latest-trip");
+
+const myPoints =
+  document.querySelector("#my-points");
 
 const editProfileButton =
   document.querySelector("#edit-profile-button");
@@ -285,6 +298,7 @@ onAuthStateChanged(
         loadHistory(),
         loadCheckins(),
         loadLatestTrip(),
+        loadMyPoints(),
         loadAnnouncements()
       ]);
 
@@ -1465,6 +1479,129 @@ growthTimeline?.addEventListener(
 if (progressDate) {
   progressDate.value = todayString();
   progressDate.max = todayString();
+}
+
+/* =========================================================
+   我的積分
+   ========================================================= */
+
+async function loadMyPoints() {
+  let records = [];
+
+  try {
+    [records] =
+      await Promise.all([
+        loadPointRecords(db, currentUser.uid),
+        loadPointRules(db)
+      ]);
+  } catch (error) {
+    console.error(
+      "加減分紀錄讀取失敗：",
+      error
+    );
+  }
+
+  renderMyPoints(records);
+}
+
+function renderMyPoints(records) {
+  const stats =
+    currentUserData.pointStats;
+
+  if (!stats) {
+    myPoints.innerHTML = `
+      <p class="eyebrow">POINTS</p>
+      <h2>我的積分</h2>
+      <p class="empty-state">
+        積分還沒計算，幹部更新排行榜後就會出現。
+      </p>
+    `;
+
+    return;
+  }
+
+  const rules =
+    getPointRules();
+
+  const adjust =
+    getAdjustPoints(currentUserData);
+
+  const bonus =
+    getBonusPoints(currentUserData);
+
+  const lines = [
+    ["🌊 參加出團", `${stats.trips || 0} 次`, (stats.trips || 0) * rules.trip],
+    ["🏄 自己打卡下水", `${stats.checkins || 0} 次`, (stats.checkins || 0) * rules.checkin],
+    stats.lights ? ["🌅 開燈／關燈", "", stats.lights] : null,
+    ["📈 升級", `${stats.levelUps || 0} 級`, (stats.levelUps || 0) * rules.levelUp],
+    adjust !== 0 || records.length > 0 ? ["⚖️ 加減分", `${stats.records || 0} 筆`, adjust] : null,
+    bonus > 0 ? ["🙌 幹部加分", "", bonus] : null
+  ].filter(Boolean);
+
+  const since =
+    stats.since || currentUserData.pointsSince || "";
+
+  const updatedAt =
+    stats.computedAt
+      ? new Date(stats.computedAt).toLocaleString("zh-TW", {
+        month: "numeric",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      })
+      : "";
+
+  myPoints.innerHTML = `
+    <p class="eyebrow">POINTS</p>
+
+    <div class="my-points-header">
+      <h2>我的積分</h2>
+      <strong class="my-points-total">${getTotalPoints(currentUserData)}<small> 分</small></strong>
+    </div>
+
+    <ul class="my-points-lines">
+      ${lines.map(([label, count, points]) => `
+        <li>
+          <span>${escapeHtml(label)}</span>
+          <span class="my-points-count">${escapeHtml(count)}</span>
+          <strong class="${points < 0 ? "is-minus" : ""}">${points === 0 ? "0" : formatSignedPoints(points)}</strong>
+        </li>
+      `).join("")}
+    </ul>
+
+    <p class="panel-hint">
+      ${since ? `從 ${escapeHtml(since.replaceAll("-", "/"))} 開始累積。` : ""}
+      ${updatedAt ? `上次更新：${escapeHtml(updatedAt)}。` : ""}
+      打卡的分數會在幹部更新排行榜時算進來。
+      <a href="./leaderboard.html">積分怎麼算？</a>
+    </p>
+
+    ${records.length > 0
+      ? `<details class="growth-details">
+          <summary>我的加減分紀錄（${records.length} 筆）</summary>
+          <ol class="growth-timeline">
+            ${records.map((record) => {
+              const isOld =
+                String(record.date) < since;
+
+              return `
+                <li class="growth-item ${isOld ? "is-old" : ""}">
+                  <time>${escapeHtml(String(record.date).replaceAll("-", "/"))}</time>
+                  <span class="growth-badge ${Number(record.points) < 0 ? "is-minus" : "is-plus"}">
+                    ${formatSignedPoints(Number(record.points))}
+                  </span>
+                  <span class="growth-text">
+                    <strong>${escapeHtml(record.name)}</strong>
+                    ${record.note ? `<small>${escapeHtml(record.note)}</small>` : ""}
+                    ${isOld ? "<small>（在積分起算日之前，不計分）</small>" : ""}
+                  </span>
+                </li>
+              `;
+            }).join("")}
+          </ol>
+        </details>`
+      : ""}
+  `;
 }
 
 /* =========================================================

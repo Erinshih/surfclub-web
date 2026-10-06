@@ -15,7 +15,7 @@
     href="./manifest.webmanifest"
   >
 
-  <title>Surf Club Admin｜排行榜結算</title>
+  <title>Surf Club Admin｜排行榜管理</title>
 
   <link
     rel="stylesheet"
@@ -58,6 +58,10 @@
           排行榜
         </a>
 
+        <a href="./admin-settle.html">
+          排行榜管理
+        </a>
+
         <!-- <a href="./index.html">
           公開網站
         </a> -->
@@ -77,11 +81,11 @@
     <section class="dashboard-header">
       <div>
         <p class="eyebrow">
-          LEADERBOARD SETTLEMENT
+          LEADERBOARD
         </p>
 
         <h1>
-          排行榜結算
+          排行榜管理
         </h1>
       </div>
 
@@ -97,6 +101,188 @@
       id="admin-content"
       class="hidden"
     >
+      <!-- ===============================================
+           積分規則
+           =============================================== -->
+
+      <section
+        id="point-rules"
+        class="content-card"
+      >
+        <p class="eyebrow">
+          POINT RULES
+        </p>
+
+        <h2>
+          積分規則
+        </h2>
+
+        <p class="panel-hint">
+          總積分＝自動積分＋幹部加分。儲存後會馬上幫所有正式社員重新計算自動積分。
+        </p>
+
+        <form id="rules-form">
+          <div
+            id="rules-fields"
+            class="rules-fields"
+          ></div>
+
+          <label class="check-item rules-toggle">
+            <input
+              id="rule-checkin-on-trip-day"
+              type="checkbox"
+            >
+            <span>出團當天自己又打卡，也算打卡分數（不勾＝出團當天只算出團分數）</span>
+          </label>
+
+          <h3 class="custom-rules-title">
+            自訂加減分項目
+          </h3>
+
+          <p class="panel-hint">
+            分數可以是正的（加分）或負的（扣分）。設定好之後，在下面的「加減分紀錄」幫社員記錄。
+            修改分數不會影響已經記錄過的紀錄。
+          </p>
+
+          <div
+            id="custom-rules"
+            class="custom-rules"
+          ></div>
+
+          <button
+            id="add-custom-rule"
+            class="button button-small button-secondary"
+            type="button"
+          >
+            ＋ 新增項目
+          </button>
+
+          <p
+            id="rules-message"
+            class="status-message"
+          ></p>
+
+          <div class="dialog-actions">
+            <button
+              id="rules-reset-button"
+              class="button button-small button-secondary"
+              type="button"
+            >
+              填回預設值
+            </button>
+
+            <button
+              id="rules-save-button"
+              class="button"
+              type="submit"
+            >
+              儲存並重新計算
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- ===============================================
+           加減分紀錄
+           =============================================== -->
+
+      <section
+        id="point-records"
+        class="content-card"
+      >
+        <p class="eyebrow">
+          POINT RECORDS
+        </p>
+
+        <h2>
+          加減分紀錄
+        </h2>
+
+        <p class="panel-hint">
+          選擇項目和社員（可以一次選多人）。社員可以在自己的社員首頁看到這些紀錄。
+        </p>
+
+        <form id="record-form">
+          <div class="form-grid">
+            <div class="field-stack">
+              <label for="record-rule">
+                項目
+              </label>
+
+              <select
+                id="record-rule"
+                required
+              ></select>
+            </div>
+
+            <div class="field-stack">
+              <label for="record-date">
+                日期
+              </label>
+
+              <input
+                id="record-date"
+                type="date"
+                required
+              >
+            </div>
+          </div>
+
+          <label for="record-note">
+            備註（選填，社員看得到）
+          </label>
+
+          <input
+            id="record-note"
+            type="text"
+            maxlength="100"
+            placeholder="例如：在漁光島搶浪"
+          >
+
+          <label>
+            社員（<span id="record-count">0</span> 人）
+          </label>
+
+          <div class="participant-tools">
+            <input
+              id="record-search"
+              type="search"
+              placeholder="搜尋名字或綽號"
+              aria-label="搜尋社員"
+            >
+          </div>
+
+          <div
+            id="record-members"
+            class="participant-picker"
+          ></div>
+
+          <p
+            id="record-message"
+            class="status-message"
+          ></p>
+
+          <div class="dialog-actions">
+            <button
+              id="record-button"
+              class="button"
+              type="submit"
+            >
+              記錄
+            </button>
+          </div>
+        </form>
+
+        <h3 class="custom-rules-title">
+          最近的紀錄
+        </h3>
+
+        <ul
+          id="record-list"
+          class="record-list"
+        ></ul>
+      </section>
+
       <!-- ===============================================
            步驟 1：結算這一期
            =============================================== -->
