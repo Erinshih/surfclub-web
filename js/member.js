@@ -29,6 +29,7 @@ import {
 
 import {
   formatLevel,
+  getGoalsToNextLevel,
   getLevel,
   getLevelByValue,
   getNextLevel
@@ -403,6 +404,9 @@ function renderLevelProgress() {
   const nextLevel =
     getNextLevel(level);
 
+  const goals =
+    getGoalsToNextLevel(level);
+
   const skills =
     getProfile(currentUserData).skills;
 
@@ -416,6 +420,13 @@ function renderLevelProgress() {
           <h2>${escapeHtml(level.name)} Lv.${level.value}</h2>
           <p class="level-tagline">「${escapeHtml(level.tagline)}」</p>
         </div>
+      </div>
+
+      <div class="level-stage">
+        <h3>這個階段</h3>
+        <ul>
+          ${level.stage.map((text) => `<li>${escapeHtml(text)}</li>`).join("")}
+        </ul>
       </div>
     `
     : `
@@ -442,27 +453,27 @@ function renderLevelProgress() {
   }
 
   const remaining =
-    nextLevel.requirements.filter(
-      (requirement) => !skills.includes(requirement.id)
+    goals.filter(
+      (goal) => !skills.includes(goal.id)
     ).length;
 
   levelProgress.innerHTML = `
     ${currentHtml}
 
     <h3 class="level-progress-next">
-      下一級：<a href="./dex.html#lv${nextLevel.value}">${escapeHtml(formatLevel(nextLevel))}</a>
+      升上 <a href="./dex.html#lv${nextLevel.value}">${escapeHtml(formatLevel(nextLevel))}</a> 的目標
     </h3>
 
     <ul class="check-list">
-      ${nextLevel.requirements.map((requirement) => `
+      ${goals.map((goal) => `
         <li>
           <label class="check-item">
             <input
               type="checkbox"
-              data-skill-id="${escapeHtml(requirement.id)}"
-              ${skills.includes(requirement.id) ? "checked" : ""}
+              data-skill-id="${escapeHtml(goal.id)}"
+              ${skills.includes(goal.id) ? "checked" : ""}
             >
-            <span>${escapeHtml(requirement.text)}</span>
+            <span>${escapeHtml(goal.text)}</span>
           </label>
         </li>
       `).join("")}
@@ -470,8 +481,8 @@ function renderLevelProgress() {
 
     <p class="level-progress-summary">
       ${remaining === 0
-        ? `條件都達成了！找幹部幫你確認升上 Lv.${nextLevel.value} 🎉`
-        : `距離 Lv.${nextLevel.value}：還差 <strong>${remaining}</strong> 個條件`}
+        ? `目標都達成了！找幹部幫你確認升上 Lv.${nextLevel.value} 🎉`
+        : `距離 Lv.${nextLevel.value}：還差 <strong>${remaining}</strong> 個目標`}
     </p>
 
     <p class="panel-hint">

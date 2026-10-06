@@ -4518,3 +4518,51 @@ input[type="file"]::file-selector-button {
   font-size: 0.75rem;
   text-align: right;
 }
+
+
+/* =========================================================
+   等級說明：這個階段／升級目標
+   ========================================================= */
+
+.level-stage {
+  margin-top: 16px;
+  padding: 14px 18px;
+
+  background: #f5f9f9;
+  border-radius: var(--radius-small);
+}
+
+.level-stage h3 {
+  margin: 0 0 6px;
+
+  color: var(--navy);
+
+  font-size: 0.95rem;
+}
+
+.level-stage ul {
+  margin: 0;
+  padding-left: 20px;
+
+  color: #4d6a6e;
+}
+
+.dex-guide {
+  margin-bottom: 24px;
+
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.dex-guide .dex-requirements {
+  margin: 0;
+  padding: 16px 18px;
+
+  background: #f5f9f9;
+  border-radius: 16px;
+}
+
+.dex-guide .dex-goals {
+  background: #fff8e3;
+}

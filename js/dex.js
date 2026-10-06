@@ -27,8 +27,10 @@ import {
 } from "./admin-nav.js";
 
 import {
+  ENTRY_GOALS,
   LEVELS,
-  getLevel
+  getLevel,
+  getNextLevel
 } from "./levels.js";
 
 import {
@@ -85,7 +87,8 @@ const UNRANKED = {
   emoji: "🌊",
   color: "#8a9ea1",
   tagline: "還在等幹部幫忙鑑定的神秘物種。",
-  requirements: []
+  stage: [],
+  goals: ENTRY_GOALS
 };
 
 const DEX_GROUPS = [
@@ -340,16 +343,7 @@ function selectLevel(value) {
       </div>
     </dl>
 
-    ${group.requirements.length > 0
-      ? `<section class="dex-requirements">
-          <h3>升上${escapeHtml(group.name)}的條件</h3>
-          <ul>
-            ${group.requirements.map((requirement) => `
-              <li>${escapeHtml(requirement.text)}</li>
-            `).join("")}
-          </ul>
-        </section>`
-      : ""}
+    ${renderLevelGuide(group)}
 
     ${members.length > 0
       ? `<ul class="dex-grid">
@@ -361,6 +355,40 @@ function selectLevel(value) {
   if (group.value) {
     renderNewbornCount(group, members);
   }
+}
+
+/*
+ * 這個階段的說明＋升上下一級的目標
+ */
+function renderLevelGuide(group) {
+  const nextLevel =
+    getNextLevel(group.value ? group : null);
+
+  const stageHtml =
+    group.stage.length > 0
+      ? `<section class="dex-requirements">
+          <h3>這個階段</h3>
+          <ul>
+            ${group.stage.map((text) => `<li>${escapeHtml(text)}</li>`).join("")}
+          </ul>
+        </section>`
+      : "";
+
+  const goalsHtml =
+    nextLevel && group.goals.length > 0
+      ? `<section class="dex-requirements dex-goals">
+          <h3>升上 ${escapeHtml(nextLevel.emoji)} ${escapeHtml(nextLevel.name)} 的目標</h3>
+          <ul>
+            ${group.goals.map((goal) => `<li>${escapeHtml(goal.text)}</li>`).join("")}
+          </ul>
+        </section>`
+      : "";
+
+  if (!stageHtml && !goalsHtml) {
+    return "";
+  }
+
+  return `<div class="dex-guide">${stageHtml}${goalsHtml}</div>`;
 }
 
 function renderDexEntry(member) {
