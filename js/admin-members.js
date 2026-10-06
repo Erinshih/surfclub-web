@@ -156,9 +156,25 @@ async function loadUsers() {
   `;
 
   try {
-    const snapshot =
-      await getDocs(
-        collection(db, "users")
+    /*
+     * 電話、學號、Email 存在 privateProfiles，
+     * 還沒搬移的舊資料則還在 users 裡，兩邊合併起來顯示
+     */
+    const [snapshot, privateSnapshot] =
+      await Promise.all([
+        getDocs(collection(db, "users")),
+        getDocs(collection(db, "privateProfiles")).catch((error) => {
+          console.error("個資讀取失敗：", error);
+          return { docs: [] };
+        })
+      ]);
+
+    const privateByUid =
+      new Map(
+        privateSnapshot.docs.map((documentSnapshot) => [
+          documentSnapshot.id,
+          documentSnapshot.data()
+        ])
       );
 
     allUsers =
@@ -166,9 +182,15 @@ async function loadUsers() {
         const data =
           documentSnapshot.data();
 
+        const privateData =
+          privateByUid.get(documentSnapshot.id) || {};
+
         return {
           uid: documentSnapshot.id,
           ...data,
+          email: privateData.email ?? data.email,
+          phone: privateData.phone ?? data.phone,
+          studentId: privateData.studentId ?? data.studentId,
           points: normalizePoints(data.points)
         };
       });
@@ -1084,6 +1106,15 @@ function createMemberEditor(member) {
         await deleteDoc(
           doc(db, "users", member.uid)
         );
+
+        /*
+         * 個資也一起刪掉
+         */
+        await deleteDoc(
+          doc(db, "privateProfiles", member.uid)
+        ).catch((error) => {
+          console.error("個資刪除失敗：", error);
+        });
 
         showStatus(
           memberMessage,

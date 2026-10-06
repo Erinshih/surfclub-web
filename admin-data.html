@@ -1,0 +1,204 @@
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon-v2.png">
+  <link
+    rel="manifest"
+    href="./manifest.webmanifest"
+  >
+
+  <title>Surf Club Admin｜資料管理</title>
+
+  <link
+    rel="stylesheet"
+    href="./css/style.css"
+  >
+</head>
+
+<body>
+  <header class="site-header">
+    <nav class="navbar">
+      <a
+        class="brand"
+        href="./admin.html"
+      >
+        SURF CLUB ADMIN
+      </a>
+
+      <div class="nav-links">
+        <a href="./admin.html">
+          管理首頁
+        </a>
+
+        <a href="./admin-announcements.html">
+          公告管理
+        </a>
+
+        <a href="./admin-courses.html">
+          社課管理
+        </a>
+
+        <a href="./admin-members.html">
+          社員管理
+        </a>
+
+        <a href="./admin-trips.html">
+          出團紀錄
+        </a>
+
+        <a href="./admin-fees.html">
+          費用管理
+        </a>
+
+        <a href="./leaderboard.html">
+          排行榜
+        </a>
+
+        <a href="./admin-settle.html">
+          排行榜管理
+        </a>
+
+        <!-- <a href="./index.html">
+          公開網站
+        </a> -->
+
+        <button
+          id="logout-button"
+          class="button button-small button-secondary"
+          type="button"
+        >
+          登出
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="dashboard">
+    <section class="dashboard-header">
+      <div>
+        <p class="eyebrow">
+          DATA
+        </p>
+
+        <h1>
+          資料管理
+        </h1>
+      </div>
+
+      <p
+        id="admin-status"
+        class="status-message"
+      >
+        正在驗證管理員身分……
+      </p>
+    </section>
+
+    <div
+      id="admin-content"
+      class="hidden"
+    >
+      <!-- ===============================================
+           個資保護
+           =============================================== -->
+
+      <section class="content-card">
+        <p class="eyebrow">
+          PRIVACY
+        </p>
+
+        <h2>
+          個資保護
+        </h2>
+
+        <p class="panel-hint">
+          電話、學號、Email 只放在 <code>privateProfiles</code>，只有本人和幹部讀得到；
+          其他社員只看得到姓名、系級、等級這些公開資料。
+          以前註冊的社員，個資還留在公開資料裡，需要搬移一次。
+        </p>
+
+        <p
+          id="privacy-summary"
+          class="settle-current"
+        >
+          正在檢查……
+        </p>
+
+        <p
+          id="privacy-message"
+          class="status-message"
+        ></p>
+
+        <div class="dialog-actions">
+          <button
+            id="migrate-button"
+            class="button"
+            type="button"
+            hidden
+          >
+            搬移個資
+          </button>
+        </div>
+      </section>
+
+      <!-- ===============================================
+           資料備份
+           =============================================== -->
+
+      <section class="content-card">
+        <p class="eyebrow">
+          BACKUP
+        </p>
+
+        <h2>
+          資料備份
+        </h2>
+
+        <p class="panel-hint">
+          免費方案的 Firestore 沒有自動備份。建議每學期結算後下載一份，存到幹部的雲端硬碟。
+          備份檔包含所有社員的個資，請不要分享給社員以外的人。
+        </p>
+
+        <p
+          id="backup-summary"
+          class="settle-current"
+        >
+          正在讀取上次備份的時間……
+        </p>
+
+        <ul class="settle-notes">
+          <li>包含：社員資料（含個資）、打卡、升級紀錄、進步紀錄、公告、社課、出團紀錄、歷屆榜單、積分規則、加減分紀錄、費用與繳費紀錄。</li>
+          <li>整個資料庫大約會用掉幾千次讀取，一學期下載一次不會有影響。</li>
+        </ul>
+
+        <p
+          id="backup-message"
+          class="status-message"
+        ></p>
+
+        <div class="dialog-actions">
+          <button
+            id="backup-button"
+            class="button"
+            type="button"
+          >
+            下載完整備份
+          </button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script
+    type="module"
+    src="./js/admin-data.js"
+  ></script>
+</body>
+</html>

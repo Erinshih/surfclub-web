@@ -92,7 +92,7 @@
    Surf Club PWA Service Worker
    ========================================================= */
 
-const CACHE_NAME = "surfclub-cache-v25";
+const CACHE_NAME = "surfclub-cache-v26";
 
 /*
  * 這些檔案會在 Service Worker 安裝時預先快取。

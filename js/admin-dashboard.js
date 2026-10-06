@@ -113,15 +113,35 @@ onAuthStateChanged(
    ========================================================= */
 
 async function loadDashboard() {
-  const [usersSnapshot, trips, outstanding] =
+  const [usersSnapshot, trips, outstanding, backupSnapshot] =
     await Promise.all([
       getDocs(collection(db, "users")),
       loadTrips(db),
       loadOutstandingPayments(db).catch((error) => {
         console.error("待繳費用讀取失敗：", error);
         return [];
-      })
+      }),
+      getDoc(doc(db, "settings", "backup")).catch(() => null)
     ]);
+
+  /*
+   * 上次備份距今幾天；個資是不是還留在公開資料裡
+   */
+  const lastBackupAt =
+    backupSnapshot?.exists?.()
+      ? backupSnapshot.data().lastBackupAt?.toDate?.()
+      : null;
+
+  const backupDays =
+    lastBackupAt
+      ? Math.floor((Date.now() - lastBackupAt.getTime()) / 86400000)
+      : null;
+
+  const legacyPrivateCount =
+    usersSnapshot.docs.filter((documentSnapshot) => {
+      const data = documentSnapshot.data();
+      return "phone" in data || "studentId" in data || "email" in data;
+    }).length;
 
   const users =
     usersSnapshot.docs.map((documentSnapshot) => documentSnapshot.data());
@@ -189,6 +209,20 @@ async function loadDashboard() {
             : ""
         }`
         : "大家都繳清了"
+    },
+    {
+      label: "上次備份",
+      value: backupDays === null ? "—" : backupDays,
+      unit: backupDays === null ? "" : "天前",
+      href: "./admin-data.html",
+      alert: backupDays === null || backupDays > 120 || legacyPrivateCount > 0,
+      note: legacyPrivateCount > 0
+        ? `${legacyPrivateCount} 位的個資還沒搬移`
+        : backupDays === null
+          ? "還沒備份過"
+          : backupDays > 120
+            ? "超過 4 個月沒備份了"
+            : "資料都有備份"
     }
   ];
 

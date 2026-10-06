@@ -9,7 +9,7 @@ import {
 import {
   doc,
   serverTimestamp,
-  setDoc
+  writeBatch
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
 
 import {
@@ -202,7 +202,34 @@ registerForm?.addEventListener(
         "正在建立社員申請資料……"
       );
 
-      await setDoc(
+      /*
+       * 公開資料放 users（其他社員看得到姓名、系級等），
+       * 電話、學號、Email 放 privateProfiles（只有本人和幹部看得到）。
+       * 用同一個 batch，兩筆一起成功或一起失敗。
+       */
+      const batch =
+        writeBatch(db);
+
+      batch.set(
+        doc(
+          db,
+          "privateProfiles",
+          createdUser.uid
+        ),
+        {
+          email,
+          phone,
+          studentId,
+
+          createdAt:
+            serverTimestamp(),
+
+          updatedAt:
+            serverTimestamp()
+        }
+      );
+
+      batch.set(
         doc(
           db,
           "users",
@@ -210,10 +237,7 @@ registerForm?.addEventListener(
         ),
         {
           name,
-          studentId,
           department,
-          phone,
-          email,
 
           role: "pending",
           status: "pending",
@@ -234,6 +258,8 @@ registerForm?.addEventListener(
             serverTimestamp()
         }
       );
+
+      await batch.commit();
 
       firestoreDocumentCreated =
         true;
