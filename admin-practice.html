@@ -1,0 +1,359 @@
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon-v2.png">
+  <link
+    rel="manifest"
+    href="./manifest.webmanifest"
+  >
+
+  <title>Surf Club Admin｜團練管理</title>
+
+  <link
+    rel="stylesheet"
+    href="./css/style.css"
+  >
+</head>
+
+<body>
+  <header class="site-header">
+    <nav class="navbar">
+      <a
+        class="brand"
+        href="./admin.html"
+      >
+        SURF CLUB ADMIN
+      </a>
+
+      <div class="nav-links">
+        <a href="./admin.html">
+          管理首頁
+        </a>
+
+        <a href="./admin-announcements.html">
+          公告管理
+        </a>
+
+        <a href="./admin-courses.html">
+          社課管理
+        </a>
+
+        <a href="./admin-members.html">
+          社員管理
+        </a>
+
+        <a href="./admin-trips.html">
+          出團紀錄
+        </a>
+
+        <a href="./admin-practice.html">
+          團練管理
+        </a>
+
+        <a href="./admin-fees.html">
+          費用管理
+        </a>
+
+        <a href="./leaderboard.html">
+          排行榜
+        </a>
+
+        <a href="./admin-settle.html">
+          排行榜管理
+        </a>
+
+        <!-- <a href="./index.html">
+          公開網站
+        </a> -->
+
+        <button
+          id="logout-button"
+          class="button button-small button-secondary"
+          type="button"
+        >
+          登出
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="dashboard">
+    <section class="dashboard-header">
+      <div>
+        <p class="eyebrow">
+          GROUP PRACTICE
+        </p>
+
+        <h1>
+          團練管理
+        </h1>
+      </div>
+
+      <p
+        id="admin-status"
+        class="status-message"
+      >
+        正在驗證管理員身分……
+      </p>
+    </section>
+
+    <div
+      id="admin-content"
+      class="hidden"
+    >
+      <!-- ===============================================
+           新增團練
+           =============================================== -->
+
+      <section
+        id="practice-form-card"
+        class="content-card"
+      >
+        <p class="eyebrow">
+          NEW PRACTICE
+        </p>
+
+        <h2 id="practice-form-title">
+          新增團練
+        </h2>
+
+        <p class="panel-hint">
+          新增後社員就能在團練頁報名。人數到了，再回來這裡按「確認成團」。
+        </p>
+
+        <form id="practice-form">
+          <div class="form-grid">
+            <div class="field-stack">
+              <label for="practice-date">日期</label>
+              <input id="practice-date" type="date" required>
+            </div>
+
+            <div class="field-stack">
+              <label for="practice-slot">常用時段</label>
+              <select id="practice-slot"></select>
+            </div>
+
+            <div class="field-stack">
+              <label for="practice-start">開始</label>
+              <input id="practice-start" type="time" required>
+            </div>
+
+            <div class="field-stack">
+              <label for="practice-end">結束</label>
+              <input id="practice-end" type="time" required>
+            </div>
+          </div>
+
+          <label for="practice-spot">浪點</label>
+
+          <input
+            id="practice-spot"
+            type="text"
+            maxlength="30"
+            list="spot-options"
+            required
+          >
+
+          <datalist id="spot-options"></datalist>
+
+          <div class="rules-fields">
+            <div class="field-stack">
+              <label for="practice-min">成團人數</label>
+              <div class="rules-input">
+                <input id="practice-min" type="number" min="1" max="100" step="1" required>
+                <span>人</span>
+              </div>
+            </div>
+
+            <div class="field-stack">
+              <label for="practice-max">人數上限</label>
+              <div class="rules-input">
+                <input id="practice-max" type="number" min="1" max="200" step="1" required>
+                <span>人</span>
+              </div>
+            </div>
+
+            <div class="field-stack">
+              <label for="practice-deadline">報名截止</label>
+              <input id="practice-deadline" type="datetime-local" required>
+            </div>
+          </div>
+
+          <label for="practice-note">備註（選填）</label>
+
+          <textarea
+            id="practice-note"
+            class="charge-note"
+            maxlength="200"
+            placeholder="例如：集合地點、要不要自備板子、費用"
+          ></textarea>
+
+          <p
+            id="practice-form-message"
+            class="status-message"
+          ></p>
+
+          <div class="dialog-actions">
+            <button
+              id="practice-form-cancel"
+              class="button button-small button-secondary"
+              type="button"
+              hidden
+            >
+              取消編輯
+            </button>
+
+            <button
+              id="practice-submit"
+              class="button"
+              type="submit"
+            >
+              新增團練
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- ===============================================
+           團練列表
+           =============================================== -->
+
+      <section class="content-card">
+        <p class="eyebrow">
+          PRACTICES
+        </p>
+
+        <h2>
+          接下來的團練
+        </h2>
+
+        <p
+          id="practice-list-message"
+          class="status-message"
+        ></p>
+
+        <div
+          id="admin-practice-list"
+          class="practice-list"
+        ></div>
+
+        <details
+          id="admin-past-practices"
+          class="growth-details past-practices"
+          hidden
+        >
+          <summary>
+            已結束或取消的團練（近 30 天）
+          </summary>
+
+          <div
+            id="admin-past-practice-list"
+            class="practice-list"
+          ></div>
+        </details>
+      </section>
+
+      <!-- ===============================================
+           預設值
+           =============================================== -->
+
+      <section class="content-card">
+        <p class="eyebrow">
+          DEFAULTS
+        </p>
+
+        <h2>
+          新增團練的預設值
+        </h2>
+
+        <p class="panel-hint">
+          新增團練時會先帶入這些值，每一團都還可以再改。
+        </p>
+
+        <form id="practice-settings-form">
+          <div class="rules-fields">
+            <div class="field-stack">
+              <label for="setting-min">成團人數</label>
+              <div class="rules-input">
+                <input id="setting-min" type="number" min="1" max="100" step="1" required>
+                <span>人</span>
+              </div>
+            </div>
+
+            <div class="field-stack">
+              <label for="setting-max">人數上限</label>
+              <div class="rules-input">
+                <input id="setting-max" type="number" min="1" max="200" step="1" required>
+                <span>人</span>
+              </div>
+            </div>
+
+            <div class="field-stack">
+              <label for="setting-hours">開始前幾小時截止報名</label>
+              <div class="rules-input">
+                <input id="setting-hours" type="number" min="0" max="168" step="1" required>
+                <span>小時</span>
+              </div>
+            </div>
+          </div>
+
+          <label for="setting-spot">
+            預設浪點
+          </label>
+
+          <input
+            id="setting-spot"
+            type="text"
+            maxlength="30"
+          >
+
+          <h3 class="custom-rules-title">
+            常用時段
+          </h3>
+
+          <div
+            id="setting-slots"
+            class="custom-rules"
+          ></div>
+
+          <button
+            id="add-slot-button"
+            class="button button-small button-secondary"
+            type="button"
+          >
+            ＋ 新增時段
+          </button>
+
+          <p
+            id="settings-message"
+            class="status-message"
+          ></p>
+
+          <div class="dialog-actions">
+            <button
+              id="save-settings-button"
+              class="button"
+              type="submit"
+            >
+              儲存預設值
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  </main>
+
+  <script
+    type="module"
+    src="./js/admin-practice.js"
+  ></script>
+</body>
+</html>

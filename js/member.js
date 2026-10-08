@@ -66,6 +66,12 @@ import {
 } from "./board-stats.js";
 
 import {
+  formatPracticeDate,
+  getPracticeState,
+  loadPractices
+} from "./practice-core.js";
+
+import {
   PAYMENT_STATUS,
   formatMoney,
   isOutstanding,
@@ -311,6 +317,7 @@ onAuthStateChanged(
         loadLatestTrip(),
         loadMyPoints(),
         loadMyFees(),
+        loadPracticeAlert(),
         loadAnnouncements()
       ]);
 
@@ -1491,6 +1498,48 @@ growthTimeline?.addEventListener(
 if (progressDate) {
   progressDate.value = todayString();
   progressDate.max = todayString();
+}
+
+/* =========================================================
+   我報名的團練
+   ========================================================= */
+
+async function loadPracticeAlert() {
+  const alert =
+    document.querySelector("#practice-alert");
+
+  if (!alert) {
+    return;
+  }
+
+  try {
+    const mine =
+      (await loadPractices(db, todayString()))
+        .filter((practice) =>
+          (practice.participants || []).includes(currentUser.uid) &&
+          ["recruiting", "ready", "confirmed"].includes(getPracticeState(practice).key)
+        );
+
+    alert.hidden =
+      mine.length === 0;
+
+    if (mine.length === 0) {
+      return;
+    }
+
+    const next =
+      mine[0];
+
+    alert.innerHTML = `
+      🏄 你報名了 <strong>${mine.length}</strong> 場團練，下一場：
+      ${escapeHtml(formatPracticeDate(next))} ${escapeHtml(next.start)}｜${escapeHtml(next.spot || "")}｜${escapeHtml(getPracticeState(next).label)} →
+    `;
+  } catch (error) {
+    console.error(
+      "團練讀取失敗：",
+      error
+    );
+  }
 }
 
 /* =========================================================

@@ -77,7 +77,8 @@ const TOP_COLLECTIONS = [
   "settings",
   "pointRecords",
   "charges",
-  "payments"
+  "payments",
+  "practices"
 ];
 
 const USER_SUBCOLLECTIONS = ["levelHistory", "checkins", "progress"];

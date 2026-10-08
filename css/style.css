@@ -5024,3 +5024,231 @@ input[type="file"]::file-selector-button {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+
+/* =========================================================
+   團練
+   ========================================================= */
+
+.practice-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
+}
+
+.practice-card {
+  padding: 18px 20px;
+
+  background: #ffffff;
+
+  border: 1px solid rgba(49, 95, 101, 0.1);
+  border-left: 5px solid #7fc3ca;
+  border-radius: 20px;
+
+  box-shadow: 0 10px 26px rgba(35, 76, 81, 0.07);
+
+  transition: box-shadow 0.3s ease;
+}
+
+.practice-card.is-ready {
+  border-left-color: #e9c46a;
+}
+
+.practice-card.is-confirmed {
+  border-left-color: #3ca67a;
+}
+
+.practice-card.is-cancelled,
+.practice-card.is-failed {
+  border-left-color: #c9d4d6;
+  opacity: 0.75;
+}
+
+.practice-card.is-highlighted {
+  box-shadow: 0 0 0 4px rgba(99, 189, 182, 0.45);
+}
+
+.practice-card-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.practice-card-header > div {
+  display: grid;
+}
+
+.practice-card-date {
+  color: #244f54;
+  font-size: 1.1rem;
+}
+
+.practice-card-time {
+  color: #6b8285;
+  font-size: 0.88rem;
+}
+
+.fee-chip.is-info {
+  color: #315f65;
+  background: #edf4f3;
+}
+
+.practice-progress {
+  position: relative;
+
+  height: 8px;
+  margin: 14px 0 6px;
+
+  overflow: visible;
+
+  background: #edf2f3;
+  border-radius: 999px;
+}
+
+.practice-progress-bar {
+  height: 100%;
+
+  display: block;
+
+  background: linear-gradient(90deg, #63bdb6, #439f99);
+  border-radius: 999px;
+}
+
+.practice-progress-min {
+  position: absolute;
+  top: -3px;
+
+  width: 2px;
+  height: 14px;
+
+  background: #e9a23b;
+}
+
+.practice-count {
+  margin: 0 0 8px;
+
+  color: #6b8285;
+
+  font-size: 0.85rem;
+}
+
+.practice-count strong {
+  color: #244f54;
+  font-size: 1.1rem;
+}
+
+.practice-people {
+  margin: 0 0 8px;
+
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.practice-person {
+  padding: 3px 10px;
+
+  color: #315f65;
+  background: #edf4f3;
+
+  border-radius: 999px;
+
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.practice-person.is-me {
+  color: #ffffff;
+  background: #439f99;
+}
+
+.practice-actions {
+  margin-top: 10px;
+
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.practice-actions .button {
+  margin-top: 0;
+}
+
+.practice-line-button {
+  background: #06c755;
+  box-shadow: 0 8px 20px rgba(6, 199, 85, 0.25);
+}
+
+.practice-cancel {
+  color: var(--danger);
+}
+
+.past-practices {
+  margin-top: 24px;
+}
+
+.past-practices .practice-list {
+  padding: 0 16px 16px;
+}
+
+/* 社員首頁：我報名的團練 */
+.practice-alert {
+  margin-bottom: 24px;
+  padding: 16px 20px;
+
+  display: block;
+
+  color: #244f54;
+  background: #e8f5f3;
+
+  border: 1px solid #b9e0db;
+  border-radius: 16px;
+
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.practice-alert:hover {
+  background: #dcf0ed;
+}
+
+/* 後台：團練設定 */
+.slot-row input[type="time"] {
+  width: 160px;
+  flex-shrink: 0;
+}
+
+#settings-message:empty,
+#practice-list-message:empty,
+#practice-form-message:empty {
+  display: none;
+}
+
+.practice-card.is-joined {
+  background: #f6fbfa;
+}
+
+.practice-card.is-ended {
+  border-left-color: #c9d4d6;
+  opacity: 0.75;
+}
+
+#admin-practice-list {
+  margin-top: 12px;
+}
+
+.practice-notified {
+  margin: 0 0 8px;
+  padding: 8px 12px;
+
+  color: #1d6b45;
+  background: #e9f7ef;
+
+  border-radius: 10px;
+
+  font-size: 0.82rem;
+  font-weight: 700;
+}

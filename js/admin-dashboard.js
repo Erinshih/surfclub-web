@@ -23,7 +23,8 @@ import {
 import {
   escapeHtml,
   getSemesterStart,
-  toDateString
+  toDateString,
+  todayString
 } from "./member-card.js";
 
 import {
@@ -36,6 +37,11 @@ import {
   formatMoney,
   loadOutstandingPayments
 } from "./fees.js";
+
+import {
+  getPracticeState,
+  loadPractices
+} from "./practice-core.js";
 
 /* =========================================================
    DOM
@@ -113,7 +119,7 @@ onAuthStateChanged(
    ========================================================= */
 
 async function loadDashboard() {
-  const [usersSnapshot, trips, outstanding, backupSnapshot] =
+  const [usersSnapshot, trips, outstanding, backupSnapshot, practices] =
     await Promise.all([
       getDocs(collection(db, "users")),
       loadTrips(db),
@@ -121,8 +127,24 @@ async function loadDashboard() {
         console.error("待繳費用讀取失敗：", error);
         return [];
       }),
-      getDoc(doc(db, "settings", "backup")).catch(() => null)
+      getDoc(doc(db, "settings", "backup")).catch(() => null),
+      loadPractices(db, todayString()).catch((error) => {
+        console.error("團練讀取失敗：", error);
+        return [];
+      })
     ]);
+
+  /*
+   * 接下來的團練；人數到了但還沒確認成團的要提醒
+   */
+  const practiceStates =
+    practices.map((practice) => getPracticeState(practice).key);
+
+  const upcomingPractices =
+    practiceStates.filter((key) => ["recruiting", "ready", "confirmed"].includes(key)).length;
+
+  const readyPractices =
+    practiceStates.filter((key) => key === "ready").length;
 
   /*
    * 上次備份距今幾天；個資是不是還留在公開資料裡
@@ -195,6 +217,16 @@ async function loadDashboard() {
       value: semesterTrips,
       unit: "次",
       href: "./admin-trips.html"
+    },
+    {
+      label: "接下來的團練",
+      value: upcomingPractices,
+      unit: "團",
+      href: "./admin-practice.html",
+      alert: readyPractices > 0,
+      note: readyPractices > 0
+        ? `${readyPractices} 團人數到了，等你確認成團`
+        : upcomingPractices > 0 ? "還在招募中" : "可以開新的團練"
     },
     {
       label: "未繳費用",

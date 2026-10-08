@@ -20,7 +20,7 @@
     content="#315f65"
   >
 
-  <title>回憶牆｜Surf Club</title>
+  <title>團練｜Surf Club</title>
 
   <link
     rel="stylesheet"
@@ -54,14 +54,14 @@
           社員圖鑑
         </a>
 
-        <a
-          class="active"
-          href="./memories.html"
-        >
+        <a href="./memories.html">
           回憶牆
         </a>
 
-        <a href="./practice.html">
+        <a
+          class="active"
+          href="./practice.html"
+        >
           團練
         </a>
 
@@ -85,58 +85,64 @@
   </header>
 
   <main class="leaderboard-page">
-    <section class="dex-hero">
+    <section class="dex-hero practice-hero">
       <p class="leaderboard-eyebrow">
-        SURF CLUB MEMORIES
+        GROUP PRACTICE
       </p>
 
       <h1>
-        回憶牆
+        團練
       </h1>
 
       <p class="leaderboard-description">
-        每一次出團、每一個第一次、每一句名言，都在這裡。
+        幹部開好的團練都在這裡，按「我要參加」報名，人數到了幹部會確認成團。
       </p>
-
-      <div
-        id="reviewLinks"
-        class="review-links"
-      ></div>
     </section>
 
     <p
-      id="memoriesStatus"
+      id="practiceStatus"
       class="status-message"
     >
-      正在載入回憶……
+      正在載入團練……
     </p>
 
-    <div id="tripTimeline"></div>
-  </main>
+    <section class="boards-section">
+      <div class="leaderboard-section-header">
+        <div>
+          <p class="leaderboard-section-eyebrow">
+            UPCOMING
+          </p>
 
-  <!-- =====================================================
-       出團詳細紀錄
-       ===================================================== -->
+          <h2>
+            接下來的團練
+          </h2>
+        </div>
+      </div>
 
-  <dialog
-    id="tripDialog"
-    class="profile-dialog dex-dialog"
-  >
-    <button
-      id="closeTripDialog"
-      class="icon-button dialog-close"
-      type="button"
-      aria-label="關閉"
+      <div
+        id="practiceList"
+        class="practice-list"
+      ></div>
+    </section>
+
+    <details
+      id="pastPractices"
+      class="growth-details past-practices"
     >
-      ×
-    </button>
+      <summary>
+        已結束或取消的團練
+      </summary>
 
-    <div id="tripDialogContent"></div>
-  </dialog>
+      <div
+        id="pastPracticeList"
+        class="practice-list"
+      ></div>
+    </details>
+  </main>
 
   <script
     type="module"
-    src="./js/memories.js"
+    src="./js/practice.js"
   ></script>
 </body>
 </html>
