@@ -19,6 +19,7 @@ import {
   arrayUnion,
   collection,
   deleteDoc,
+  deleteField,
   doc,
   getDoc,
   getDocs,
@@ -302,11 +303,35 @@ export async function createPractice(db, fields, uid) {
   return reference.id;
 }
 
-export async function updatePractice(db, practiceId, fields) {
+/*
+ * previous 是修改前的團練。改了截止時間、上限、成團人數之後，
+ * 已經不符合的 LINE 通知紀錄會清掉，之後條件再成立時會重新通知
+ */
+export async function updatePractice(db, practiceId, fields, previous = {}) {
+  const count =
+    (previous.participants || []).length;
+
+  const cleared = {};
+
+  if (previous.coachNotifiedAt && fields.minParticipants > count) {
+    cleared.coachNotifiedAt = deleteField();
+    cleared.coachNotifiedCount = deleteField();
+  }
+
+  if (previous.fullNotifiedAt && fields.maxParticipants > count) {
+    cleared.fullNotifiedAt = deleteField();
+  }
+
+  if (previous.deadlineNotifiedAt && fields.signupDeadline.toDate() > new Date()) {
+    cleared.deadlineNotifiedAt = deleteField();
+    cleared.deadlineNotifiedCount = deleteField();
+  }
+
   await updateDoc(
     doc(db, "practices", practiceId),
     {
       ...fields,
+      ...cleared,
       updatedAt: serverTimestamp()
     }
   );

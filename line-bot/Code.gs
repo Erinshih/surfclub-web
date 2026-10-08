@@ -1,12 +1,13 @@
 /* =========================================================
    檔案：line-bot/Code.gs（貼到 Google Apps Script）
-   團練人數湊齊時，自動用 LINE 通知教練群組
+   團練有變化時，自動用 LINE 通知教練群組
 
-   每 5 分鐘執行一次 checkPractices（執行一次 setupTrigger 就會建立）：
-   1. 讀 Firestore 今天以後的團練
-   2. 找出「招募中、人數到了成團人數、還沒通知過、還沒開始」的團
-   3. 把日期、浪點、參加名單推播到教練群組
-   4. 在團練寫上 coachNotifiedAt，同一團不會重複通知
+   每 5 分鐘執行一次 checkPractices（執行一次 setupTrigger 就會建立），
+   讀 Firestore 今天以後、還沒開始、沒有取消的團練，遇到下面的情況就通知：
+     ready     人數湊齊（招募中的團，報名人數到了成團人數）→ coachNotifiedAt
+     full      報名額滿（報名人數到了上限）               → fullNotifiedAt
+     deadline  報名截止（附最終名單）                     → deadlineNotifiedAt
+   每種通知同一團只會傳一次；同一次檢查遇到好幾種，合併成一則訊息。
 
    指令碼屬性（專案設定 → 指令碼屬性）：
      FIREBASE_PROJECT_ID  Firebase 專案 ID，例如 surfclub-web
@@ -49,11 +50,12 @@ function runCheck_(dryRun) {
 
     const practices =
       loadUpcomingPractices_(config, now)
+        .map(function (practice) {
+          practice.events = getEvents_(practice, now);
+          return practice;
+        })
         .filter(function (practice) {
-          return practice.status === "open" &&
-            !practice.coachNotifiedAt &&
-            practice.participants.length >= (practice.minParticipants || 1) &&
-            getPracticeStart_(practice) > now;
+          return practice.events.length > 0;
         });
 
     if (practices.length === 0) {
@@ -92,7 +94,7 @@ function runCheck_(dryRun) {
         pushLineMessage_(config, text);
         markNotified_(config, practice, now);
 
-        console.log("已通知教練：" + practice.date + " " + practice.start + " " + practice.spot);
+        console.log("已通知教練（" + practice.events.join("、") + "）：" + practice.date + " " + practice.start + " " + practice.spot);
       } catch (error) {
         console.error("通知失敗：" + practice.date + " " + practice.start + "：" + error.message);
         errors.push(error.message);
@@ -108,6 +110,39 @@ function runCheck_(dryRun) {
   } finally {
     lock.releaseLock();
   }
+}
+
+/*
+ * 這一團現在要通知哪些事
+ */
+function getEvents_(practice, now) {
+  const count = practice.participants.length;
+  const min = practice.minParticipants || 1;
+  const max = practice.maxParticipants || Infinity;
+  const start = getPracticeStart_(practice);
+
+  const deadline =
+    practice.signupDeadline instanceof Date ? practice.signupDeadline : start;
+
+  if (practice.status === "cancelled" || !(start > now) || count === 0) {
+    return [];
+  }
+
+  const events = [];
+
+  if (practice.status === "open" && !practice.coachNotifiedAt && count >= min) {
+    events.push("ready");
+  }
+
+  if (!practice.fullNotifiedAt && count >= max) {
+    events.push("full");
+  }
+
+  if (!practice.deadlineNotifiedAt && now >= deadline) {
+    events.push("deadline");
+  }
+
+  return events;
 }
 
 /* =========================================================
@@ -356,21 +391,40 @@ function loadMemberNames_(config, uids) {
   return names;
 }
 
+/*
+ * 記下這次通知了什麼，下次就不會重複傳
+ */
 function markNotified_(config, practice, now) {
+  const time = { timestampValue: now.toISOString() };
+  const count = { integerValue: String(practice.participants.length) };
+  const fields = {};
+
+  if (practice.events.indexOf("ready") !== -1) {
+    fields.coachNotifiedAt = time;
+    fields.coachNotifiedCount = count;
+  }
+
+  if (practice.events.indexOf("full") !== -1) {
+    fields.fullNotifiedAt = time;
+  }
+
+  if (practice.events.indexOf("deadline") !== -1) {
+    fields.deadlineNotifiedAt = time;
+    fields.deadlineNotifiedCount = count;
+  }
+
+  const mask =
+    Object.keys(fields)
+      .map(function (field) {
+        return "updateMask.fieldPaths=" + field;
+      })
+      .join("&");
+
   firestoreRequest_(
     config,
-    "https://firestore.googleapis.com/v1/" +
-      practice.documentName +
-      "?updateMask.fieldPaths=coachNotifiedAt" +
-      "&updateMask.fieldPaths=coachNotifiedCount" +
-      "&currentDocument.exists=true",
+    "https://firestore.googleapis.com/v1/" + practice.documentName + "?" + mask + "&currentDocument.exists=true",
     "patch",
-    {
-      fields: {
-        coachNotifiedAt: { timestampValue: now.toISOString() },
-        coachNotifiedCount: { integerValue: String(practice.participants.length) }
-      }
-    }
+    { fields: fields }
   );
 }
 
@@ -390,17 +444,50 @@ function formatPracticeDate_(practice) {
 }
 
 /*
- * 跟網站上「用 LINE 通知教練」的訊息一樣
+ * 開頭依最重要的事決定：報名截止 > 額滿 > 人數湊齊
  */
 function buildMessage_(practice, names) {
+  const count = names.length;
+  const min = practice.minParticipants || 1;
+  const max = practice.maxParticipants;
+  const events = practice.events || ["ready"];
+  const enough = count >= min;
+
+  let headline;
+  let closing;
+
+  if (events.indexOf("deadline") !== -1) {
+    headline =
+      enough
+        ? "⏰ 團練報名截止！最終名單 " + count + " 人（" + min + " 人成團）"
+        : "⏰ 團練報名截止，只有 " + count + " 人報名（未達成團人數 " + min + " 人）";
+
+    closing =
+      !enough
+        ? "人數不足，幹部會再決定要不要照常團練。"
+        : practice.status === "confirmed"
+          ? "已確定成團，名單如上，謝謝教練！🙏"
+          : "名單已確定，麻煩教練確認這團可以帶，謝謝！🙏";
+  } else if (events.indexOf("full") !== -1) {
+    headline = "🈵 團練報名額滿了！共 " + count + " 人（上限 " + max + " 人）";
+    closing = "麻煩教練確認這團可以帶，謝謝！🙏";
+  } else {
+    headline = "🏄 團練人數湊齊了！目前 " + count + " 人報名（" + min + " 人成團）";
+    closing = "麻煩教練確認這團可以帶，謝謝！🙏";
+  }
+
   const lines = [
-    "🏄 團練人數湊齊了！目前 " + names.length + " 人報名（" + (practice.minParticipants || 1) + " 人成團）",
+    headline,
     "",
     "📅 " + formatPracticeDate_(practice) + " " + practice.start + "–" + practice.end,
-    "📍 " + (practice.spot || "浪點未定"),
-    "",
-    "👥 參加名單："
+    "📍 " + (practice.spot || "浪點未定")
   ];
+
+  if (practice.status === "confirmed") {
+    lines.push("✅ 已確定成團");
+  }
+
+  lines.push("", "👥 參加名單：");
 
   names.forEach(function (name, index) {
     lines.push((index + 1) + ". " + name);
@@ -410,7 +497,7 @@ function buildMessage_(practice, names) {
     lines.push("", "📝 " + practice.note);
   }
 
-  lines.push("", "麻煩教練確認這團可以帶，謝謝！🙏");
+  lines.push("", closing);
 
   return lines.join("\n");
 }

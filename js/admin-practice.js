@@ -429,7 +429,7 @@ practiceForm?.addEventListener(
       let id = editingId;
 
       if (editing) {
-        await updatePractice(db, editing.id, fields);
+        await updatePractice(db, editing.id, fields, editing);
       } else {
         id = await createPractice(db, fields, currentAdminUid);
       }
@@ -551,7 +551,7 @@ function renderPracticeCard(practice, now) {
    * 人數湊齊了才需要通知教練
    */
   if (state.key === "ready" || state.key === "confirmed") {
-    actions.push(`<button class="button button-small practice-line-button" type="button" data-line-share="${id}">${practice.coachNotifiedAt ? "再用 LINE 通知一次" : "用 LINE 通知教練"}</button>`);
+    actions.push(`<button class="button button-small practice-line-button" type="button" data-line-share="${id}">${practice.coachNotifiedAt || practice.fullNotifiedAt || practice.deadlineNotifiedAt ? "再用 LINE 通知一次" : "用 LINE 通知教練"}</button>`);
   }
 
   if (state.key === "recruiting" || state.key === "ready" || state.key === "confirmed") {
@@ -611,28 +611,50 @@ function renderPracticeCard(practice, now) {
 }
 
 /*
- * LINE 小幫手（line-bot/Code.gs）自動通知教練後會寫上 coachNotifiedAt
+ * LINE 小幫手（line-bot/Code.gs）自動通知後會寫上
+ * coachNotifiedAt（人數湊齊）、fullNotifiedAt（額滿）、deadlineNotifiedAt（報名截止）
  */
-function renderNotifiedNote(practice) {
-  const notifiedAt =
-    practice.coachNotifiedAt?.toDate?.();
+function formatNotifiedTime(value) {
+  const date =
+    value?.toDate?.();
 
-  if (!notifiedAt) {
+  if (!date) {
     return "";
   }
 
-  const time =
-    `${notifiedAt.getMonth() + 1}/${notifiedAt.getDate()} ${String(notifiedAt.getHours()).padStart(2, "0")}:${String(notifiedAt.getMinutes()).padStart(2, "0")}`;
+  return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+}
 
-  const count =
-    Number(practice.coachNotifiedCount) || 0;
+function renderNotifiedNote(practice) {
+  const items = [
+    practice.coachNotifiedAt &&
+      `人數湊齊 ${formatNotifiedTime(practice.coachNotifiedAt)}（${Number(practice.coachNotifiedCount) || 0} 人）`,
+    practice.fullNotifiedAt &&
+      `額滿 ${formatNotifiedTime(practice.fullNotifiedAt)}`,
+    practice.deadlineNotifiedAt &&
+      `報名截止 ${formatNotifiedTime(practice.deadlineNotifiedAt)}（${Number(practice.deadlineNotifiedCount) || 0} 人）`
+  ].filter(Boolean);
+
+  if (items.length === 0) {
+    return "";
+  }
+
+  /*
+   * 最後一次通知之後名單還有變動，提醒可以手動再傳
+   */
+  const lastCount =
+    practice.deadlineNotifiedAt
+      ? Number(practice.deadlineNotifiedCount)
+      : practice.fullNotifiedAt
+        ? Number(practice.maxParticipants)
+        : Number(practice.coachNotifiedCount);
 
   const changed =
-    count > 0 && count !== (practice.participants || []).length;
+    lastCount > 0 && lastCount !== (practice.participants || []).length;
 
   return `
     <p class="practice-notified">
-      📨 ${escapeHtml(time)} 已自動通知教練（當時 ${count} 人）
+      📨 已自動通知教練：${escapeHtml(items.join("、"))}
       ${changed ? "<br>名單之後有變動，需要的話可以再通知一次。" : ""}
     </p>
   `;
