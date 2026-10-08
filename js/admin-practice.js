@@ -36,8 +36,6 @@ import {
   deletePractice,
   formatDeadline,
   formatPracticeDate,
-  getLineShareText,
-  getLineShareUrl,
   getPracticeStart,
   getPracticeState,
   getSignupDeadline,
@@ -132,6 +130,9 @@ const settingHours =
 
 const settingSpot =
   document.querySelector("#setting-spot");
+
+const settingBotUrl =
+  document.querySelector("#setting-bot-url");
 
 const settingSlots =
   document.querySelector("#setting-slots");
@@ -548,10 +549,10 @@ function renderPracticeCard(practice, now) {
   }
 
   /*
-   * 人數湊齊了才需要通知教練
+   * 請 LINE 小幫手把目前名單傳到教練群組
    */
-  if (state.key === "ready" || state.key === "confirmed") {
-    actions.push(`<button class="button button-small practice-line-button" type="button" data-line-share="${id}">${practice.coachNotifiedAt || practice.fullNotifiedAt || practice.deadlineNotifiedAt ? "再用 LINE 通知一次" : "用 LINE 通知教練"}</button>`);
+  if ((state.key === "recruiting" || state.key === "ready" || state.key === "confirmed") && count > 0) {
+    actions.push(`<button class="button button-small practice-line-button" type="button" data-bot-notify="${id}">📨 請小幫手通知教練</button>`);
   }
 
   if (state.key === "recruiting" || state.key === "ready" || state.key === "confirmed") {
@@ -611,8 +612,8 @@ function renderPracticeCard(practice, now) {
 }
 
 /*
- * LINE 小幫手（line-bot/Code.gs）自動通知後會寫上
- * coachNotifiedAt（人數湊齊）、fullNotifiedAt（額滿）、deadlineNotifiedAt（報名截止）
+ * LINE 小幫手（line-bot/Code.gs）傳過名單後會寫上
+ * deadlineNotifiedAt（報名截止自動傳的最終名單）、manualNotifiedAt（幹部按按鈕傳的）
  */
 function formatNotifiedTime(value) {
   const date =
@@ -627,12 +628,10 @@ function formatNotifiedTime(value) {
 
 function renderNotifiedNote(practice) {
   const items = [
-    practice.coachNotifiedAt &&
-      `人數湊齊 ${formatNotifiedTime(practice.coachNotifiedAt)}（${Number(practice.coachNotifiedCount) || 0} 人）`,
-    practice.fullNotifiedAt &&
-      `額滿 ${formatNotifiedTime(practice.fullNotifiedAt)}`,
+    practice.manualNotifiedAt &&
+      `手動 ${formatNotifiedTime(practice.manualNotifiedAt)}（${Number(practice.manualNotifiedCount) || 0} 人）`,
     practice.deadlineNotifiedAt &&
-      `報名截止 ${formatNotifiedTime(practice.deadlineNotifiedAt)}（${Number(practice.deadlineNotifiedCount) || 0} 人）`
+      `最終名單 ${formatNotifiedTime(practice.deadlineNotifiedAt)}（${Number(practice.deadlineNotifiedCount) || 0} 人）`
   ].filter(Boolean);
 
   if (items.length === 0) {
@@ -640,21 +639,24 @@ function renderNotifiedNote(practice) {
   }
 
   /*
-   * 最後一次通知之後名單還有變動，提醒可以手動再傳
+   * 最後一次通知之後名單還有變動，提醒可以再傳一次
    */
+  const lastAt =
+    [practice.manualNotifiedAt, practice.deadlineNotifiedAt]
+      .filter((value) => value?.toDate)
+      .sort((first, second) => second.toDate() - first.toDate())[0];
+
   const lastCount =
-    practice.deadlineNotifiedAt
-      ? Number(practice.deadlineNotifiedCount)
-      : practice.fullNotifiedAt
-        ? Number(practice.maxParticipants)
-        : Number(practice.coachNotifiedCount);
+    lastAt === practice.manualNotifiedAt
+      ? Number(practice.manualNotifiedCount)
+      : Number(practice.deadlineNotifiedCount);
 
   const changed =
     lastCount > 0 && lastCount !== (practice.participants || []).length;
 
   return `
     <p class="practice-notified">
-      📨 已自動通知教練：${escapeHtml(items.join("、"))}
+      📨 小幫手已通知教練：${escapeHtml(items.join("、"))}
       ${changed ? "<br>名單之後有變動，需要的話可以再通知一次。" : ""}
     </p>
   `;
@@ -678,68 +680,104 @@ const DONE_MESSAGES = {
 };
 
 /*
- * 用 LINE 通知教練：先問要不要開 LINE，再到 LINE 裡選要傳給誰
+ * 請 LINE 小幫手把目前名單傳到教練群組
+ * 小幫手會用登入憑證確認是幹部，才會傳
  */
 adminContent?.addEventListener(
   "click",
 
-  (event) => {
+  async (event) => {
     const button =
-      event.target.closest("[data-line-share]");
+      event.target.closest("[data-bot-notify]");
 
     if (!button) {
       return;
     }
 
     const practice =
-      practices.find((item) => item.id === button.dataset.lineShare);
+      practices.find((item) => item.id === button.dataset.botNotify);
 
     if (!practice) {
       return;
     }
 
-    const isMobile =
-      /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
-      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    if (!settings.lineBotUrl) {
+      showStatus(
+        practiceListMessage,
+        "還沒設定 LINE 小幫手網址，請到下方「新增團練的預設值」填好再按。",
+        "error"
+      );
+
+      return;
+    }
+
+    const count =
+      (practice.participants || []).length;
 
     if (
       !window.confirm(
-        `要開啟 LINE 通知教練嗎？\n\n` +
-        `${formatPracticeDate(practice)} ${practice.start}｜${practice.spot}\n\n` +
-        (isMobile
-          ? "接下來會打開 LINE App，選擇要傳給哪個好友或群組。"
-          : "接下來會開啟 LINE 分享視窗，登入後選擇要傳給哪個好友或群組。")
+        `要請小幫手把這團的名單傳到教練群組嗎？\n\n` +
+        `${formatPracticeDate(practice)} ${practice.start}｜${practice.spot}\n` +
+        `目前 ${count} 人報名`
       )
     ) {
       return;
     }
 
-    const text =
-      getLineShareText(
-        practice,
-        (practice.participants || []).map(getMemberName)
+    button.disabled = true;
+    button.textContent = "傳送中……";
+
+    try {
+      const idToken =
+        await auth.currentUser.getIdToken();
+
+      /*
+       * 用 text/plain 送出，Apps Script 不需要處理跨網域預檢
+       */
+      const response =
+        await fetch(
+          settings.lineBotUrl,
+          {
+            method: "POST",
+            body: JSON.stringify({
+              action: "notify",
+              practiceId: practice.id,
+              idToken
+            })
+          }
+        );
+
+      const result =
+        await response.json();
+
+      if (!result.ok) {
+        throw new Error(result.error || "小幫手沒有回應");
+      }
+
+      await refreshPractices();
+
+      showStatus(
+        practiceListMessage,
+        `✅ 小幫手已經把 ${result.count} 人的名單傳到教練群組了。`,
+        "success"
       );
 
-    const url =
-      getLineShareUrl(text, getPracticePageUrl(practice.id), isMobile);
+      highlightPractice(practice.id);
+    } catch (error) {
+      console.error(
+        "小幫手通知失敗：",
+        error
+      );
 
-    if (isMobile) {
-      window.location.href = url;
-      return;
+      button.disabled = false;
+      button.textContent = "📨 請小幫手通知教練";
+
+      showStatus(
+        practiceListMessage,
+        `小幫手通知失敗：${error?.message || "未知錯誤"}`,
+        "error"
+      );
     }
-
-    /*
-     * 電腦版也先複製一份，LINE 網頁沒帶到訊息時可以直接貼上
-     */
-    navigator.clipboard?.writeText(text).catch(() => {});
-
-    window.open(url, "line-share", "width=600,height=720,noopener");
-
-    showStatus(
-      practiceListMessage,
-      "已開啟 LINE 分享視窗，訊息也複製好了，沒帶到的話直接貼上就可以。",
-      "success"
-    );
   }
 );
 
@@ -814,13 +852,6 @@ adminContent?.addEventListener(
   }
 );
 
-/*
- * 社員報名用的團練頁網址
- */
-function getPracticePageUrl(id) {
-  return new URL(`./practice.html#practice-${id}`, window.location.href).href;
-}
-
 function highlightPractice(id) {
   const card =
     id && document.querySelector(`#practice-${CSS.escape(id)}`);
@@ -842,6 +873,7 @@ function fillSettings() {
   settingMax.value = settings.maxParticipants;
   settingHours.value = settings.closeHoursBefore;
   settingSpot.value = settings.defaultSpot;
+  settingBotUrl.value = settings.lineBotUrl || "";
 
   slots =
     settings.slots.map((slot) => ({ ...slot }));
@@ -955,6 +987,7 @@ settingsForm?.addEventListener(
           maxParticipants: settingMax.value,
           closeHoursBefore: settingHours.value,
           defaultSpot: settingSpot.value,
+          lineBotUrl: settingBotUrl.value,
           slots
         });
 

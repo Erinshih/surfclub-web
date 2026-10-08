@@ -1,27 +1,27 @@
 /* =========================================================
    檔案：line-bot/Code.gs（貼到 Google Apps Script）
-   團練有變化時，自動用 LINE 通知教練群組
+   團練 LINE 小幫手：把參加名單傳到教練群組
 
-   每 5 分鐘執行一次 checkPractices（執行一次 setupTrigger 就會建立），
-   讀 Firestore 今天以後、還沒開始、沒有取消的團練，遇到下面的情況就通知：
-     ready     人數湊齊（招募中的團，報名人數到了成團人數）→ coachNotifiedAt
-     full      報名額滿（報名人數到了上限）               → fullNotifiedAt
-     deadline  報名截止（附最終名單）                     → deadlineNotifiedAt
-   每種通知同一團只會傳一次；同一次檢查遇到好幾種，合併成一則訊息。
+   1. 自動：報名截止時，傳最終名單（每 5 分鐘檢查一次，同一團只傳一次）
+      → 在團練寫上 deadlineNotifiedAt
+   2. 手動：幹部在後台「團練管理」按「請小幫手通知教練」，馬上傳目前名單
+      → 在團練寫上 manualNotifiedAt
 
    指令碼屬性（專案設定 → 指令碼屬性）：
      FIREBASE_PROJECT_ID  Firebase 專案 ID，例如 surfclub-web
+     FIREBASE_API_KEY     Firebase 網頁 API 金鑰（js/firebase-config.js 的 apiKey），用來確認是幹部按的
      LINE_CHANNEL_TOKEN   LINE Messaging API 的 Channel access token
      LINE_GROUP_ID        教練群組的 ID（把官方帳號邀進群組，它會回覆這個 ID）
 
    執行這支程式的 Google 帳號，必須是 Firebase 專案的擁有者或編輯者。
+   修改程式後要到「部署 → 管理部署作業」發布新版本，後台按鈕才會用到新程式。
    ========================================================= */
 
 const TIME_ZONE = "Asia/Taipei";
 const WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
 
 /* =========================================================
-   主程式：檢查團練、通知教練
+   自動：報名截止時傳最終名單
    ========================================================= */
 
 function checkPractices() {
@@ -29,7 +29,7 @@ function checkPractices() {
 }
 
 /*
- * 只看會通知哪些團、訊息長怎樣，不會真的傳出去
+ * 只看會傳哪些團、訊息長怎樣，不會真的傳出去
  * 第一次設定時先跑這個，確認讀得到 Firestore
  */
 function previewPractices() {
@@ -50,40 +50,21 @@ function runCheck_(dryRun) {
 
     const practices =
       loadUpcomingPractices_(config, now)
-        .map(function (practice) {
-          practice.events = getEvents_(practice, now);
-          return practice;
-        })
         .filter(function (practice) {
-          return practice.events.length > 0;
+          return needsFinalList_(practice, now);
         });
 
     if (practices.length === 0) {
-      console.log("沒有需要通知的團練。");
+      console.log("沒有需要傳最終名單的團練。");
       return;
     }
 
-    const uids = [];
-
-    practices.forEach(function (practice) {
-      practice.participants.forEach(function (uid) {
-        if (uids.indexOf(uid) === -1) {
-          uids.push(uid);
-        }
-      });
-    });
-
-    const names = loadMemberNames_(config, uids);
+    const names = loadMemberNames_(config, collectUids_(practices));
     const errors = [];
 
     practices.forEach(function (practice) {
       const text =
-        buildMessage_(
-          practice,
-          practice.participants.map(function (uid) {
-            return names[uid] || "（已不是社員）";
-          })
-        );
+        buildMessage_(practice, getNames_(practice, names), now, "final");
 
       if (dryRun) {
         console.log("【預覽】會傳出這則訊息：\n" + text);
@@ -92,11 +73,11 @@ function runCheck_(dryRun) {
 
       try {
         pushLineMessage_(config, text);
-        markNotified_(config, practice, now);
+        markNotified_(config, practice, "deadline", now);
 
-        console.log("已通知教練（" + practice.events.join("、") + "）：" + practice.date + " " + practice.start + " " + practice.spot);
+        console.log("已傳最終名單：" + practice.date + " " + practice.start + " " + practice.spot);
       } catch (error) {
-        console.error("通知失敗：" + practice.date + " " + practice.start + "：" + error.message);
+        console.error("傳送失敗：" + practice.date + " " + practice.start + "：" + error.message);
         errors.push(error.message);
       }
     });
@@ -105,7 +86,7 @@ function runCheck_(dryRun) {
      * 有失敗的話丟出錯誤，Apps Script 會寄信通知
      */
     if (errors.length > 0) {
-      throw new Error(errors.length + " 團通知失敗：" + errors.join("；"));
+      throw new Error(errors.length + " 團傳送失敗：" + errors.join("；"));
     }
   } finally {
     lock.releaseLock();
@@ -113,36 +94,132 @@ function runCheck_(dryRun) {
 }
 
 /*
- * 這一團現在要通知哪些事
+ * 報名截止了、還沒開始、沒取消、有人報名、還沒傳過最終名單
  */
-function getEvents_(practice, now) {
-  const count = practice.participants.length;
-  const min = practice.minParticipants || 1;
-  const max = practice.maxParticipants || Infinity;
+function needsFinalList_(practice, now) {
   const start = getPracticeStart_(practice);
 
   const deadline =
     practice.signupDeadline instanceof Date ? practice.signupDeadline : start;
 
-  if (practice.status === "cancelled" || !(start > now) || count === 0) {
-    return [];
+  return practice.status !== "cancelled" &&
+    practice.participants.length > 0 &&
+    !practice.deadlineNotifiedAt &&
+    now >= deadline &&
+    start > now;
+}
+
+/* =========================================================
+   手動：後台按鈕
+   ========================================================= */
+
+/*
+ * 後台送來 { action: "notify", practiceId, idToken }
+ * 確認是幹部之後，馬上把目前名單傳到教練群組
+ */
+function handleNotifyRequest_(body) {
+  const lock = LockService.getScriptLock();
+
+  if (!lock.tryLock(20000)) {
+    return jsonOutput_({ ok: false, error: "小幫手正在忙，請過幾秒再按一次。" });
   }
 
-  const events = [];
+  try {
+    const config = getConfig_(false);
 
-  if (practice.status === "open" && !practice.coachNotifiedAt && count >= min) {
-    events.push("ready");
+    if (!config.apiKey) {
+      throw new Error("還沒設定指令碼屬性 FIREBASE_API_KEY。");
+    }
+
+    const uid = verifyIdToken_(config, body.idToken);
+    const user = getDocument_(config, "users/" + uid);
+
+    if (!user || user.role !== "admin") {
+      throw new Error("只有幹部可以請小幫手傳通知。");
+    }
+
+    const practiceId = String(body.practiceId || "");
+
+    if (!/^[A-Za-z0-9_-]+$/.test(practiceId)) {
+      throw new Error("找不到這團團練。");
+    }
+
+    const practice = getDocument_(config, "practices/" + practiceId);
+
+    if (!practice) {
+      throw new Error("找不到這團團練。");
+    }
+
+    practice.participants = practice.participants || [];
+
+    if (practice.status === "cancelled") {
+      throw new Error("這團已經取消了。");
+    }
+
+    if (practice.participants.length === 0) {
+      throw new Error("這團還沒有人報名。");
+    }
+
+    const now = new Date();
+
+    const names =
+      loadMemberNames_(config, practice.participants);
+
+    pushLineMessage_(
+      config,
+      buildMessage_(practice, getNames_(practice, names), now, "manual")
+    );
+
+    markNotified_(config, practice, "manual", now);
+
+    console.log("幹部手動通知：" + practice.date + " " + practice.start + " " + practice.spot);
+
+    return jsonOutput_({ ok: true, count: practice.participants.length });
+  } catch (error) {
+    console.error("手動通知失敗：" + error.message);
+
+    return jsonOutput_({ ok: false, error: error.message });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/*
+ * 用 Firebase 確認登入憑證，回傳使用者 uid
+ */
+function verifyIdToken_(config, idToken) {
+  if (!idToken) {
+    throw new Error("請重新登入後再試一次。");
   }
 
-  if (!practice.fullNotifiedAt && count >= max) {
-    events.push("full");
+  const response =
+    UrlFetchApp.fetch(
+      "https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=" + encodeURIComponent(config.apiKey),
+      {
+        method: "post",
+        contentType: "application/json",
+        payload: JSON.stringify({ idToken: idToken }),
+        muteHttpExceptions: true
+      }
+    );
+
+  const data =
+    JSON.parse(response.getContentText() || "{}");
+
+  const user =
+    data.users && data.users[0];
+
+  if (response.getResponseCode() !== 200 || !user || !user.localId) {
+    throw new Error("登入已過期，請重新整理頁面後再試一次。");
   }
 
-  if (!practice.deadlineNotifiedAt && now >= deadline) {
-    events.push("deadline");
-  }
+  return user.localId;
+}
 
-  return events;
+function jsonOutput_(data) {
+  return ContentService
+    .createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 /* =========================================================
@@ -159,6 +236,7 @@ function getProperty_(key) {
 function getConfig_(dryRun) {
   const config = {
     projectId: getProperty_("FIREBASE_PROJECT_ID"),
+    apiKey: getProperty_("FIREBASE_API_KEY"),
     lineToken: getProperty_("LINE_CHANNEL_TOKEN"),
     groupId: getProperty_("LINE_GROUP_ID")
   };
@@ -207,7 +285,7 @@ function setupTrigger() {
  */
 function showGroupId() {
   const id =
-    PropertiesService.getScriptProperties().getProperty("LAST_SEEN_GROUP_ID");
+    getProperty_("LAST_SEEN_GROUP_ID");
 
   console.log(
     id
@@ -222,7 +300,7 @@ function showGroupId() {
 function testLine() {
   pushLineMessage_(
     getConfig_(false),
-    "✅ 團練通知小幫手設定完成！之後團練人數湊齊時，會自動在這裡通知教練。"
+    "✅ 團練通知小幫手設定完成！報名截止時會在這裡傳最終名單。"
   );
 
   console.log("已傳出測試訊息。");
@@ -255,6 +333,10 @@ function firestoreRequest_(config, url, method, payload) {
 
   const response = UrlFetchApp.fetch(url, options);
   const code = response.getResponseCode();
+
+  if (code === 404 && method === "get") {
+    return null;
+  }
 
   if (code >= 300) {
     throw new Error("Firestore 讀寫失敗（" + code + "）：" + response.getContentText());
@@ -309,6 +391,24 @@ function fromFields_(fields) {
   return data;
 }
 
+/*
+ * 讀一筆文件，例如 "users/abc"；不存在時回傳 null
+ */
+function getDocument_(config, path) {
+  const document =
+    firestoreRequest_(config, getDocumentsUrl_(config) + "/" + path, "get");
+
+  if (!document) {
+    return null;
+  }
+
+  const data = fromFields_(document.fields);
+
+  data.documentName = document.name;
+
+  return data;
+}
+
 function loadUpcomingPractices_(config, now) {
   const today =
     Utilities.formatDate(now, TIME_ZONE, "yyyy-MM-dd");
@@ -347,6 +447,20 @@ function loadUpcomingPractices_(config, now) {
     .sort(function (first, second) {
       return (first.date + first.start).localeCompare(second.date + second.start);
     });
+}
+
+function collectUids_(practices) {
+  const uids = [];
+
+  practices.forEach(function (practice) {
+    practice.participants.forEach(function (uid) {
+      if (uids.indexOf(uid) === -1) {
+        uids.push(uid);
+      }
+    });
+  });
+
+  return uids;
 }
 
 /*
@@ -391,38 +505,31 @@ function loadMemberNames_(config, uids) {
   return names;
 }
 
+function getNames_(practice, names) {
+  return practice.participants.map(function (uid) {
+    return names[uid] || "（已不是社員）";
+  });
+}
+
 /*
- * 記下這次通知了什麼，下次就不會重複傳
+ * 記下傳過的時間和當時人數
+ * kind：deadline（最終名單）或 manual（幹部手動）
  */
-function markNotified_(config, practice, now) {
-  const time = { timestampValue: now.toISOString() };
-  const count = { integerValue: String(practice.participants.length) };
+function markNotified_(config, practice, kind, now) {
+  const prefix =
+    kind === "deadline" ? "deadlineNotified" : "manualNotified";
+
   const fields = {};
 
-  if (practice.events.indexOf("ready") !== -1) {
-    fields.coachNotifiedAt = time;
-    fields.coachNotifiedCount = count;
-  }
-
-  if (practice.events.indexOf("full") !== -1) {
-    fields.fullNotifiedAt = time;
-  }
-
-  if (practice.events.indexOf("deadline") !== -1) {
-    fields.deadlineNotifiedAt = time;
-    fields.deadlineNotifiedCount = count;
-  }
-
-  const mask =
-    Object.keys(fields)
-      .map(function (field) {
-        return "updateMask.fieldPaths=" + field;
-      })
-      .join("&");
+  fields[prefix + "At"] = { timestampValue: now.toISOString() };
+  fields[prefix + "Count"] = { integerValue: String(practice.participants.length) };
 
   firestoreRequest_(
     config,
-    "https://firestore.googleapis.com/v1/" + practice.documentName + "?" + mask + "&currentDocument.exists=true",
+    "https://firestore.googleapis.com/v1/" + practice.documentName +
+      "?updateMask.fieldPaths=" + prefix + "At" +
+      "&updateMask.fieldPaths=" + prefix + "Count" +
+      "&currentDocument.exists=true",
     "patch",
     { fields: fields }
   );
@@ -444,36 +551,44 @@ function formatPracticeDate_(practice) {
 }
 
 /*
- * 開頭依最重要的事決定：報名截止 > 額滿 > 人數湊齊
+ * kind：final（報名截止自動傳）或 manual（幹部手動傳）
+ * 手動傳的時候如果已經過了截止時間，也算最終名單
  */
-function buildMessage_(practice, names) {
+function buildMessage_(practice, names, now, kind) {
   const count = names.length;
   const min = practice.minParticipants || 1;
-  const max = practice.maxParticipants;
-  const events = practice.events || ["ready"];
   const enough = count >= min;
 
-  let headline;
-  let closing;
+  const deadline =
+    practice.signupDeadline instanceof Date ? practice.signupDeadline : getPracticeStart_(practice);
 
-  if (events.indexOf("deadline") !== -1) {
+  const isFinal =
+    kind === "final" || now >= deadline;
+
+  let headline;
+
+  if (isFinal) {
     headline =
       enough
         ? "⏰ 團練報名截止！最終名單 " + count + " 人（" + min + " 人成團）"
         : "⏰ 團練報名截止，只有 " + count + " 人報名（未達成團人數 " + min + " 人）";
-
-    closing =
-      !enough
-        ? "人數不足，幹部會再決定要不要照常團練。"
-        : practice.status === "confirmed"
-          ? "已確定成團，名單如上，謝謝教練！🙏"
-          : "名單已確定，麻煩教練確認這團可以帶，謝謝！🙏";
-  } else if (events.indexOf("full") !== -1) {
-    headline = "🈵 團練報名額滿了！共 " + count + " 人（上限 " + max + " 人）";
-    closing = "麻煩教練確認這團可以帶，謝謝！🙏";
   } else {
-    headline = "🏄 團練人數湊齊了！目前 " + count + " 人報名（" + min + " 人成團）";
+    headline =
+      enough
+        ? "📣 團練目前名單：" + count + " 人報名（" + min + " 人成團）"
+        : "📣 團練目前名單：" + count + " 人報名（還差 " + (min - count) + " 人成團）";
+  }
+
+  let closing;
+
+  if (practice.status === "confirmed") {
+    closing = "已確定成團，名單如上，謝謝教練！🙏";
+  } else if (enough) {
     closing = "麻煩教練確認這團可以帶，謝謝！🙏";
+  } else if (isFinal) {
+    closing = "人數不足，幹部會再決定要不要照常團練。";
+  } else {
+    closing = "還在招募中，報名截止時會再傳最終名單。";
   }
 
   const lines = [
@@ -537,16 +652,13 @@ function pushLineMessage_(config, text) {
   );
 }
 
-/*
- * LINE Webhook：用來取得教練群組的 ID
- * - 官方帳號被邀進群組時，自動回覆群組 ID
- * - 在群組輸入「群組ID」也會回覆
- * 這裡只會回覆訊息，不會改任何設定
- */
-function doPost(e) {
-  const token =
-    getProperty_("LINE_CHANNEL_TOKEN");
+/* =========================================================
+   網頁應用程式入口
+   - 後台按鈕：{ action: "notify", ... }
+   - LINE Webhook：{ events: [...] }，用來取得教練群組的 ID
+   ========================================================= */
 
+function doPost(e) {
   let body = {};
 
   try {
@@ -555,14 +667,28 @@ function doPost(e) {
     body = {};
   }
 
+  if (body.action === "notify") {
+    return handleNotifyRequest_(body);
+  }
+
+  handleLineWebhook_(body);
+
+  return ContentService.createTextOutput("OK");
+}
+
+/*
+ * - 官方帳號被邀進群組時，自動回覆群組 ID
+ * - 在群組輸入「群組ID」也會回覆
+ * 這裡只會回覆訊息、記下最近看到的群組 ID，不會改任何設定
+ */
+function handleLineWebhook_(body) {
+  const token =
+    getProperty_("LINE_CHANNEL_TOKEN");
+
   (body.events || []).forEach(function (event) {
     const source = event.source || {};
     const id = source.groupId || source.roomId;
 
-    /*
-     * 記下最近一次收到訊息的群組 ID，機器人沒回覆時也能在指令碼屬性找到
-     * 只是記錄，真正用來傳訊息的還是 LINE_GROUP_ID
-     */
     if (id) {
       PropertiesService.getScriptProperties().setProperty("LAST_SEEN_GROUP_ID", id);
       console.log("收到群組訊息，群組 ID：" + id);
@@ -598,6 +724,4 @@ function doPost(e) {
       console.error("回覆群組 ID 失敗：" + error.message);
     }
   });
-
-  return ContentService.createTextOutput("OK");
 }

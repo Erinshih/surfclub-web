@@ -51,7 +51,10 @@ export const DEFAULT_PRACTICE_SETTINGS = {
   ],
 
   /* 預設浪點 */
-  defaultSpot: "漁光島"
+  defaultSpot: "漁光島",
+
+  /* LINE 小幫手（line-bot/Code.gs 部署後的網址），後台按鈕用 */
+  lineBotUrl: ""
 };
 
 export const WEEKDAY_LABELS = ["日", "一", "二", "三", "四", "五", "六"];
@@ -120,8 +123,16 @@ export async function savePracticeSettings(db, settings) {
       };
     });
 
+  const lineBotUrl =
+    String(settings.lineBotUrl || "").trim();
+
+  if (lineBotUrl && !/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(lineBotUrl)) {
+    throw new Error("LINE 小幫手網址不正確，應該是 https://script.google.com/macros/s/……/exec。");
+  }
+
   const values = {
     ...capacity,
+    lineBotUrl,
     closeHoursBefore: Math.min(168, Math.max(0, Math.floor(Number(settings.closeHoursBefore) || 0))),
     slots,
     defaultSpot: String(settings.defaultSpot || "").trim().slice(0, 30)
@@ -304,23 +315,11 @@ export async function createPractice(db, fields, uid) {
 }
 
 /*
- * previous 是修改前的團練。改了截止時間、上限、成團人數之後，
- * 已經不符合的 LINE 通知紀錄會清掉，之後條件再成立時會重新通知
+ * previous 是修改前的團練。截止時間延後到現在之後，
+ * 最終名單的通知紀錄會清掉，新的截止時間到了會再傳一次
  */
 export async function updatePractice(db, practiceId, fields, previous = {}) {
-  const count =
-    (previous.participants || []).length;
-
   const cleared = {};
-
-  if (previous.coachNotifiedAt && fields.minParticipants > count) {
-    cleared.coachNotifiedAt = deleteField();
-    cleared.coachNotifiedCount = deleteField();
-  }
-
-  if (previous.fullNotifiedAt && fields.maxParticipants > count) {
-    cleared.fullNotifiedAt = deleteField();
-  }
 
   if (previous.deadlineNotifiedAt && fields.signupDeadline.toDate() > new Date()) {
     cleared.deadlineNotifiedAt = deleteField();
@@ -405,41 +404,4 @@ export function formatDeadline(practice) {
     String(deadline.getMinutes()).padStart(2, "0");
 
   return `${deadline.getMonth() + 1}/${deadline.getDate()} ${hours}:${minutes}`;
-}
-
-/*
- * 傳給教練的 LINE 訊息：人數湊齊了，有誰要參加
- * names 是報名社員的本名，照報名順序
- */
-export function getLineShareText(practice, names) {
-  const min =
-    Number(practice.minParticipants) || DEFAULT_PRACTICE_SETTINGS.minParticipants;
-
-  const headline =
-    names.length >= min
-      ? `🏄 團練人數湊齊了！目前 ${names.length} 人報名（${min} 人成團）`
-      : `🏄 團練目前 ${names.length} 人報名（還差 ${min - names.length} 人成團）`;
-
-  return [
-    headline,
-    "",
-    `📅 ${formatPracticeDate(practice)} ${practice.start}–${practice.end}`,
-    `📍 ${practice.spot || "浪點未定"}`,
-    "",
-    "👥 參加名單：",
-    ...names.map((name, index) => `${index + 1}. ${name}`),
-    ...(practice.note ? ["", `📝 ${practice.note}`] : []),
-    "",
-    "麻煩教練確認這團可以帶，謝謝！🙏"
-  ].join("\n");
-}
-
-/*
- * 手機：打開 LINE App，選要傳給哪個好友或群組
- * 電腦：打開 LINE 的網頁分享視窗，登入後一樣可以選傳給誰
- */
-export function getLineShareUrl(text, pageUrl, isMobile) {
-  return isMobile
-    ? `https://line.me/R/share?text=${encodeURIComponent(text)}`
-    : `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(pageUrl)}&text=${encodeURIComponent(text)}`;
 }
